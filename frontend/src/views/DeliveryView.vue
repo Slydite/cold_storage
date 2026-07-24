@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useFacility } from '../composables/useFacility'
 import {
@@ -7,20 +8,25 @@ import {
   usePostDeliveryNote,
   useCancelDeliveryNote
 } from '../composables/useDeliveryNotes'
+import { usePartyList } from '../composables/useParties'
 import { useSearchFilter } from '../composables/useSearchFilter'
 import DeliveryListTable from '../components/delivery/DeliveryListTable.vue'
+import DeliveryCreatePanel from '../components/delivery/DeliveryCreatePanel.vue'
 import type { DeliveryNoteOutput } from '../api/delivery'
 
+const route = useRoute()
 const toast = useToast()
 const { facilityId, isLoading: loadingFacility, isError: facilityError, refetch: refetchFacility } = useFacility()
 
 const selectedStatus = ref('all')
+const isPanelOpen = ref(false)
 
 const deliveryFilters = computed(() => ({
   status: selectedStatus.value
 }))
 
 const deliveriesQuery = useDeliveryNoteList(facilityId, deliveryFilters)
+const partiesQuery = usePartyList(facilityId)
 const postMutation = usePostDeliveryNote()
 const cancelMutation = useCancelDeliveryNote()
 
@@ -75,11 +81,13 @@ const handleCancel = async (id: number) => {
   }
 }
 
-const handleNewDelivery = () => {
+const handleCreated = (dnNumber: string, status: string) => {
+  isPanelOpen.value = false
+  const isDraft = status === 'DRAFT'
   toast.add({
-    severity: 'info',
-    summary: 'New Delivery (DN)',
-    detail: 'Delivery Note creation form will be enabled in the next release.',
+    severity: isDraft ? 'info' : 'success',
+    summary: isDraft ? 'Draft Saved' : 'Delivery Note Created',
+    detail: `Delivery Note ${dnNumber} was successfully ${isDraft ? 'saved as draft' : 'posted'}.`,
     life: 4000
   })
 }
@@ -88,10 +96,16 @@ const handleRetry = () => {
   refetchFacility()
   deliveriesQuery.refetch()
 }
+
+onMounted(() => {
+  if (route.query.action === 'create') {
+    isPanelOpen.value = true
+  }
+})
 </script>
 
 <template>
-  <div class="page-container">
+  <div class="delivery-page" :class="{ 'panel-active': isPanelOpen }">
     <DeliveryListTable
       :deliveries="searchedDeliveries"
       :loading="isLoading"
@@ -99,16 +113,43 @@ const handleRetry = () => {
       :errorDetail="errorMessage"
       v-model:searchQuery="searchQuery"
       v-model:selectedStatus="selectedStatus"
-      @newDelivery="handleNewDelivery"
+      @newDelivery="isPanelOpen = true"
       @retry="handleRetry"
       @post="handlePost"
       @cancel="handleCancel"
+      :class="{ 'shrink-list': isPanelOpen }"
     />
+
+    <transition name="panel-slide">
+      <DeliveryCreatePanel
+        v-if="isPanelOpen"
+        :facilityId="facilityId"
+        :parties="partiesQuery.data.value || []"
+        :loadingParties="partiesQuery.isLoading.value"
+        @close="isPanelOpen = false"
+        @created="handleCreated"
+      />
+    </transition>
   </div>
 </template>
 
 <style scoped>
-.page-container {
+.delivery-page {
+  display: flex;
+  gap: 20px;
   width: 100%;
+  position: relative;
+}
+.shrink-list {
+  max-width: 40%;
+}
+.panel-slide-enter-active,
+.panel-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.panel-slide-enter-from,
+.panel-slide-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
 }
 </style>
