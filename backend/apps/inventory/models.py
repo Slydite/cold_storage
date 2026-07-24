@@ -40,7 +40,7 @@ class Commodity(models.Model):
 class GRN(models.Model):
     class Status(models.TextChoices):
         DRAFT = 'DRAFT', 'Draft'
-        RECEIVED = 'RECEIVED', 'Received/Posted'
+        POSTED = 'POSTED', 'Posted'
         CANCELLED = 'CANCELLED', 'Cancelled'
 
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='grns')
@@ -50,7 +50,7 @@ class GRN(models.Model):
     vehicle_number = models.CharField(max_length=50, blank=True)
     driver_name = models.CharField(max_length=100, blank=True)
     remarks = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.RECEIVED)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.POSTED)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

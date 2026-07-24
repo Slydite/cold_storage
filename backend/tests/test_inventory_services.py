@@ -6,8 +6,11 @@ from apps.inventory.services import (
     create_commodity,
     update_commodity,
     create_grn,
-    withdraw_stock_from_lot
+    withdraw_stock_from_lot,
+    post_grn,
+    cancel_grn
 )
+from apps.inventory.selectors import get_lots_list
 from apps.inventory.models import GRN, Lot
 
 @pytest.fixture
@@ -77,29 +80,29 @@ def test_create_grn_with_sequence_and_lots(default_facility, test_party, test_co
         items=items
     )
 
-    assert grn1.grn_number == "GRN-00001"
+    assert grn1.grn_number == "GRN-000001"
     assert grn1.party == test_party
-    assert grn1.status == GRN.Status.RECEIVED
+    assert grn1.status == GRN.Status.POSTED
     assert grn1.lots.count() == 2
 
     lots = list(grn1.lots.order_by('id'))
     assert lots[0].initial_qty == 100
     assert lots[0].remaining_qty == 100
-    assert lots[0].lot_number == "GRN-00001-L01"
+    assert lots[0].lot_number == "LOT-000001"
     assert lots[0].chamber == "Chamber A"
 
     assert lots[1].initial_qty == 50
     assert lots[1].remaining_qty == 50
-    assert lots[1].lot_number == "GRN-00001-L02"
+    assert lots[1].lot_number == "LOT-000002"
 
-    # Create a second GRN to verify sequence auto-increments to GRN-00002
+    # Create a second GRN to verify sequence auto-increments to GRN-000002
     grn2 = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
         receipt_date=receipt_date,
         items=items
     )
-    assert grn2.grn_number == "GRN-00002"
+    assert grn2.grn_number == "GRN-000002"
 
 @pytest.mark.django_db
 def test_withdraw_stock_from_lot_success(default_facility, test_party, test_commodity):
@@ -142,3 +145,141 @@ def test_withdraw_stock_from_lot_insufficient_stock(default_facility, test_party
     with pytest.raises(ValidationError) as exc:
         withdraw_stock_from_lot(lot_id=lot.id, qty_to_withdraw=100)
     assert "Insufficient stock" in str(exc.value)
+
+
+@pytest.mark.django_db
+def test_post_grn_transitions_draft_to_posted(default_facility, test_party, test_commodity):
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        status=GRN.Status.DRAFT,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100
+        }]
+    )
+    assert grn.status == GRN.Status.DRAFT
+
+    posted_grn = post_grn(grn_id=grn.id)
+    assert posted_grn.status == GRN.Status.POSTED
+    grn.refresh_from_db()
+    assert grn.status == GRN.Status.POSTED
+
+
+@pytest.mark.django_db
+def test_post_grn_rejects_non_draft(default_facility, test_party, test_commodity):
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100
+        }]
+    )
+    with pytest.raises(ValidationError) as exc:
+        post_grn(grn_id=grn.id)
+    assert "must be DRAFT" in str(exc.value)
+
+
+@pytest.mark.django_db
+def test_cancel_grn_from_draft(default_facility, test_party, test_commodity):
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        status=GRN.Status.DRAFT,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100
+        }]
+    )
+    cancelled_grn = cancel_grn(grn_id=grn.id)
+    assert cancelled_grn.status == GRN.Status.CANCELLED
+    grn.refresh_from_db()
+    assert grn.status == GRN.Status.CANCELLED
+
+
+@pytest.mark.django_db
+def test_cancel_grn_rejects_posted(default_facility, test_party, test_commodity):
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100
+        }]
+    )
+    with pytest.raises(ValidationError) as exc:
+        cancel_grn(grn_id=grn.id)
+    assert "must be DRAFT" in str(exc.value)
+
+
+@pytest.mark.django_db
+def test_withdraw_rejected_when_grn_is_draft(default_facility, test_party, test_commodity):
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        status=GRN.Status.DRAFT,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100
+        }]
+    )
+    lot = grn.lots.first()
+    with pytest.raises(ValidationError) as exc:
+        withdraw_stock_from_lot(lot_id=lot.id, qty_to_withdraw=20)
+    assert "must be POSTED" in str(exc.value)
+
+    lot.refresh_from_db()
+    assert lot.remaining_qty == 100
+
+
+@pytest.mark.django_db
+def test_withdraw_succeeds_after_posting(default_facility, test_party, test_commodity):
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        status=GRN.Status.DRAFT,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100
+        }]
+    )
+    lot = grn.lots.first()
+
+    post_grn(grn_id=grn.id)
+
+    updated_lot = withdraw_stock_from_lot(lot_id=lot.id, qty_to_withdraw=30)
+    assert updated_lot.remaining_qty == 70
+    lot.refresh_from_db()
+    assert lot.remaining_qty == 70
+
+
+@pytest.mark.django_db
+def test_get_lots_list_excludes_draft_grn_lots(default_facility, test_party, test_commodity):
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        status=GRN.Status.DRAFT,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100
+        }]
+    )
+    lot = grn.lots.first()
+
+    lots = get_lots_list(facility_id=default_facility.id)
+    assert lot not in lots
+
+    post_grn(grn_id=grn.id)
+
+    lots_after_post = get_lots_list(facility_id=default_facility.id)
+    assert lot in lots_after_post

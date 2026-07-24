@@ -13,7 +13,7 @@ def get_next_sequence_number(
     """
     Generate the next sequence number for a given facility and sequence type (e.g. 'GRN', 'DN', 'INV')
     using select_for_update() on the Sequence model inside an atomic transaction.
-    Format example: GRN-00001
+    Format example: GRN-000001
 
     Pass an already-loaded `facility` to skip a redundant lookup when the caller
     has one on hand; otherwise pass `facility_id` and it will be fetched here.
@@ -38,4 +38,5 @@ def get_next_sequence_number(
     seq.current_value += 1
     seq.save()
 
-    return f"{seq.prefix}{seq.current_value:05d}"
+    return f"{seq.prefix}{seq.current_value:06d}"
+

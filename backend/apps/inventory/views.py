@@ -20,6 +20,8 @@ from .services import (
     create_commodity,
     update_commodity,
     create_grn,
+    post_grn,
+    cancel_grn,
     withdraw_stock_from_lot
 )
 from .serializers import (
@@ -131,7 +133,7 @@ class GRNViewSet(ViewSet):
         parameters=[
             OpenApiParameter('facility_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="Filter by Facility ID"),
             OpenApiParameter('party_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Party ID"),
-            OpenApiParameter('status', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Status (DRAFT, RECEIVED, CANCELLED)"),
+            OpenApiParameter('status', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Status (DRAFT, POSTED, CANCELLED)"),
         ],
         responses={200: GRNOutputSerializer(many=True)},
         summary="List Goods Receipt Notes (GRNs)"
@@ -185,7 +187,7 @@ class GRNViewSet(ViewSet):
                 vehicle_number=serializer.validated_data.get('vehicle_number', ''),
                 driver_name=serializer.validated_data.get('driver_name', ''),
                 remarks=serializer.validated_data.get('remarks', ''),
-                status=serializer.validated_data.get('status', GRN.Status.RECEIVED),
+                status=serializer.validated_data.get('status', GRN.Status.POSTED),
                 items=serializer.validated_data.get('items', [])
             )
         except DjangoValidationError as e:
@@ -193,6 +195,30 @@ class GRNViewSet(ViewSet):
 
         output_serializer = GRNOutputSerializer(grn)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        responses={200: GRNOutputSerializer, 400: None},
+        summary="Post a DRAFT GRN"
+    )
+    @action(detail=True, methods=['post'], url_path='post')
+    def post_grn_action(self, request, pk=None):
+        try:
+            grn = post_grn(grn_id=pk)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(GRNOutputSerializer(grn).data)
+
+    @extend_schema(
+        responses={200: GRNOutputSerializer, 400: None},
+        summary="Cancel a DRAFT GRN"
+    )
+    @action(detail=True, methods=['post'], url_path='cancel')
+    def cancel_grn_action(self, request, pk=None):
+        try:
+            grn = cancel_grn(grn_id=pk)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(GRNOutputSerializer(grn).data)
 
 
 class LotViewSet(ViewSet):

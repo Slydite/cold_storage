@@ -46,9 +46,9 @@ def get_lots_list(
     in_stock_only: bool = False
 ) -> QuerySet[Lot]:
     """
-    Fetch lots for a facility with optional filters.
+    Fetch lots for a facility with optional filters. Only includes lots from POSTED GRNs.
     """
-    qs = Lot.objects.filter(facility_id=facility_id).select_related('grn', 'grn__party', 'commodity')
+    qs = Lot.objects.filter(facility_id=facility_id, grn__status=GRN.Status.POSTED).select_related('grn', 'grn__party', 'commodity')
     
     if party_id:
         qs = qs.filter(grn__party_id=party_id)

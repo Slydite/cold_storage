@@ -73,7 +73,7 @@ def test_grn_api_create_and_list(auth_client, default_facility, party, commodity
 
     res = auth_client.post('/api/grns/', grn_payload, format='json')
     assert res.status_code == status.HTTP_201_CREATED
-    assert res.data['grn_number'] == "GRN-00001"
+    assert res.data['grn_number'] == "GRN-000001"
     assert res.data['party_name'] == "API Farmer"
     assert len(res.data['lots']) == 1
     assert res.data['lots'][0]['remaining_qty'] == 300

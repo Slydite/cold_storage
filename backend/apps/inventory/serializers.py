@@ -73,7 +73,7 @@ class GRNCreateInputSerializer(serializers.Serializer):
     vehicle_number = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
     driver_name = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
     remarks = serializers.CharField(max_length=1000, required=False, allow_blank=True, default='')
-    status = serializers.ChoiceField(choices=GRN.Status.choices, default=GRN.Status.RECEIVED)
+    status = serializers.ChoiceField(choices=GRN.Status.choices, default=GRN.Status.POSTED)
     items = LotItemInputSerializer(many=True, required=False, default=list)
 
 
