@@ -4,6 +4,78 @@ info:
   version: 1.0.0
   description: API documentation for the Cold Storage Warehouse Management System.
 paths:
+  /api/auth/csrf/:
+    get:
+      operationId: auth_csrf_retrieve
+      summary: Get CSRF token cookie
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      summary: Log in user and establish session
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      summary: Log out current user
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      summary: Get current authenticated user
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserOutput'
+          description: ''
   /api/commodities/:
     get:
       operationId: commodities_list
@@ -121,6 +193,145 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommodityOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/delivery-notes/:
+    get:
+      operationId: delivery_notes_list
+      summary: List Delivery Notes
+      parameters:
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: party_id
+        schema:
+          type: integer
+        description: Filter by Party ID
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter by Status (DRAFT, POSTED, CANCELLED)
+      tags:
+      - delivery-notes
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryNoteOutput'
+          description: ''
+    post:
+      operationId: delivery_notes_create
+      summary: Create a new Delivery Note
+      tags:
+      - delivery-notes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryNoteCreateInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DeliveryNoteCreateInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeliveryNoteCreateInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryNoteOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/delivery-notes/{id}/:
+    get:
+      operationId: delivery_notes_retrieve
+      summary: Retrieve a Delivery Note by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Delivery Note.
+        required: true
+      tags:
+      - delivery-notes
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryNoteOutput'
+          description: ''
+        '404':
+          description: No response body
+  /api/delivery-notes/{id}/cancel/:
+    post:
+      operationId: delivery_notes_cancel_create
+      summary: Cancel a DRAFT Delivery Note
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Delivery Note.
+        required: true
+      tags:
+      - delivery-notes
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryNoteOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/delivery-notes/{id}/post/:
+    post:
+      operationId: delivery_notes_post_create
+      summary: Post a DRAFT Delivery Note
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Delivery Note.
+        required: true
+      tags:
+      - delivery-notes
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryNoteOutput'
           description: ''
         '400':
           description: No response body
@@ -252,7 +463,7 @@ paths:
         name: status
         schema:
           type: string
-        description: Filter by Status (DRAFT, RECEIVED, CANCELLED)
+        description: Filter by Status (DRAFT, POSTED, CANCELLED)
       tags:
       - grns
       security:
@@ -320,6 +531,56 @@ paths:
                 $ref: '#/components/schemas/GRNOutput'
           description: ''
         '404':
+          description: No response body
+  /api/grns/{id}/cancel/:
+    post:
+      operationId: grns_cancel_create
+      summary: Cancel a DRAFT GRN
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Goods Receipt Note.
+        required: true
+      tags:
+      - grns
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GRNOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/grns/{id}/post/:
+    post:
+      operationId: grns_post_create
+      summary: Post a DRAFT GRN
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Goods Receipt Note.
+        required: true
+      tags:
+      - grns
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GRNOutput'
+          description: ''
+        '400':
           description: No response body
   /api/lots/:
     get:
@@ -589,6 +850,7 @@ components:
           readOnly: true
         facility_id:
           type: integer
+          readOnly: true
         name:
           type: string
           maxLength: 255
@@ -616,6 +878,190 @@ components:
       - facility_id
       - id
       - name
+      - updated_at
+    CurrentUserOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          title: Email address
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - role
+      - username
+    DeliveryLineInput:
+      type: object
+      properties:
+        lot_id:
+          type: integer
+        qty:
+          type: integer
+          minimum: 1
+      required:
+      - lot_id
+      - qty
+    DeliveryLineOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility_id:
+          type: integer
+          readOnly: true
+        delivery_note_id:
+          type: integer
+          readOnly: true
+        lot_id:
+          type: integer
+          readOnly: true
+        lot_number:
+          type: string
+          readOnly: true
+        commodity_name:
+          type: string
+          readOnly: true
+        commodity_code:
+          type: string
+          readOnly: true
+        qty:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - commodity_code
+      - commodity_name
+      - created_at
+      - delivery_note_id
+      - facility_id
+      - id
+      - lot_id
+      - lot_number
+      - qty
+      - updated_at
+    DeliveryNoteCreateInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        party_id:
+          type: integer
+        dispatch_date:
+          type: string
+          format: date
+        vehicle_number:
+          type: string
+          default: ''
+          maxLength: 50
+        driver_name:
+          type: string
+          default: ''
+          maxLength: 100
+        remarks:
+          type: string
+          default: ''
+          maxLength: 1000
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          default: DRAFT
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryLineInput'
+      required:
+      - dispatch_date
+      - facility_id
+      - party_id
+    DeliveryNoteOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility_id:
+          type: integer
+          readOnly: true
+        dn_number:
+          type: string
+          maxLength: 100
+        party_id:
+          type: integer
+          readOnly: true
+        party_name:
+          type: string
+          readOnly: true
+        party_code:
+          type: string
+          readOnly: true
+        dispatch_date:
+          type: string
+          format: date
+        vehicle_number:
+          type: string
+          maxLength: 50
+        driver_name:
+          type: string
+          maxLength: 100
+        remarks:
+          type: string
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryLineOutput'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - dispatch_date
+      - dn_number
+      - facility_id
+      - id
+      - lines
+      - party_code
+      - party_id
+      - party_name
       - updated_at
     FacilityInput:
       type: object
@@ -686,7 +1132,7 @@ components:
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
-          default: RECEIVED
+          default: POSTED
         items:
           type: array
           items:
@@ -703,6 +1149,7 @@ components:
           readOnly: true
         facility_id:
           type: integer
+          readOnly: true
         grn_number:
           type: string
           maxLength: 100
@@ -752,6 +1199,17 @@ components:
       - party_name
       - receipt_date
       - updated_at
+    LoginInput:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - username
     LotItemInput:
       type: object
       properties:
@@ -969,12 +1427,12 @@ components:
     StatusEnum:
       enum:
       - DRAFT
-      - RECEIVED
+      - POSTED
       - CANCELLED
       type: string
       description: |-
         * `DRAFT` - Draft
-        * `RECEIVED` - Received/Posted
+        * `POSTED` - Posted
         * `CANCELLED` - Cancelled
     TypeEnum:
       enum:

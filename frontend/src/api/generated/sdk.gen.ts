@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsListData, GrnsListResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses } from './types.gen';
+import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsListData, GrnsListResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -17,6 +17,62 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
+
+/**
+ * Get CSRF token cookie
+ */
+export const authCsrfRetrieve = <ThrowOnError extends boolean = false>(options?: Options<AuthCsrfRetrieveData, ThrowOnError>): RequestResult<AuthCsrfRetrieveResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AuthCsrfRetrieveResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/auth/csrf/',
+    ...options
+});
+
+/**
+ * Log in user and establish session
+ */
+export const authLoginCreate = <ThrowOnError extends boolean = false>(options: Options<AuthLoginCreateData, ThrowOnError>): RequestResult<AuthLoginCreateResponses, AuthLoginCreateErrors, ThrowOnError> => (options.client ?? client).post<AuthLoginCreateResponses, AuthLoginCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/auth/login/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Log out current user
+ */
+export const authLogoutCreate = <ThrowOnError extends boolean = false>(options?: Options<AuthLogoutCreateData, ThrowOnError>): RequestResult<AuthLogoutCreateResponses, unknown, ThrowOnError> => (options?.client ?? client).post<AuthLogoutCreateResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/auth/logout/',
+    ...options
+});
+
+/**
+ * Get current authenticated user
+ */
+export const authMeRetrieve = <ThrowOnError extends boolean = false>(options?: Options<AuthMeRetrieveData, ThrowOnError>): RequestResult<AuthMeRetrieveResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AuthMeRetrieveResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/auth/me/',
+    ...options
+});
 
 /**
  * List all commodities for a facility
@@ -76,6 +132,75 @@ export const commoditiesUpdate = <ThrowOnError extends boolean = false>(options:
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * List Delivery Notes
+ */
+export const deliveryNotesList = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesListData, ThrowOnError>): RequestResult<DeliveryNotesListResponses, unknown, ThrowOnError> => (options.client ?? client).get<DeliveryNotesListResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/delivery-notes/',
+    ...options
+});
+
+/**
+ * Create a new Delivery Note
+ */
+export const deliveryNotesCreate = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesCreateData, ThrowOnError>): RequestResult<DeliveryNotesCreateResponses, DeliveryNotesCreateErrors, ThrowOnError> => (options.client ?? client).post<DeliveryNotesCreateResponses, DeliveryNotesCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/delivery-notes/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieve a Delivery Note by ID
+ */
+export const deliveryNotesRetrieve = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesRetrieveData, ThrowOnError>): RequestResult<DeliveryNotesRetrieveResponses, DeliveryNotesRetrieveErrors, ThrowOnError> => (options.client ?? client).get<DeliveryNotesRetrieveResponses, DeliveryNotesRetrieveErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/delivery-notes/{id}/',
+    ...options
+});
+
+/**
+ * Cancel a DRAFT Delivery Note
+ */
+export const deliveryNotesCancelCreate = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesCancelCreateData, ThrowOnError>): RequestResult<DeliveryNotesCancelCreateResponses, DeliveryNotesCancelCreateErrors, ThrowOnError> => (options.client ?? client).post<DeliveryNotesCancelCreateResponses, DeliveryNotesCancelCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/delivery-notes/{id}/cancel/',
+    ...options
+});
+
+/**
+ * Post a DRAFT Delivery Note
+ */
+export const deliveryNotesPostCreate = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesPostCreateData, ThrowOnError>): RequestResult<DeliveryNotesPostCreateResponses, DeliveryNotesPostCreateErrors, ThrowOnError> => (options.client ?? client).post<DeliveryNotesPostCreateResponses, DeliveryNotesPostCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/delivery-notes/{id}/post/',
+    ...options
 });
 
 /**
@@ -178,6 +303,32 @@ export const grnsRetrieve = <ThrowOnError extends boolean = false>(options: Opti
             type: 'apiKey'
         }, { scheme: 'basic', type: 'http' }],
     url: '/api/grns/{id}/',
+    ...options
+});
+
+/**
+ * Cancel a DRAFT GRN
+ */
+export const grnsCancelCreate = <ThrowOnError extends boolean = false>(options: Options<GrnsCancelCreateData, ThrowOnError>): RequestResult<GrnsCancelCreateResponses, GrnsCancelCreateErrors, ThrowOnError> => (options.client ?? client).post<GrnsCancelCreateResponses, GrnsCancelCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/grns/{id}/cancel/',
+    ...options
+});
+
+/**
+ * Post a DRAFT GRN
+ */
+export const grnsPostCreate = <ThrowOnError extends boolean = false>(options: Options<GrnsPostCreateData, ThrowOnError>): RequestResult<GrnsPostCreateResponses, GrnsPostCreateErrors, ThrowOnError> => (options.client ?? client).post<GrnsPostCreateResponses, GrnsPostCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/grns/{id}/post/',
     ...options
 });
 

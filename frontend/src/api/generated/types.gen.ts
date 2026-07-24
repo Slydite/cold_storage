@@ -15,12 +15,73 @@ export type CommodityInput = {
 
 export type CommodityOutput = {
     readonly id: number;
-    facility_id: number;
+    readonly facility_id: number;
     name: string;
     code: string;
     unit?: string;
     description?: string;
     is_active?: boolean;
+    readonly created_at: string;
+    readonly updated_at: string;
+};
+
+export type CurrentUserOutput = {
+    readonly id: number;
+    /**
+     * Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+     */
+    username: string;
+    /**
+     * Email address
+     */
+    email?: string | string;
+    first_name?: string;
+    last_name?: string;
+    readonly role: string;
+};
+
+export type DeliveryLineInput = {
+    lot_id: number;
+    qty: number;
+};
+
+export type DeliveryLineOutput = {
+    readonly id: number;
+    readonly facility_id: number;
+    readonly delivery_note_id: number;
+    readonly lot_id: number;
+    readonly lot_number: string;
+    readonly commodity_name: string;
+    readonly commodity_code: string;
+    qty: number;
+    readonly created_at: string;
+    readonly updated_at: string;
+};
+
+export type DeliveryNoteCreateInput = {
+    facility_id: number;
+    party_id: number;
+    dispatch_date: string;
+    vehicle_number?: string;
+    driver_name?: string;
+    remarks?: string;
+    status?: StatusEnum;
+    lines?: Array<DeliveryLineInput>;
+};
+
+export type DeliveryNoteOutput = {
+    readonly id: number;
+    readonly facility_id: number;
+    dn_number: string;
+    readonly party_id: number;
+    readonly party_name: string;
+    readonly party_code: string;
+    dispatch_date: string;
+    vehicle_number?: string;
+    driver_name?: string;
+    remarks?: string;
+    status?: StatusEnum;
+    readonly lines: Array<DeliveryLineOutput>;
     readonly created_at: string;
     readonly updated_at: string;
 };
@@ -53,7 +114,7 @@ export type GrnCreateInput = {
 
 export type GrnOutput = {
     readonly id: number;
-    facility_id: number;
+    readonly facility_id: number;
     grn_number: string;
     readonly party_id: number;
     readonly party_name: string;
@@ -66,6 +127,10 @@ export type GrnOutput = {
     readonly lots: Array<LotOutput>;
     readonly created_at: string;
     readonly updated_at: string;
+};
+
+export type LoginInput = {
+    username: string;
 };
 
 export type LotItemInput = {
@@ -133,10 +198,10 @@ export type PartyOutput = {
 
 /**
  * * `DRAFT` - Draft
- * * `RECEIVED` - Received/Posted
+ * * `POSTED` - Posted
  * * `CANCELLED` - Cancelled
  */
-export type StatusEnum = 'DRAFT' | 'RECEIVED' | 'CANCELLED';
+export type StatusEnum = 'DRAFT' | 'POSTED' | 'CANCELLED';
 
 /**
  * * `DEPOSITOR` - Depositor/Customer
@@ -146,12 +211,37 @@ export type StatusEnum = 'DRAFT' | 'RECEIVED' | 'CANCELLED';
 export type TypeEnum = 'DEPOSITOR' | 'VENDOR' | 'TRANSPORTER';
 
 export type CommodityOutputWritable = {
-    facility_id: number;
     name: string;
     code: string;
     unit?: string;
     description?: string;
     is_active?: boolean;
+};
+
+export type CurrentUserOutputWritable = {
+    /**
+     * Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+     */
+    username: string;
+    /**
+     * Email address
+     */
+    email?: string | string;
+    first_name?: string;
+    last_name?: string;
+};
+
+export type DeliveryLineOutputWritable = {
+    qty: number;
+};
+
+export type DeliveryNoteOutputWritable = {
+    dn_number: string;
+    dispatch_date: string;
+    vehicle_number?: string;
+    driver_name?: string;
+    remarks?: string;
+    status?: StatusEnum;
 };
 
 export type FacilityOutputWritable = {
@@ -161,13 +251,17 @@ export type FacilityOutputWritable = {
 };
 
 export type GrnOutputWritable = {
-    facility_id: number;
     grn_number: string;
     receipt_date: string;
     vehicle_number?: string;
     driver_name?: string;
     remarks?: string;
     status?: StatusEnum;
+};
+
+export type LoginInputWritable = {
+    username: string;
+    password: string;
 };
 
 export type LotOutputWritable = {
@@ -192,6 +286,71 @@ export type PartyOutputWritable = {
     address?: string;
     is_active?: boolean;
 };
+
+export type AuthCsrfRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/csrf/';
+};
+
+export type AuthCsrfRetrieveResponses = {
+    /**
+     * No response body
+     */
+    204: void;
+};
+
+export type AuthCsrfRetrieveResponse = AuthCsrfRetrieveResponses[keyof AuthCsrfRetrieveResponses];
+
+export type AuthLoginCreateData = {
+    body: LoginInputWritable;
+    path?: never;
+    query?: never;
+    url: '/api/auth/login/';
+};
+
+export type AuthLoginCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type AuthLoginCreateResponses = {
+    200: CurrentUserOutput;
+};
+
+export type AuthLoginCreateResponse = AuthLoginCreateResponses[keyof AuthLoginCreateResponses];
+
+export type AuthLogoutCreateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/logout/';
+};
+
+export type AuthLogoutCreateResponses = {
+    /**
+     * No response body
+     */
+    204: void;
+};
+
+export type AuthLogoutCreateResponse = AuthLogoutCreateResponses[keyof AuthLogoutCreateResponses];
+
+export type AuthMeRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/me/';
+};
+
+export type AuthMeRetrieveResponses = {
+    200: CurrentUserOutput;
+};
+
+export type AuthMeRetrieveResponse = AuthMeRetrieveResponses[keyof AuthMeRetrieveResponses];
 
 export type CommoditiesListData = {
     body?: never;
@@ -284,6 +443,127 @@ export type CommoditiesUpdateResponses = {
 };
 
 export type CommoditiesUpdateResponse = CommoditiesUpdateResponses[keyof CommoditiesUpdateResponses];
+
+export type DeliveryNotesListData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Filter by Party ID
+         */
+        party_id?: number;
+        /**
+         * Filter by Status (DRAFT, POSTED, CANCELLED)
+         */
+        status?: string;
+    };
+    url: '/api/delivery-notes/';
+};
+
+export type DeliveryNotesListResponses = {
+    200: Array<DeliveryNoteOutput>;
+};
+
+export type DeliveryNotesListResponse = DeliveryNotesListResponses[keyof DeliveryNotesListResponses];
+
+export type DeliveryNotesCreateData = {
+    body: DeliveryNoteCreateInput;
+    path?: never;
+    query?: never;
+    url: '/api/delivery-notes/';
+};
+
+export type DeliveryNotesCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type DeliveryNotesCreateResponses = {
+    201: DeliveryNoteOutput;
+};
+
+export type DeliveryNotesCreateResponse = DeliveryNotesCreateResponses[keyof DeliveryNotesCreateResponses];
+
+export type DeliveryNotesRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Delivery Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/delivery-notes/{id}/';
+};
+
+export type DeliveryNotesRetrieveErrors = {
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type DeliveryNotesRetrieveResponses = {
+    200: DeliveryNoteOutput;
+};
+
+export type DeliveryNotesRetrieveResponse = DeliveryNotesRetrieveResponses[keyof DeliveryNotesRetrieveResponses];
+
+export type DeliveryNotesCancelCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Delivery Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/delivery-notes/{id}/cancel/';
+};
+
+export type DeliveryNotesCancelCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type DeliveryNotesCancelCreateResponses = {
+    200: DeliveryNoteOutput;
+};
+
+export type DeliveryNotesCancelCreateResponse = DeliveryNotesCancelCreateResponses[keyof DeliveryNotesCancelCreateResponses];
+
+export type DeliveryNotesPostCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Delivery Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/delivery-notes/{id}/post/';
+};
+
+export type DeliveryNotesPostCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type DeliveryNotesPostCreateResponses = {
+    200: DeliveryNoteOutput;
+};
+
+export type DeliveryNotesPostCreateResponse = DeliveryNotesPostCreateResponses[keyof DeliveryNotesPostCreateResponses];
 
 export type FacilitiesListData = {
     body?: never;
@@ -381,7 +661,7 @@ export type GrnsListData = {
          */
         party_id?: number;
         /**
-         * Filter by Status (DRAFT, RECEIVED, CANCELLED)
+         * Filter by Status (DRAFT, POSTED, CANCELLED)
          */
         status?: string;
     };
@@ -438,6 +718,56 @@ export type GrnsRetrieveResponses = {
 };
 
 export type GrnsRetrieveResponse = GrnsRetrieveResponses[keyof GrnsRetrieveResponses];
+
+export type GrnsCancelCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Goods Receipt Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/grns/{id}/cancel/';
+};
+
+export type GrnsCancelCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type GrnsCancelCreateResponses = {
+    200: GrnOutput;
+};
+
+export type GrnsCancelCreateResponse = GrnsCancelCreateResponses[keyof GrnsCancelCreateResponses];
+
+export type GrnsPostCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Goods Receipt Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/grns/{id}/post/';
+};
+
+export type GrnsPostCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type GrnsPostCreateResponses = {
+    200: GrnOutput;
+};
+
+export type GrnsPostCreateResponse = GrnsPostCreateResponses[keyof GrnsPostCreateResponses];
 
 export type LotsListData = {
     body?: never;
