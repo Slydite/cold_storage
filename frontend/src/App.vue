@@ -1,13 +1,21 @@
 <script setup lang="ts">
+import { useRoute } from 'vue-router'
 import AppLayout from './components/layout/AppLayout.vue'
 import Toast from 'primevue/toast'
 import ConfirmDialog from 'primevue/confirmdialog'
+
+const route = useRoute()
 </script>
 
 <template>
-  <AppLayout>
+  <template v-if="route.meta.public">
     <RouterView />
-  </AppLayout>
+  </template>
+  <template v-else>
+    <AppLayout>
+      <RouterView />
+    </AppLayout>
+  </template>
   <Toast position="top-right" />
   <ConfirmDialog />
 </template>

@@ -179,7 +179,7 @@ const chartOptions = computed(() => {
           color: textColor,
           font: { family: 'Inter', size: 12 },
           stepSize: 500,
-          callback: (value: any) => {
+          callback: (value: number | string) => {
             if (value === 0) return '0'
             if (value === 500) return '500'
             if (value === 1000) return '1K'

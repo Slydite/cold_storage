@@ -57,8 +57,34 @@ const router = createRouter({
       name: 'settings',
       component: () => import('../views/SettingsView.vue'),
       meta: { title: 'Settings', subtitle: 'Facility configuration, units, and preference settings.' }
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/LoginView.vue'),
+      meta: { public: true, title: 'Sign in', subtitle: '' }
     }
   ]
+})
+
+router.beforeEach(async (to) => {
+  const { useAuthStore } = await import('../stores/auth')
+  const authStore = useAuthStore()
+
+  if (!authStore.authChecked) {
+    await authStore.fetchCurrentUser()
+  }
+
+  const isPublic = Boolean(to.meta.public)
+  const isAuthenticated = authStore.isAuthenticated
+
+  if (!isPublic && !isAuthenticated) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  if (to.name === 'login' && isAuthenticated) {
+    return '/'
+  }
 })
 
 export default router

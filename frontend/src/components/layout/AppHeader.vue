@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '../../stores/theme'
+import { useAuthStore } from '../../stores/auth'
+import { useToast } from 'primevue/usetoast'
 import OverlayBadge from 'primevue/overlaybadge'
+import Menu from 'primevue/menu'
 import { Calendar, Bell, Sun, Moon } from 'lucide-vue-next'
 
 const route = useRoute()
+const router = useRouter()
+const toast = useToast()
 const themeStore = useThemeStore()
+const authStore = useAuthStore()
 
 const pageMeta = computed(() => ({
   title: (route.meta.title as string) ?? 'Dashboard',
@@ -26,6 +32,53 @@ onMounted(() => {
 onUnmounted(() => {
   clearInterval(dateRefreshInterval)
 })
+
+const menu = ref()
+
+const toggleMenu = (event: Event) => {
+  menu.value?.toggle(event)
+}
+
+const userInitials = computed(() => {
+  const user = authStore.user
+  if (!user) return 'AU'
+  const firstInitial = user.first_name?.[0]
+  const lastInitial = user.last_name?.[0]
+  if (firstInitial && lastInitial) {
+    return (firstInitial + lastInitial).toUpperCase()
+  }
+  const username = user.username
+  const parts = username.split(/[\s._-]+/).filter(Boolean)
+  const [firstPart, secondPart] = parts
+  if (firstPart && secondPart) {
+    return (firstPart.charAt(0) + secondPart.charAt(0)).toUpperCase()
+  }
+  return username.slice(0, 2).toUpperCase()
+})
+
+const usernameDisplay = computed(() => authStore.user?.username ?? 'Admin User')
+
+const menuItems = computed(() => [
+  {
+    label: authStore.user?.username ? `@${authStore.user.username}` : 'Account',
+    items: [
+      {
+        label: 'Sign out',
+        icon: 'pi pi-sign-out',
+        command: async () => {
+          await authStore.logout()
+          toast.add({
+            severity: 'info',
+            summary: 'Signed out',
+            detail: 'You have been logged out successfully.',
+            life: 3000
+          })
+          router.push({ name: 'login' })
+        }
+      }
+    ]
+  }
+])
 </script>
 
 <template>
@@ -63,10 +116,18 @@ onUnmounted(() => {
         </OverlayBadge>
       </div>
 
-      <!-- Avatar Pill -->
-      <div class="header-avatar" title="Admin User">
-        <span>AU</span>
-      </div>
+      <!-- Avatar Pill & Menu -->
+      <Menu ref="menu" :model="menuItems" popup />
+      <button
+        class="header-avatar"
+        :title="usernameDisplay"
+        @click="toggleMenu"
+        type="button"
+        aria-haspopup="true"
+        aria-controls="overlay_menu"
+      >
+        <span>{{ userInitials }}</span>
+      </button>
     </div>
   </header>
 </template>
@@ -168,5 +229,6 @@ onUnmounted(() => {
   font-weight: 700;
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
   cursor: pointer;
+  border: none;
 }
 </style>
