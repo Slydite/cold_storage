@@ -15,10 +15,12 @@ router.register(r'lots', LotViewSet, basename='lot')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    
+
     # API endpoints
+    path('api/', include('apps.accounts.urls')),
+    path('api/', include('apps.delivery.urls')),
     path('api/', include(router.urls)),
-    
+
     # OpenAPI Schema and documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

@@ -18,3 +18,10 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# The Vue dev server proxies /api to Django, so requests are same-origin and the
+# session cookie applies. These cover the direct-origin case (no proxy).
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+]
