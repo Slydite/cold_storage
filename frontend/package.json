@@ -16,15 +16,19 @@
     "gen:types": "openapi-ts -i ../backend/schema.yml -o src/api/generated"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
     "@primevue/themes": "^4.5.4",
     "@tanstack/vue-query": "^5.101.4",
     "@vee-validate/zod": "^4.15.1",
     "axios": "^1.18.1",
+    "chart.js": "^4.5.1",
+    "lucide-vue-next": "^1.0.0",
     "pinia": "^4.0.2",
     "primeicons": "^8.0.0",
     "primevue": "^5.0.0",
     "vee-validate": "^4.15.1",
     "vue": "^3.5.40",
+    "vue-chartjs": "^5.3.4",
     "vue-router": "^5.2.0",
     "zod": "^4.4.3"
   },

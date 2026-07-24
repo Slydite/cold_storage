@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses } from './types.gen';
+import type { CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsListData, GrnsListResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -17,6 +17,66 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
      */
     meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
+
+/**
+ * List all commodities for a facility
+ */
+export const commoditiesList = <ThrowOnError extends boolean = false>(options: Options<CommoditiesListData, ThrowOnError>): RequestResult<CommoditiesListResponses, unknown, ThrowOnError> => (options.client ?? client).get<CommoditiesListResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/commodities/',
+    ...options
+});
+
+/**
+ * Create a new commodity
+ */
+export const commoditiesCreate = <ThrowOnError extends boolean = false>(options: Options<CommoditiesCreateData, ThrowOnError>): RequestResult<CommoditiesCreateResponses, CommoditiesCreateErrors, ThrowOnError> => (options.client ?? client).post<CommoditiesCreateResponses, CommoditiesCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/commodities/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieve a commodity by ID
+ */
+export const commoditiesRetrieve = <ThrowOnError extends boolean = false>(options: Options<CommoditiesRetrieveData, ThrowOnError>): RequestResult<CommoditiesRetrieveResponses, CommoditiesRetrieveErrors, ThrowOnError> => (options.client ?? client).get<CommoditiesRetrieveResponses, CommoditiesRetrieveErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/commodities/{id}/',
+    ...options
+});
+
+/**
+ * Update an existing commodity
+ */
+export const commoditiesUpdate = <ThrowOnError extends boolean = false>(options: Options<CommoditiesUpdateData, ThrowOnError>): RequestResult<CommoditiesUpdateResponses, CommoditiesUpdateErrors, ThrowOnError> => (options.client ?? client).put<CommoditiesUpdateResponses, CommoditiesUpdateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/commodities/{id}/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
 
 /**
  * List all facilities
@@ -71,6 +131,92 @@ export const facilitiesUpdate = <ThrowOnError extends boolean = false>(options: 
             type: 'apiKey'
         }, { scheme: 'basic', type: 'http' }],
     url: '/api/facilities/{id}/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List Goods Receipt Notes (GRNs)
+ */
+export const grnsList = <ThrowOnError extends boolean = false>(options: Options<GrnsListData, ThrowOnError>): RequestResult<GrnsListResponses, unknown, ThrowOnError> => (options.client ?? client).get<GrnsListResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/grns/',
+    ...options
+});
+
+/**
+ * Create a new Goods Receipt Note (GRN)
+ */
+export const grnsCreate = <ThrowOnError extends boolean = false>(options: Options<GrnsCreateData, ThrowOnError>): RequestResult<GrnsCreateResponses, GrnsCreateErrors, ThrowOnError> => (options.client ?? client).post<GrnsCreateResponses, GrnsCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/grns/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieve a GRN by ID
+ */
+export const grnsRetrieve = <ThrowOnError extends boolean = false>(options: Options<GrnsRetrieveData, ThrowOnError>): RequestResult<GrnsRetrieveResponses, GrnsRetrieveErrors, ThrowOnError> => (options.client ?? client).get<GrnsRetrieveResponses, GrnsRetrieveErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/grns/{id}/',
+    ...options
+});
+
+/**
+ * List inventory lots
+ */
+export const lotsList = <ThrowOnError extends boolean = false>(options: Options<LotsListData, ThrowOnError>): RequestResult<LotsListResponses, unknown, ThrowOnError> => (options.client ?? client).get<LotsListResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/lots/',
+    ...options
+});
+
+/**
+ * Retrieve a lot by ID
+ */
+export const lotsRetrieve = <ThrowOnError extends boolean = false>(options: Options<LotsRetrieveData, ThrowOnError>): RequestResult<LotsRetrieveResponses, LotsRetrieveErrors, ThrowOnError> => (options.client ?? client).get<LotsRetrieveResponses, LotsRetrieveErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/lots/{id}/',
+    ...options
+});
+
+/**
+ * Withdraw stock from a lot
+ */
+export const lotsWithdrawCreate = <ThrowOnError extends boolean = false>(options: Options<LotsWithdrawCreateData, ThrowOnError>): RequestResult<LotsWithdrawCreateResponses, LotsWithdrawCreateErrors, ThrowOnError> => (options.client ?? client).post<LotsWithdrawCreateResponses, LotsWithdrawCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/lots/{id}/withdraw/',
     ...options,
     headers: {
         'Content-Type': 'application/json',

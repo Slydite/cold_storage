@@ -4,6 +4,27 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
+export type CommodityInput = {
+    facility_id: number;
+    name: string;
+    code: string;
+    unit?: string;
+    description?: string;
+    is_active?: boolean;
+};
+
+export type CommodityOutput = {
+    readonly id: number;
+    facility_id: number;
+    name: string;
+    code: string;
+    unit?: string;
+    description?: string;
+    is_active?: boolean;
+    readonly created_at: string;
+    readonly updated_at: string;
+};
+
 export type FacilityInput = {
     name: string;
     code: string;
@@ -17,6 +38,70 @@ export type FacilityOutput = {
     address?: string;
     readonly created_at: string;
     readonly updated_at: string;
+};
+
+export type GrnCreateInput = {
+    facility_id: number;
+    party_id: number;
+    receipt_date: string;
+    vehicle_number?: string;
+    driver_name?: string;
+    remarks?: string;
+    status?: StatusEnum;
+    items?: Array<LotItemInput>;
+};
+
+export type GrnOutput = {
+    readonly id: number;
+    facility_id: number;
+    grn_number: string;
+    readonly party_id: number;
+    readonly party_name: string;
+    readonly party_code: string;
+    receipt_date: string;
+    vehicle_number?: string;
+    driver_name?: string;
+    remarks?: string;
+    status?: StatusEnum;
+    readonly lots: Array<LotOutput>;
+    readonly created_at: string;
+    readonly updated_at: string;
+};
+
+export type LotItemInput = {
+    commodity_id: number;
+    lot_number?: string;
+    chamber?: string;
+    floor?: string;
+    rack?: string;
+    initial_qty: number;
+    unit_weight?: string;
+    rent_rate_per_unit?: string;
+};
+
+export type LotOutput = {
+    readonly id: number;
+    readonly facility_id: number;
+    readonly grn_id: number;
+    readonly commodity_id: number;
+    readonly commodity_name: string;
+    readonly commodity_code: string;
+    readonly commodity_unit: string;
+    lot_number: string;
+    chamber?: string;
+    floor?: string;
+    rack?: string;
+    initial_qty: number;
+    remaining_qty: number;
+    unit_weight?: string;
+    rent_rate_per_unit?: string;
+    inward_date: string;
+    readonly created_at: string;
+    readonly updated_at: string;
+};
+
+export type LotWithdrawalInput = {
+    qty: number;
 };
 
 export type PartyInput = {
@@ -47,16 +132,54 @@ export type PartyOutput = {
 };
 
 /**
+ * * `DRAFT` - Draft
+ * * `RECEIVED` - Received/Posted
+ * * `CANCELLED` - Cancelled
+ */
+export type StatusEnum = 'DRAFT' | 'RECEIVED' | 'CANCELLED';
+
+/**
  * * `DEPOSITOR` - Depositor/Customer
  * * `VENDOR` - Vendor
  * * `TRANSPORTER` - Transporter
  */
 export type TypeEnum = 'DEPOSITOR' | 'VENDOR' | 'TRANSPORTER';
 
+export type CommodityOutputWritable = {
+    facility_id: number;
+    name: string;
+    code: string;
+    unit?: string;
+    description?: string;
+    is_active?: boolean;
+};
+
 export type FacilityOutputWritable = {
     name: string;
     code: string;
     address?: string;
+};
+
+export type GrnOutputWritable = {
+    facility_id: number;
+    grn_number: string;
+    receipt_date: string;
+    vehicle_number?: string;
+    driver_name?: string;
+    remarks?: string;
+    status?: StatusEnum;
+};
+
+export type LotOutputWritable = {
+    lot_number: string;
+    chamber?: string;
+    floor?: string;
+    rack?: string;
+    initial_qty: number;
+    remaining_qty: number;
+    unit_weight?: string;
+    rent_rate_per_unit?: string;
+    inward_date: string;
 };
 
 export type PartyOutputWritable = {
@@ -69,6 +192,98 @@ export type PartyOutputWritable = {
     address?: string;
     is_active?: boolean;
 };
+
+export type CommoditiesListData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Filter by active status
+         */
+        is_active?: boolean;
+    };
+    url: '/api/commodities/';
+};
+
+export type CommoditiesListResponses = {
+    200: Array<CommodityOutput>;
+};
+
+export type CommoditiesListResponse = CommoditiesListResponses[keyof CommoditiesListResponses];
+
+export type CommoditiesCreateData = {
+    body: CommodityInput;
+    path?: never;
+    query?: never;
+    url: '/api/commodities/';
+};
+
+export type CommoditiesCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type CommoditiesCreateResponses = {
+    201: CommodityOutput;
+};
+
+export type CommoditiesCreateResponse = CommoditiesCreateResponses[keyof CommoditiesCreateResponses];
+
+export type CommoditiesRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this commodity.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/commodities/{id}/';
+};
+
+export type CommoditiesRetrieveErrors = {
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type CommoditiesRetrieveResponses = {
+    200: CommodityOutput;
+};
+
+export type CommoditiesRetrieveResponse = CommoditiesRetrieveResponses[keyof CommoditiesRetrieveResponses];
+
+export type CommoditiesUpdateData = {
+    body: CommodityInput;
+    path: {
+        /**
+         * A unique integer value identifying this commodity.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/commodities/{id}/';
+};
+
+export type CommoditiesUpdateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type CommoditiesUpdateResponses = {
+    200: CommodityOutput;
+};
+
+export type CommoditiesUpdateResponse = CommoditiesUpdateResponses[keyof CommoditiesUpdateResponses];
 
 export type FacilitiesListData = {
     body?: never;
@@ -152,6 +367,161 @@ export type FacilitiesUpdateResponses = {
 };
 
 export type FacilitiesUpdateResponse = FacilitiesUpdateResponses[keyof FacilitiesUpdateResponses];
+
+export type GrnsListData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Filter by Party ID
+         */
+        party_id?: number;
+        /**
+         * Filter by Status (DRAFT, RECEIVED, CANCELLED)
+         */
+        status?: string;
+    };
+    url: '/api/grns/';
+};
+
+export type GrnsListResponses = {
+    200: Array<GrnOutput>;
+};
+
+export type GrnsListResponse = GrnsListResponses[keyof GrnsListResponses];
+
+export type GrnsCreateData = {
+    body: GrnCreateInput;
+    path?: never;
+    query?: never;
+    url: '/api/grns/';
+};
+
+export type GrnsCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type GrnsCreateResponses = {
+    201: GrnOutput;
+};
+
+export type GrnsCreateResponse = GrnsCreateResponses[keyof GrnsCreateResponses];
+
+export type GrnsRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Goods Receipt Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/grns/{id}/';
+};
+
+export type GrnsRetrieveErrors = {
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type GrnsRetrieveResponses = {
+    200: GrnOutput;
+};
+
+export type GrnsRetrieveResponse = GrnsRetrieveResponses[keyof GrnsRetrieveResponses];
+
+export type LotsListData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by Chamber
+         */
+        chamber?: string;
+        /**
+         * Filter by Commodity ID
+         */
+        commodity_id?: number;
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Only show lots with remaining_qty > 0
+         */
+        in_stock_only?: boolean;
+        /**
+         * Filter by Party ID
+         */
+        party_id?: number;
+    };
+    url: '/api/lots/';
+};
+
+export type LotsListResponses = {
+    200: Array<LotOutput>;
+};
+
+export type LotsListResponse = LotsListResponses[keyof LotsListResponses];
+
+export type LotsRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this lot.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/lots/{id}/';
+};
+
+export type LotsRetrieveErrors = {
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type LotsRetrieveResponses = {
+    200: LotOutput;
+};
+
+export type LotsRetrieveResponse = LotsRetrieveResponses[keyof LotsRetrieveResponses];
+
+export type LotsWithdrawCreateData = {
+    body: LotWithdrawalInput;
+    path: {
+        /**
+         * A unique integer value identifying this lot.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/lots/{id}/withdraw/';
+};
+
+export type LotsWithdrawCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type LotsWithdrawCreateResponses = {
+    200: LotOutput;
+};
+
+export type LotsWithdrawCreateResponse = LotsWithdrawCreateResponses[keyof LotsWithdrawCreateResponses];
 
 export type PartiesListData = {
     body?: never;

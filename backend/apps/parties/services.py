@@ -1,6 +1,6 @@
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from apps.facilities.models import Facility
+from libs.lookups import get_facility_or_raise
 from .models import Party
 
 @transaction.atomic
@@ -18,11 +18,7 @@ def create_party(
     """
     Create a new party for a facility.
     """
-    # Check facility exists
-    try:
-        facility = Facility.objects.get(pk=facility_id)
-    except Facility.DoesNotExist:
-        raise ValidationError(f"Facility with ID {facility_id} does not exist.")
+    facility = get_facility_or_raise(facility_id)
 
     # Validate party type
     if type not in Party.PartyType.values:

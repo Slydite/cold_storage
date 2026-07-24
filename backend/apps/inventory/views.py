@@ -1,0 +1,272 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework.viewsets import ViewSet
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ValidationError
+from rest_framework.decorators import action
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
+
+from .selectors import (
+    get_commodities_list,
+    get_commodity_by_id,
+    get_grns_list,
+    get_grn_by_id,
+    get_lots_list,
+    get_lot_by_id
+)
+from .services import (
+    create_commodity,
+    update_commodity,
+    create_grn,
+    withdraw_stock_from_lot
+)
+from .serializers import (
+    CommodityInputSerializer,
+    CommodityOutputSerializer,
+    GRNCreateInputSerializer,
+    GRNOutputSerializer,
+    LotOutputSerializer,
+    LotWithdrawalInputSerializer
+)
+from .models import Commodity, GRN, Lot
+
+class CommodityViewSet(ViewSet):
+    permission_classes = [IsAuthenticated]
+    queryset = Commodity.objects.none()
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('facility_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="Filter by Facility ID"),
+            OpenApiParameter('is_active', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description="Filter by active status"),
+        ],
+        responses={200: CommodityOutputSerializer(many=True)},
+        summary="List all commodities for a facility"
+    )
+    def list(self, request):
+        facility_id = request.query_params.get('facility_id')
+        if not facility_id:
+            raise ValidationError({"facility_id": "This query parameter is required."})
+
+        is_active_param = request.query_params.get('is_active')
+        is_active_filter = None
+        if is_active_param is not None:
+            is_active_filter = is_active_param.lower() in ['true', '1', 'yes']
+
+        try:
+            commodities = get_commodities_list(facility_id=int(facility_id), is_active=is_active_filter)
+        except ValueError:
+            raise ValidationError({"facility_id": "Must be an integer."})
+
+        serializer = CommodityOutputSerializer(commodities, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        responses={200: CommodityOutputSerializer, 404: None},
+        summary="Retrieve a commodity by ID"
+    )
+    def retrieve(self, request, pk=None):
+        try:
+            commodity = get_commodity_by_id(pk)
+        except (Commodity.DoesNotExist, ValueError):
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = CommodityOutputSerializer(commodity)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=CommodityInputSerializer,
+        responses={201: CommodityOutputSerializer, 400: None},
+        summary="Create a new commodity"
+    )
+    def create(self, request):
+        serializer = CommodityInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            commodity = create_commodity(
+                facility_id=serializer.validated_data['facility_id'],
+                name=serializer.validated_data['name'],
+                code=serializer.validated_data['code'],
+                unit=serializer.validated_data.get('unit', 'BAGS'),
+                description=serializer.validated_data.get('description', ''),
+                is_active=serializer.validated_data.get('is_active', True)
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        output_serializer = CommodityOutputSerializer(commodity)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=CommodityInputSerializer,
+        responses={200: CommodityOutputSerializer, 400: None},
+        summary="Update an existing commodity"
+    )
+    def update(self, request, pk=None):
+        serializer = CommodityInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            commodity = update_commodity(
+                commodity_id=pk,
+                name=serializer.validated_data['name'],
+                code=serializer.validated_data['code'],
+                unit=serializer.validated_data.get('unit', 'BAGS'),
+                description=serializer.validated_data.get('description', ''),
+                is_active=serializer.validated_data.get('is_active', True)
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        output_serializer = CommodityOutputSerializer(commodity)
+        return Response(output_serializer.data)
+
+
+class GRNViewSet(ViewSet):
+    permission_classes = [IsAuthenticated]
+    queryset = GRN.objects.none()
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('facility_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="Filter by Facility ID"),
+            OpenApiParameter('party_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Party ID"),
+            OpenApiParameter('status', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Status (DRAFT, RECEIVED, CANCELLED)"),
+        ],
+        responses={200: GRNOutputSerializer(many=True)},
+        summary="List Goods Receipt Notes (GRNs)"
+    )
+    def list(self, request):
+        facility_id = request.query_params.get('facility_id')
+        if not facility_id:
+            raise ValidationError({"facility_id": "This query parameter is required."})
+
+        party_id = request.query_params.get('party_id')
+        status_param = request.query_params.get('status')
+
+        try:
+            grns = get_grns_list(
+                facility_id=int(facility_id),
+                party_id=int(party_id) if party_id else None,
+                status=status_param
+            )
+        except ValueError:
+            raise ValidationError({"facility_id": "Invalid ID format."})
+
+        serializer = GRNOutputSerializer(grns, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        responses={200: GRNOutputSerializer, 404: None},
+        summary="Retrieve a GRN by ID"
+    )
+    def retrieve(self, request, pk=None):
+        try:
+            grn = get_grn_by_id(pk)
+        except (GRN.DoesNotExist, ValueError):
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = GRNOutputSerializer(grn)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=GRNCreateInputSerializer,
+        responses={201: GRNOutputSerializer, 400: None},
+        summary="Create a new Goods Receipt Note (GRN)"
+    )
+    def create(self, request):
+        serializer = GRNCreateInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            grn = create_grn(
+                facility_id=serializer.validated_data['facility_id'],
+                party_id=serializer.validated_data['party_id'],
+                receipt_date=serializer.validated_data['receipt_date'],
+                vehicle_number=serializer.validated_data.get('vehicle_number', ''),
+                driver_name=serializer.validated_data.get('driver_name', ''),
+                remarks=serializer.validated_data.get('remarks', ''),
+                status=serializer.validated_data.get('status', GRN.Status.RECEIVED),
+                items=serializer.validated_data.get('items', [])
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        output_serializer = GRNOutputSerializer(grn)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class LotViewSet(ViewSet):
+    permission_classes = [IsAuthenticated]
+    queryset = Lot.objects.none()
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('facility_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="Filter by Facility ID"),
+            OpenApiParameter('party_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Party ID"),
+            OpenApiParameter('commodity_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Commodity ID"),
+            OpenApiParameter('chamber', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Chamber"),
+            OpenApiParameter('in_stock_only', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description="Only show lots with remaining_qty > 0"),
+        ],
+        responses={200: LotOutputSerializer(many=True)},
+        summary="List inventory lots"
+    )
+    def list(self, request):
+        facility_id = request.query_params.get('facility_id')
+        if not facility_id:
+            raise ValidationError({"facility_id": "This query parameter is required."})
+
+        party_id = request.query_params.get('party_id')
+        commodity_id = request.query_params.get('commodity_id')
+        chamber = request.query_params.get('chamber')
+        in_stock_param = request.query_params.get('in_stock_only')
+
+        in_stock_only = False
+        if in_stock_param is not None:
+            in_stock_only = in_stock_param.lower() in ['true', '1', 'yes']
+
+        try:
+            lots = get_lots_list(
+                facility_id=int(facility_id),
+                party_id=int(party_id) if party_id else None,
+                commodity_id=int(commodity_id) if commodity_id else None,
+                chamber=chamber,
+                in_stock_only=in_stock_only
+            )
+        except ValueError:
+            raise ValidationError({"facility_id": "Invalid query parameter format."})
+
+        serializer = LotOutputSerializer(lots, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        responses={200: LotOutputSerializer, 404: None},
+        summary="Retrieve a lot by ID"
+    )
+    def retrieve(self, request, pk=None):
+        try:
+            lot = get_lot_by_id(pk)
+        except (Lot.DoesNotExist, ValueError):
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = LotOutputSerializer(lot)
+        return Response(serializer.data)
+
+    @extend_schema(
+        request=LotWithdrawalInputSerializer,
+        responses={200: LotOutputSerializer, 400: None},
+        summary="Withdraw stock from a lot"
+    )
+    @action(detail=True, methods=['post'], url_path='withdraw')
+    def withdraw(self, request, pk=None):
+        serializer = LotWithdrawalInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            updated_lot = withdraw_stock_from_lot(
+                lot_id=pk,
+                qty_to_withdraw=serializer.validated_data['qty']
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        output_serializer = LotOutputSerializer(updated_lot)
+        return Response(output_serializer.data)

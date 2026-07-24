@@ -4,10 +4,14 @@ from rest_framework.routers import DefaultRouter
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from apps.facilities.views import FacilityViewSet
 from apps.parties.views import PartyViewSet
+from apps.inventory.views import CommodityViewSet, GRNViewSet, LotViewSet
 
 router = DefaultRouter()
 router.register(r'facilities', FacilityViewSet, basename='facility')
 router.register(r'parties', PartyViewSet, basename='party')
+router.register(r'commodities', CommodityViewSet, basename='commodity')
+router.register(r'grns', GRNViewSet, basename='grn')
+router.register(r'lots', LotViewSet, basename='lot')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

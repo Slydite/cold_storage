@@ -4,6 +4,126 @@ info:
   version: 1.0.0
   description: API documentation for the Cold Storage Warehouse Management System.
 paths:
+  /api/commodities/:
+    get:
+      operationId: commodities_list
+      summary: List all commodities for a facility
+      parameters:
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Filter by active status
+      tags:
+      - commodities
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommodityOutput'
+          description: ''
+    post:
+      operationId: commodities_create
+      summary: Create a new commodity
+      tags:
+      - commodities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommodityInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommodityInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommodityInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommodityOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/commodities/{id}/:
+    get:
+      operationId: commodities_retrieve
+      summary: Retrieve a commodity by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this commodity.
+        required: true
+      tags:
+      - commodities
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommodityOutput'
+          description: ''
+        '404':
+          description: No response body
+    put:
+      operationId: commodities_update
+      summary: Update an existing commodity
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this commodity.
+        required: true
+      tags:
+      - commodities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommodityInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommodityInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommodityInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommodityOutput'
+          description: ''
+        '400':
+          description: No response body
   /api/facilities/:
     get:
       operationId: facilities_list
@@ -109,6 +229,202 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FacilityOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/grns/:
+    get:
+      operationId: grns_list
+      summary: List Goods Receipt Notes (GRNs)
+      parameters:
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: party_id
+        schema:
+          type: integer
+        description: Filter by Party ID
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter by Status (DRAFT, RECEIVED, CANCELLED)
+      tags:
+      - grns
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GRNOutput'
+          description: ''
+    post:
+      operationId: grns_create
+      summary: Create a new Goods Receipt Note (GRN)
+      tags:
+      - grns
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GRNCreateInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GRNCreateInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GRNCreateInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GRNOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/grns/{id}/:
+    get:
+      operationId: grns_retrieve
+      summary: Retrieve a GRN by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Goods Receipt Note.
+        required: true
+      tags:
+      - grns
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GRNOutput'
+          description: ''
+        '404':
+          description: No response body
+  /api/lots/:
+    get:
+      operationId: lots_list
+      summary: List inventory lots
+      parameters:
+      - in: query
+        name: chamber
+        schema:
+          type: string
+        description: Filter by Chamber
+      - in: query
+        name: commodity_id
+        schema:
+          type: integer
+        description: Filter by Commodity ID
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: in_stock_only
+        schema:
+          type: boolean
+        description: Only show lots with remaining_qty > 0
+      - in: query
+        name: party_id
+        schema:
+          type: integer
+        description: Filter by Party ID
+      tags:
+      - lots
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LotOutput'
+          description: ''
+  /api/lots/{id}/:
+    get:
+      operationId: lots_retrieve
+      summary: Retrieve a lot by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lot.
+        required: true
+      tags:
+      - lots
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LotOutput'
+          description: ''
+        '404':
+          description: No response body
+  /api/lots/{id}/withdraw/:
+    post:
+      operationId: lots_withdraw_create
+      summary: Withdraw stock from a lot
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lot.
+        required: true
+      tags:
+      - lots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LotWithdrawalInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LotWithdrawalInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LotWithdrawalInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LotOutput'
           description: ''
         '400':
           description: No response body
@@ -239,6 +555,68 @@ paths:
           description: No response body
 components:
   schemas:
+    CommodityInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        name:
+          type: string
+          maxLength: 255
+        code:
+          type: string
+          maxLength: 50
+        unit:
+          type: string
+          default: BAGS
+          maxLength: 50
+        description:
+          type: string
+          default: ''
+          maxLength: 1000
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - code
+      - facility_id
+      - name
+    CommodityOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility_id:
+          type: integer
+        name:
+          type: string
+          maxLength: 255
+        code:
+          type: string
+          maxLength: 50
+        unit:
+          type: string
+          maxLength: 50
+        description:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - facility_id
+      - id
+      - name
+      - updated_at
     FacilityInput:
       type: object
       properties:
@@ -283,6 +661,221 @@ components:
       - id
       - name
       - updated_at
+    GRNCreateInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        party_id:
+          type: integer
+        receipt_date:
+          type: string
+          format: date
+        vehicle_number:
+          type: string
+          default: ''
+          maxLength: 50
+        driver_name:
+          type: string
+          default: ''
+          maxLength: 100
+        remarks:
+          type: string
+          default: ''
+          maxLength: 1000
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          default: RECEIVED
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LotItemInput'
+      required:
+      - facility_id
+      - party_id
+      - receipt_date
+    GRNOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility_id:
+          type: integer
+        grn_number:
+          type: string
+          maxLength: 100
+        party_id:
+          type: integer
+          readOnly: true
+        party_name:
+          type: string
+          readOnly: true
+        party_code:
+          type: string
+          readOnly: true
+        receipt_date:
+          type: string
+          format: date
+        vehicle_number:
+          type: string
+          maxLength: 50
+        driver_name:
+          type: string
+          maxLength: 100
+        remarks:
+          type: string
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        lots:
+          type: array
+          items:
+            $ref: '#/components/schemas/LotOutput'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - facility_id
+      - grn_number
+      - id
+      - lots
+      - party_code
+      - party_id
+      - party_name
+      - receipt_date
+      - updated_at
+    LotItemInput:
+      type: object
+      properties:
+        commodity_id:
+          type: integer
+        lot_number:
+          type: string
+          default: ''
+          maxLength: 100
+        chamber:
+          type: string
+          default: ''
+          maxLength: 50
+        floor:
+          type: string
+          default: ''
+          maxLength: 50
+        rack:
+          type: string
+          default: ''
+          maxLength: 50
+        initial_qty:
+          type: integer
+          minimum: 1
+        unit_weight:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          default: '0.00'
+        rent_rate_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          default: '0.00'
+      required:
+      - commodity_id
+      - initial_qty
+    LotOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility_id:
+          type: integer
+          readOnly: true
+        grn_id:
+          type: integer
+          readOnly: true
+        commodity_id:
+          type: integer
+          readOnly: true
+        commodity_name:
+          type: string
+          readOnly: true
+        commodity_code:
+          type: string
+          readOnly: true
+        commodity_unit:
+          type: string
+          readOnly: true
+        lot_number:
+          type: string
+          maxLength: 100
+        chamber:
+          type: string
+          maxLength: 50
+        floor:
+          type: string
+          maxLength: 50
+        rack:
+          type: string
+          maxLength: 50
+        initial_qty:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        remaining_qty:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        unit_weight:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        rent_rate_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        inward_date:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - commodity_code
+      - commodity_id
+      - commodity_name
+      - commodity_unit
+      - created_at
+      - facility_id
+      - grn_id
+      - id
+      - initial_qty
+      - inward_date
+      - lot_number
+      - remaining_qty
+      - updated_at
+    LotWithdrawalInput:
+      type: object
+      properties:
+        qty:
+          type: integer
+          minimum: 1
+      required:
+      - qty
     PartyInput:
       type: object
       properties:
@@ -373,6 +966,16 @@ components:
       - type
       - type_display
       - updated_at
+    StatusEnum:
+      enum:
+      - DRAFT
+      - RECEIVED
+      - CANCELLED
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `RECEIVED` - Received/Posted
+        * `CANCELLED` - Cancelled
     TypeEnum:
       enum:
       - DEPOSITOR
