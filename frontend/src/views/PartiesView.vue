@@ -1,103 +1,100 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Select from 'primevue/select'
-import { Search, Plus, Download, Phone } from 'lucide-vue-next'
+import { ref, computed } from 'vue'
+import { useToast } from 'primevue/usetoast'
+import { useFacility } from '../composables/useFacility'
+import { usePartyList, useCreateParty } from '../composables/useParties'
 import { useSearchFilter } from '../composables/useSearchFilter'
+import PartyListTable from '../components/party/PartyListTable.vue'
+import PartyCreateDialog from '../components/party/PartyCreateDialog.vue'
+import type { PartyOutput, TypeEnum } from '../api/party'
+
+const toast = useToast()
+const { facilityId, isLoading: loadingFacility, isError: facilityError, refetch: refetchFacility } = useFacility()
 
 const selectedType = ref('all')
+const isDialogOpen = ref(false)
 
-const typeOptions = [
-  { label: 'All Parties', value: 'all' },
-  { label: 'Customers', value: 'customer' },
-  { label: 'Suppliers', value: 'supplier' }
-]
+const partiesQuery = usePartyList(facilityId)
+const createMutation = useCreateParty()
 
-const parties = ref([
-  { id: '1', name: 'Shree Traders', code: 'PRT-001', type: 'Customer', contact: 'Rajesh Shah', phone: '+91 98250 12345', email: 'rajesh@shreetraders.com', activeLots: 12, balance: '₹ 1,45,200' },
-  { id: '2', name: 'Kisan Exports', code: 'PRT-002', type: 'Customer', contact: 'Vikram Patel', phone: '+91 98980 67890', email: 'info@kisanexports.in', activeLots: 8, balance: '₹ 84,500' },
-  { id: '3', name: 'Arctic Foods', code: 'PRT-003', type: 'Supplier', contact: 'Suresh Kumar', phone: '+91 94260 54321', email: 'suresh@arcticfoods.com', activeLots: 5, balance: '₹ 0' },
-  { id: '4', name: 'Global Frozen Pvt Ltd', code: 'PRT-004', type: 'Customer', contact: 'Animesh Roy', phone: '+91 97129 11223', email: 'contact@globalfrozen.com', activeLots: 15, balance: '₹ 3,20,000' }
-])
+const partyList = computed<PartyOutput[]>(() => partiesQuery.data.value || [])
 
-const { searchQuery, filtered: filteredParties } = useSearchFilter(parties, (p, query) =>
-  p.name.toLowerCase().includes(query) || p.code.toLowerCase().includes(query)
+const { searchQuery, filtered: searchedParties } = useSearchFilter(partyList, (item, query) =>
+  item.name.toLowerCase().includes(query) ||
+  item.code.toLowerCase().includes(query) ||
+  (item.phone ? item.phone.toLowerCase().includes(query) : false) ||
+  (item.email ? item.email.toLowerCase().includes(query) : false)
 )
+
+const filteredParties = computed(() =>
+  searchedParties.value.filter(
+    (party) => selectedType.value === 'all' || party.type === selectedType.value
+  )
+)
+
+const isLoading = computed(() => loadingFacility.value || partiesQuery.isLoading.value)
+const isError = computed(() => facilityError.value || partiesQuery.isError.value)
+const errorMessage = computed(() => (partiesQuery.error.value instanceof Error ? partiesQuery.error.value.message : undefined))
+
+const handleRetry = () => {
+  refetchFacility()
+  partiesQuery.refetch()
+}
+
+const handleCreateParty = async (values: {
+  name: string
+  code: string
+  type: TypeEnum
+  phone?: string
+  email?: string
+}) => {
+  if (!facilityId.value) return
+  try {
+    const created = await createMutation.mutateAsync({
+      facility_id: facilityId.value,
+      ...values
+    })
+    toast.add({
+      severity: 'success',
+      summary: 'Party Created',
+      detail: `Party "${created.name}" (${created.code}) created successfully.`,
+      life: 3000
+    })
+    isDialogOpen.value = false
+  } catch (err: unknown) {
+    toast.add({
+      severity: 'error',
+      summary: 'Action Failed',
+      detail: err instanceof Error ? err.message : 'Failed to create party',
+      life: 5000
+    })
+  }
+}
 </script>
 
 <template>
   <div class="page-container">
-    <div class="list-toolbar">
-      <div class="toolbar-search">
-        <div class="search-input-wrapper">
-          <Search :size="16" class="search-icon" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search party name, code..."
-            class="custom-search-input"
-          />
-        </div>
-        <Select v-model="selectedType" :options="typeOptions" optionLabel="label" optionValue="value" class="toolbar-select" />
-      </div>
+    <PartyListTable
+      :parties="filteredParties"
+      :loading="isLoading"
+      :error="isError"
+      :errorDetail="errorMessage"
+      v-model:searchQuery="searchQuery"
+      v-model:selectedType="selectedType"
+      @openCreate="isDialogOpen = true"
+      @retry="handleRetry"
+    />
 
-      <div class="toolbar-actions">
-        <button class="btn-outlined"><Download :size="15" /><span>Export</span></button>
-        <button class="btn-primary"><Plus :size="16" /><span>Add Party</span></button>
-      </div>
-    </div>
-
-    <div class="table-card">
-      <DataTable :value="filteredParties" paginator :rows="5" responsiveLayout="scroll" class="custom-datatable">
-        <Column field="code" header="Code" sortable>
-          <template #body="{ data }">
-            <span class="code-link">{{ data.code }}</span>
-          </template>
-        </Column>
-
-        <Column field="name" header="Party Name" sortable>
-          <template #body="{ data }">
-            <span class="party-name">{{ data.name }}</span>
-          </template>
-        </Column>
-
-        <Column field="type" header="Type" sortable />
-        <Column field="contact" header="Contact Person" />
-
-        <Column field="phone" header="Phone">
-          <template #body="{ data }">
-            <div class="cell-flex"><Phone :size="14" class="icon-muted" /><span>{{ data.phone }}</span></div>
-          </template>
-        </Column>
-
-        <Column field="activeLots" header="Active Lots" sortable>
-          <template #body="{ data }">
-            <span class="num-val">{{ data.activeLots }}</span>
-          </template>
-        </Column>
-
-        <Column field="balance" header="Outstanding (₹)" sortable>
-          <template #body="{ data }">
-            <span class="num-val highlight">{{ data.balance }}</span>
-          </template>
-        </Column>
-      </DataTable>
-    </div>
+    <PartyCreateDialog
+      v-model:visible="isDialogOpen"
+      :loading="createMutation.isPending.value"
+      @submit="handleCreateParty"
+    />
   </div>
 </template>
 
 <style scoped>
-.cell-flex {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.icon-muted {
-  color: var(--text-secondary);
-}
-.highlight {
-  font-weight: 700;
-  color: var(--status-warning-color);
+.page-container {
+  width: 100%;
 }
 </style>

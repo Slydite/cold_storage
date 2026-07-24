@@ -1,103 +1,67 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import Select from 'primevue/select'
-import { Search, Filter, Download } from 'lucide-vue-next'
-import { chamberOptions } from '../constants/chambers'
-import { formatQty } from '../utils/format'
+import { useFacility } from '../composables/useFacility'
+import { useLotList } from '../composables/useLots'
 import { useSearchFilter } from '../composables/useSearchFilter'
+import InventoryListTable from '../components/inventory/InventoryListTable.vue'
+import type { LotOutput } from '../api/lot'
+
+const { facilityId, isLoading: loadingFacility, isError: facilityError, refetch: refetchFacility } = useFacility()
 
 const selectedChamber = ref('all')
 const selectedStatus = ref('active')
 
-const statusOptions = [
-  { label: 'Active Lots', value: 'active' },
-  { label: 'Depleted Lots', value: 'depleted' },
-  { label: 'All Lots', value: 'all' }
-]
+const lotFilters = computed(() => ({
+  chamber: selectedChamber.value,
+  inStockOnly: selectedStatus.value === 'active'
+}))
 
-const lots = ref([
-  { id: '1', lotNo: 'LOT-000086', product: 'Frozen Green Peas', party: 'Shree Traders', chamber: 'Chamber A', inDate: '20 May 2024', totalQty: 2.500, remainingQty: 1.750, status: 'Active' },
-  { id: '2', lotNo: 'LOT-000085', product: 'Frozen Sweet Corn', party: 'Shree Traders', chamber: 'Chamber A', inDate: '20 May 2024', totalQty: 2.000, remainingQty: 2.000, status: 'Active' },
-  { id: '3', lotNo: 'LOT-000084', product: 'Frozen Cauliflower', party: 'Shree Traders', chamber: 'Chamber B', inDate: '20 May 2024', totalQty: 3.000, remainingQty: 0.500, status: 'Active' },
-  { id: '4', lotNo: 'LOT-000083', product: 'Frozen Okra', party: 'Kisan Exports', chamber: 'Chamber C', inDate: '18 May 2024', totalQty: 1.800, remainingQty: 1.200, status: 'Active' },
-  { id: '5', lotNo: 'LOT-000082', product: 'Frozen Mixed Veg', party: 'Kisan Exports', chamber: 'Chamber C', inDate: '18 May 2024', totalQty: 2.250, remainingQty: 1.750, status: 'Active' }
-])
+const lotsQuery = useLotList(facilityId, lotFilters)
 
-const { searchQuery, filtered: searchedLots } = useSearchFilter(lots, (lot, query) =>
-  lot.lotNo.toLowerCase().includes(query) ||
-  lot.product.toLowerCase().includes(query) ||
-  lot.party.toLowerCase().includes(query)
+const rawLots = computed<LotOutput[]>(() => lotsQuery.data.value || [])
+
+const { searchQuery, filtered: searchedLots } = useSearchFilter(rawLots, (item, query) =>
+  item.lot_number.toLowerCase().includes(query) ||
+  item.commodity_name.toLowerCase().includes(query) ||
+  (item.chamber ? item.chamber.toLowerCase().includes(query) : false)
 )
 
-const filteredLots = computed(() =>
-  searchedLots.value.filter(
-    (lot) => selectedChamber.value === 'all' || lot.chamber === selectedChamber.value
-  )
-)
+const filteredLots = computed(() => {
+  return searchedLots.value.filter((lot) => {
+    if (selectedStatus.value === 'depleted') {
+      return lot.remaining_qty === 0
+    }
+    return true
+  })
+})
+
+const isLoading = computed(() => loadingFacility.value || lotsQuery.isLoading.value)
+const isError = computed(() => facilityError.value || lotsQuery.isError.value)
+const errorMessage = computed(() => (lotsQuery.error.value instanceof Error ? lotsQuery.error.value.message : undefined))
+
+const handleRetry = () => {
+  refetchFacility()
+  lotsQuery.refetch()
+}
 </script>
 
 <template>
   <div class="page-container">
-    <div class="list-toolbar">
-      <div class="toolbar-search">
-        <div class="search-input-wrapper">
-          <Search :size="16" class="search-icon" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search lot no., item, party..."
-            class="custom-search-input"
-          />
-        </div>
-        <Select v-model="selectedChamber" :options="chamberOptions" optionLabel="label" optionValue="value" class="toolbar-select" />
-        <Select v-model="selectedStatus" :options="statusOptions" optionLabel="label" optionValue="value" class="toolbar-select" />
-      </div>
-
-      <div class="toolbar-actions">
-        <button class="btn-outlined"><Filter :size="15" /><span>Filters</span></button>
-        <button class="btn-outlined"><Download :size="15" /><span>Export</span></button>
-      </div>
-    </div>
-
-    <div class="table-card">
-      <DataTable :value="filteredLots" paginator :rows="5" responsiveLayout="scroll" class="custom-datatable">
-        <Column field="lotNo" header="Lot No." sortable>
-          <template #body="{ data }">
-            <span class="code-link">{{ data.lotNo }}</span>
-          </template>
-        </Column>
-
-        <Column field="product" header="Item / Product" sortable />
-        <Column field="party" header="Party" sortable />
-        <Column field="chamber" header="Chamber" sortable />
-        <Column field="inDate" header="In Date" sortable />
-
-        <Column field="totalQty" header="In Qty (MT)" sortable>
-          <template #body="{ data }">
-            <span class="num-val">{{ formatQty(data.totalQty) }}</span>
-          </template>
-        </Column>
-
-        <Column field="remainingQty" header="Remaining Qty (MT)" sortable>
-          <template #body="{ data }">
-            <span class="num-val text-bold">{{ formatQty(data.remainingQty) }}</span>
-          </template>
-        </Column>
-
-        <Column field="status" header="Status">
-          <template #body="{ data }">
-            <span class="status-pill success">{{ data.status }}</span>
-          </template>
-        </Column>
-      </DataTable>
-    </div>
+    <InventoryListTable
+      :lots="filteredLots"
+      :loading="isLoading"
+      :error="isError"
+      :errorDetail="errorMessage"
+      v-model:searchQuery="searchQuery"
+      v-model:selectedChamber="selectedChamber"
+      v-model:selectedStatus="selectedStatus"
+      @retry="handleRetry"
+    />
   </div>
 </template>
 
 <style scoped>
-.text-bold {
-  font-weight: 700;
+.page-container {
+  width: 100%;
 }
 </style>

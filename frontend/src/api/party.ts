@@ -1,7 +1,7 @@
-import { partiesList } from './generated/sdk.gen'
-import type { PartyOutput } from './generated/types.gen'
+import { partiesList, partiesCreate } from './generated/sdk.gen'
+import type { PartyOutput, PartyInput, TypeEnum } from './generated/types.gen'
 
-export type { PartyOutput }
+export type { PartyOutput, PartyInput, TypeEnum }
 
 function extractErrorMessage(error: unknown, fallback: string): string {
   if (typeof error === 'object' && error !== null) {
@@ -30,3 +30,17 @@ export async function fetchParties(params: { facilityId: number }): Promise<Part
   }
   return res.data ?? []
 }
+
+export async function createParty(body: PartyInput): Promise<PartyOutput> {
+  const res = await partiesCreate({
+    body
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to create party'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from party creation')
+  }
+  return res.data
+}
+
