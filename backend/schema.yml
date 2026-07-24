@@ -1,0 +1,393 @@
+openapi: 3.0.3
+info:
+  title: Cold Storage Management API
+  version: 1.0.0
+  description: API documentation for the Cold Storage Warehouse Management System.
+paths:
+  /api/facilities/:
+    get:
+      operationId: facilities_list
+      summary: List all facilities
+      tags:
+      - facilities
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FacilityOutput'
+          description: ''
+    post:
+      operationId: facilities_create
+      summary: Create a new facility
+      tags:
+      - facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FacilityInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FacilityInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/facilities/{id}/:
+    get:
+      operationId: facilities_retrieve
+      summary: Retrieve a facility by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this facility.
+        required: true
+      tags:
+      - facilities
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityOutput'
+          description: ''
+        '404':
+          description: No response body
+    put:
+      operationId: facilities_update
+      summary: Update an existing facility
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this facility.
+        required: true
+      tags:
+      - facilities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacilityInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FacilityInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FacilityInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacilityOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/parties/:
+    get:
+      operationId: parties_list
+      summary: List all parties in a facility
+      parameters:
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Filter by active status (true/false)
+      - in: query
+        name: type
+        schema:
+          type: string
+        description: Filter by Party Type (DEPOSITOR, VENDOR, TRANSPORTER)
+      tags:
+      - parties
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PartyOutput'
+          description: ''
+    post:
+      operationId: parties_create
+      summary: Create a new party
+      tags:
+      - parties
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartyInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartyInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartyOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/parties/{id}/:
+    get:
+      operationId: parties_retrieve
+      summary: Retrieve a party by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this party.
+        required: true
+      tags:
+      - parties
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartyOutput'
+          description: ''
+        '404':
+          description: No response body
+    put:
+      operationId: parties_update
+      summary: Update an existing party
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this party.
+        required: true
+      tags:
+      - parties
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PartyInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PartyInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartyOutput'
+          description: ''
+        '400':
+          description: No response body
+components:
+  schemas:
+    FacilityInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        code:
+          type: string
+          maxLength: 50
+        address:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - code
+      - name
+    FacilityOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        code:
+          type: string
+          maxLength: 50
+        address:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - id
+      - name
+      - updated_at
+    PartyInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        name:
+          type: string
+          maxLength: 255
+        code:
+          type: string
+          maxLength: 50
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        phone:
+          type: string
+          default: ''
+          maxLength: 20
+        email:
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        address:
+          type: string
+          default: ''
+          maxLength: 1000
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - code
+      - facility_id
+      - name
+      - type
+    PartyOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility:
+          type: integer
+        facility_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        code:
+          type: string
+          maxLength: 50
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        type_display:
+          type: string
+          readOnly: true
+        phone:
+          type: string
+          maxLength: 20
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        address:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - facility
+      - facility_name
+      - id
+      - name
+      - type
+      - type_display
+      - updated_at
+    TypeEnum:
+      enum:
+      - DEPOSITOR
+      - VENDOR
+      - TRANSPORTER
+      type: string
+      description: |-
+        * `DEPOSITOR` - Depositor/Customer
+        * `VENDOR` - Vendor
+        * `TRANSPORTER` - Transporter
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

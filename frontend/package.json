@@ -13,7 +13,7 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "prettier --write --experimental-cli src/",
-    "gen:types": "openapi-ts -i http://127.0.0.1:8000/api/schema/ -o src/api/generated"
+    "gen:types": "openapi-ts -i ../backend/schema.yml -o src/api/generated"
   },
   "dependencies": {
     "@primevue/themes": "^4.5.4",

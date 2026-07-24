@@ -31,6 +31,10 @@ INSTALLED_APPS = [
     'django_filters',
     'simple_history',
     'drf_spectacular',
+
+    # Local apps
+    'apps.facilities',
+    'apps.parties',
 ]
 
 MIDDLEWARE = [
