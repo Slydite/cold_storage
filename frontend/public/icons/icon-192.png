@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="brandGrad192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FB923C"/>
+      <stop offset="50%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle Badge Background -->
+  <rect x="6" y="6" width="180" height="180" rx="40" fill="url(#brandGrad192)"/>
+
+  <!-- Geometric Cold Storage Snowflake Emblem -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Main 6 Radial Axes -->
+    <line x1="96" y1="36" x2="96" y2="156"/>
+    <line x1="44" y1="66" x2="148" y2="126"/>
+    <line x1="44" y1="126" x2="148" y2="66"/>
+
+    <!-- Central Hexagon Core -->
+    <polygon points="96,81 109,88.5 109,103.5 96,111 83,103.5 83,88.5" stroke-width="7" fill="rgba(255, 255, 255, 0.15)"/>
+
+    <!-- Vertical Arm Chevrons -->
+    <path d="M81 51 L96 66 L111 51"/>
+    <path d="M81 141 L96 126 L111 141"/>
+
+    <!-- Warehouse Box/Pallet Accents -->
+    <rect x="89" y="40" width="14" height="14" rx="2.5" fill="#FFFFFF" stroke="none"/>
+    <rect x="89" y="138" width="14" height="14" rx="2.5" fill="#FFFFFF" stroke="none"/>
+  </g>
+</svg>
