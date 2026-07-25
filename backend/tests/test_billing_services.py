@@ -365,6 +365,7 @@ def test_generate_rent_run_pdf(default_facility, test_party, test_commodity):
     assert pdf_url is not None
     rent_run.refresh_from_db()
     assert bool(rent_run.pdf_file) is True
+    assert rent_run.pdf_file.read().startswith(b'%PDF')
 
 
 @pytest.mark.django_db

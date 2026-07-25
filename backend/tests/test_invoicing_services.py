@@ -374,5 +374,6 @@ def test_generate_invoice_pdf(default_facility, test_party, test_commodity, tmp_
 
     inv_fetched = get_invoice_by_id(inv.id)
     assert inv_fetched.pdf_file is not None
+    assert inv_fetched.pdf_file.read().startswith(b'%PDF')
     serializer = InvoiceOutputSerializer(inv_fetched)
     assert serializer.data['pdf_url'] == pdf_url

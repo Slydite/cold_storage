@@ -1,0 +1,95 @@
+{% extends "pdf/base.html" %}
+
+{% block title %}Goods Receipt Note - {{ grn.grn_number }}{% endblock %}
+
+{% block content %}
+<table class="doc-header-table">
+    <tr>
+        <td style="width: 50%;">
+            <div style="font-size: 9pt;">
+                <strong>Document Status:</strong> {{ grn.status }}
+            </div>
+        </td>
+        <td style="width: 50%;">
+            <div class="doc-title">GOODS RECEIPT NOTE (रसीद)</div>
+            <div class="doc-meta">
+                <strong>GRN No. (क्रमांक):</strong> {{ grn.grn_number }}<br>
+                <strong>Date (दिनांक):</strong> {{ grn.receipt_date|date:"Y-m-d" }}<br>
+                <strong>Time (समय):</strong> {% if grn.inward_time %}{{ grn.inward_time|time:"H:i" }}{% else %}—{% endif %}
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div class="party-box">
+    <strong>M/s (मैसर्स):</strong> {{ party.name }}<br>
+    <strong>GSTIN:</strong> {{ party.gstin|default:"N/A" }} | <strong>Mobile (मोबाईल):</strong> {{ party.mobile|default:"N/A" }}
+    {% if party.address %}<br><strong>Address (पता):</strong> {{ party.address }}{% endif %}
+</div>
+
+<div class="declaration-line">
+    Received following goods for cold storage based on terms and conditions stated below. (निम्न माल कोल्ड स्टोरेज हेतु नीचे दी गई शर्तों के अधीन प्राप्त किया।)
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th class="center" style="width: 15%;">Qty / मात्रा</th>
+            <th style="width: 35%;">Description / विवरण</th>
+            <th style="width: 25%;">Lot No. / लॉट नं.</th>
+            <th style="width: 25%;">Special Remarks / विशेष विवरण</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for lot in grn.lots.all %}
+        <tr>
+            <td class="center">{{ lot.initial_qty }}</td>
+            <td>{{ lot.commodity.name }}</td>
+            <td>{{ lot.lot_number }}</td>
+            <td>{{ lot.special_remarks|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="note-text">
+    (Goods received unchecked/unverified as to condition / अवस्था की संतुष्टि के बिना, बगैर जांचा गया माल)
+</div>
+
+<table class="info-grid">
+    <tr>
+        <td>
+            <strong>Preservation Charges (प्रीजर्वेशन चार्जेज 20/50 किलो प्रति नग/माह):</strong> ₹{{ grn.preservation_rate_per_bag_per_month|floatformat:2 }}<br>
+            <strong>Loading & Unloading Labour (लोडिंग व अनलोडिंग लेबर मजदूरी प्रति नग):</strong> ₹{{ grn.loading_unloading_rate_per_bag|floatformat:2 }} (Total: ₹{{ grn.loading_charge|floatformat:2 }})
+        </td>
+        <td>
+            <strong>Bill No. (बिल नं.):</strong> {{ grn.bill_no|default:"—" }}<br>
+            <strong>Bilty / LR No. (बिल्टी नं.):</strong> {{ grn.bilty_no|default:"—" }}<br>
+            <strong>Transporter (ट्रांसपोर्टर):</strong> {{ grn.transporter|default:"—" }}<br>
+            <strong>Vehicle No. (गाड़ी नं.):</strong> {{ grn.vehicle_number|default:"—" }}{% if grn.driver_name %} | <strong>Driver:</strong> {{ grn.driver_name }}{% endif %}<br>
+            <strong>Chamber / Remarks (रिमार्क - मंजिल/कक्ष):</strong> {{ grn.remarks|default:"—" }}
+        </td>
+    </tr>
+</table>
+
+{% if facility.terms_and_conditions %}
+<div class="terms-block">
+    <strong>Terms & Conditions (शर्तें):</strong> {{ facility.terms_and_conditions }}
+</div>
+{% endif %}
+
+<table class="signatures-table">
+    <tr>
+        <td>
+            <strong>Party Signature (हस्ताक्षर ग्राहक/जमाकर्ता)</strong>
+            <div class="sig-space"></div>
+            ______________________
+        </td>
+        <td class="right-align">
+            <strong>वास्ते {{ facility.name }}</strong>
+            <div class="sig-space"></div>
+            <strong>Authorised Signatory (अधिकृत हस्ताक्षरकर्ता)</strong>
+        </td>
+    </tr>
+</table>
+{% endblock %}

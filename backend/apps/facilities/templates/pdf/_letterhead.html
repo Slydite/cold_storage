@@ -1,0 +1,11 @@
+<div class="letterhead">
+    <div class="facility-title">{{ facility.name }}</div>
+    <div class="facility-sub">{% if facility.address %}{{ facility.address }}{% elif facility.code %}Facility Code: {{ facility.code }}{% endif %}</div>
+    <div class="facility-details">
+        {% if facility.gstin %}<span class="detail-item"><strong>GSTIN:</strong> {{ facility.gstin }}</span>{% endif %}
+        {% if facility.phone %}<span class="detail-item"><strong>Office Mob:</strong> {{ facility.phone }}</span>{% endif %}
+        {% if facility.factory_phone %}<span class="detail-item"><strong>Factory No.:</strong> {{ facility.factory_phone }}</span>{% endif %}
+        {% if facility.bank_account_no %}<span class="detail-item"><strong>Bank A/c:</strong> {{ facility.bank_account_no }}</span>{% endif %}
+        {% if facility.bank_ifsc %}<span class="detail-item"><strong>IFSC:</strong> {{ facility.bank_ifsc }}</span>{% endif %}
+    </div>
+</div>

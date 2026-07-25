@@ -1,18 +1,13 @@
 import calendar
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
-from io import BytesIO
 
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 
-from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet
-
 from libs.lookups import get_facility_or_raise, get_party_or_raise
+from libs.pdf import render_pdf
 from apps.inventory.models import Commodity, Lot
 from .models import RateCard, RentRun, RentRunLine
 from .selectors import get_rent_run_by_id
@@ -431,7 +426,7 @@ def cancel_rent_run(*, rent_run_id: int) -> RentRun:
 
 def generate_rent_run_pdf(*, rent_run_id: int) -> str:
     """
-    Generate a PDF summary report for a RentRun using ReportLab and store it in rent_run.pdf_file.
+    Generate a PDF summary report for a RentRun using WeasyPrint and store it in rent_run.pdf_file.
     Returns rent_run.pdf_file.url as a string.
     """
     try:
@@ -439,98 +434,22 @@ def generate_rent_run_pdf(*, rent_run_id: int) -> str:
     except RentRun.DoesNotExist:
         raise ValidationError(f"RentRun with ID {rent_run_id} does not exist.")
 
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=letter,
-        rightMargin=36,
-        leftMargin=36,
-        topMargin=36,
-        bottomMargin=36
-    )
-    styles = getSampleStyleSheet()
-    elements = []
-
     facility = rent_run.facility
-
-    # Title
-    elements.append(Paragraph("<b>RENT RUN REPORT</b>", styles['Title']))
-    elements.append(Spacer(1, 12))
-
-    # Defensive field retrieval on facility
-    gstin_val = getattr(facility, 'gstin', '')
-    phone_val = getattr(facility, 'phone', '')
-    facility_info = f"<b>{facility.name}</b><br/>{facility.address or facility.code}"
-    if gstin_val:
-        facility_info += f"<br/>GSTIN: {gstin_val}"
-    if phone_val:
-        facility_info += f"<br/>Phone: {phone_val}"
-
-    party_filter = rent_run.party.name if rent_run.party else "All Parties"
-    commodity_filter = rent_run.commodity.name if rent_run.commodity else "All Commodities"
-    chamber_filter = rent_run.chamber if rent_run.chamber else "All Chambers"
-
-    # Header section
-    header_data = [
-        [
-            Paragraph(facility_info, styles['Normal']),
-            Paragraph(
-                f"<b>Run ID:</b> RentRun #{rent_run.id}<br/>"
-                f"<b>Period:</b> {rent_run.period_start} to {rent_run.period_end}<br/>"
-                f"<b>Status:</b> {rent_run.status}<br/>"
-                f"<b>Party Filter:</b> {party_filter}<br/>"
-                f"<b>Commodity Filter:</b> {commodity_filter}<br/>"
-                f"<b>Chamber Filter:</b> {chamber_filter}<br/>"
-                f"<b>Min Billing Days:</b> {rent_run.min_billing_days}",
-                styles['Normal']
-            )
-        ]
-    ]
-    header_table = Table(header_data, colWidths=[270, 270])
-    header_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-    ]))
-    elements.append(header_table)
-    elements.append(Spacer(1, 16))
-
-    # Table of lines
     lines = rent_run.lines.all()
-    table_data = [["Lot #", "Commodity", "Party", "Qty", "Weight Cat.", "Rate (₹)", "Days", "Amount (₹)"]]
+    total_amount = sum((line.amount for line in lines), Decimal('0.00'))
 
-    total_amount = Decimal('0.00')
-    for line in lines:
-        total_amount += line.amount
-        table_data.append([
-            line.lot.lot_number,
-            line.lot.commodity.name,
-            line.party.name,
-            str(line.qty),
-            line.weight_category,
-            f"{line.rate_per_bag_per_month:.2f}",
-            str(line.days_stored),
-            f"{line.amount:.2f}"
-        ])
-
-    table_data.append(["Total", "", "", "", "", "", "", f"{total_amount:.2f}"])
-
-    items_table = Table(table_data, colWidths=[65, 75, 90, 40, 60, 60, 40, 110])
-    items_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('ALIGN', (3, 0), (-1, -1), 'RIGHT'),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-    ]))
-    elements.append(items_table)
-
-    doc.build(elements)
-    pdf_bytes = buffer.getvalue()
-    buffer.close()
+    context = {
+        'rent_run': rent_run,
+        'facility': facility,
+        'lines': lines,
+        'total_amount': total_amount,
+    }
+    pdf_bytes = render_pdf('pdf/rent_run.html', context)
 
     filename = f"RentRun_{rent_run.id}.pdf"
     with transaction.atomic():
         rent_run.pdf_file.save(filename, ContentFile(pdf_bytes), save=True)
 
     return rent_run.pdf_file.url
+
 

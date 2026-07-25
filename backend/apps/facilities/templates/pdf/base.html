@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}Document{% endblock %}</title>
+    <style>
+        /* NOTE: Linux deployments require Devanagari-capable fonts installed (e.g. fonts-noto-devanagari) or Hindi glyphs will fall back to tofu. */
+        @page {
+            size: A4;
+            margin: 12mm 15mm 18mm 15mm;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: "Segoe UI", "Nirmala UI", "Noto Sans", "Noto Sans Devanagari", sans-serif;
+                font-size: 8pt;
+                color: #666666;
+            }
+        }
+        
+        body {
+            font-family: "Segoe UI", "Nirmala UI", "Noto Sans", "Noto Sans Devanagari", sans-serif;
+            font-size: 9.5pt;
+            line-height: 1.4;
+            color: #222222;
+            margin: 0;
+            padding: 0;
+        }
+
+        .letterhead {
+            border-bottom: 2px solid #1a365d;
+            padding-bottom: 6px;
+            margin-bottom: 12px;
+        }
+        .facility-title {
+            font-size: 15pt;
+            font-weight: bold;
+            color: #1a365d;
+            text-transform: uppercase;
+        }
+        .facility-sub {
+            font-size: 9pt;
+            color: #444444;
+            margin-top: 2px;
+        }
+        .facility-details {
+            margin-top: 4px;
+            font-size: 8.5pt;
+            color: #555555;
+        }
+        .detail-item {
+            display: inline;
+        }
+        .detail-item + .detail-item::before {
+            content: " | ";
+            color: #888888;
+            padding: 0 4px;
+        }
+
+        .doc-header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+        .doc-header-table td {
+            vertical-align: top;
+            padding: 0;
+        }
+        .doc-title {
+            font-size: 13pt;
+            font-weight: bold;
+            color: #1a365d;
+            text-transform: uppercase;
+            text-align: right;
+        }
+        .doc-meta {
+            font-size: 9pt;
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        .party-box {
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e0;
+            border-radius: 3px;
+            padding: 8px 10px;
+            margin-bottom: 12px;
+            font-size: 9pt;
+        }
+
+        .declaration-line {
+            font-size: 8.5pt;
+            font-style: italic;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        table.data-table th {
+            background-color: #edf2f7;
+            color: #1a202c;
+            font-weight: bold;
+            font-size: 8.5pt;
+            text-align: left;
+            padding: 6px 8px;
+            border: 1px solid #cbd5e0;
+        }
+        table.data-table td {
+            padding: 5px 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 9pt;
+        }
+        table.data-table tr:nth-child(even) td {
+            background-color: #fcfcfc;
+        }
+        table.data-table td.center, table.data-table th.center {
+            text-align: center;
+        }
+        table.data-table td.right, table.data-table th.right {
+            text-align: right;
+        }
+        table.data-table tr.total-row td {
+            font-weight: bold;
+            background-color: #edf2f7;
+            border-top: 2px solid #cbd5e0;
+        }
+
+        .info-grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        .info-grid td {
+            width: 50%;
+            vertical-align: top;
+            padding: 6px 8px;
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e0;
+            font-size: 8.5pt;
+        }
+
+        .note-text {
+            font-size: 8pt;
+            font-style: italic;
+            color: #718096;
+            margin-bottom: 8px;
+        }
+
+        .words-block {
+            font-size: 9.5pt;
+            margin-top: 8px;
+            margin-bottom: 12px;
+        }
+
+        .terms-block {
+            font-size: 7.5pt;
+            color: #4a5568;
+            margin-top: 10px;
+            margin-bottom: 12px;
+            border-top: 1px dashed #cbd5e0;
+            padding-top: 6px;
+        }
+
+        .signatures-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 18px;
+            page-break-inside: avoid;
+        }
+        .signatures-table td {
+            width: 50%;
+            vertical-align: top;
+            font-size: 9pt;
+        }
+        .signatures-table td.right-align {
+            text-align: right;
+        }
+        .sig-space {
+            height: 35px;
+        }
+    </style>
+</head>
+<body>
+    {% include "pdf/_letterhead.html" %}
+    {% block content %}{% endblock %}
+</body>
+</html>

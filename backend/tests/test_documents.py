@@ -63,6 +63,7 @@ def test_generate_grn_pdf_service_and_serializer(default_facility, test_party, t
 
     grn.refresh_from_db()
     assert grn.pdf_file is not None
+    assert grn.pdf_file.read().startswith(b'%PDF')
 
     serializer = GRNOutputSerializer(grn)
     assert serializer.data['pdf_url'] == pdf_url
@@ -121,6 +122,7 @@ def test_generate_delivery_note_pdf_and_balance_after(default_facility, test_par
 
     posted_dn.refresh_from_db()
     assert posted_dn.pdf_file is not None
+    assert posted_dn.pdf_file.read().startswith(b'%PDF')
 
     serializer = DeliveryNoteOutputSerializer(posted_dn)
     assert serializer.data['pdf_url'] == pdf_url
@@ -215,3 +217,12 @@ def test_delivery_note_new_fields_roundtrip_api(admin_user, default_facility, te
 
     assert data["transporter"] == "Fast Cargo"
     assert data["lines"][0]["balance_after"] is None
+
+
+@pytest.mark.django_db
+def test_render_pdf_helper(default_facility):
+    from libs.pdf import render_pdf
+    pdf_bytes = render_pdf('pdf/base.html', {'facility': default_facility})
+    assert isinstance(pdf_bytes, bytes)
+    assert pdf_bytes.startswith(b'%PDF')
+

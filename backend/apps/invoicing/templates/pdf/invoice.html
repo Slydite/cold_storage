@@ -1,0 +1,79 @@
+{% extends "pdf/base.html" %}
+
+{% block title %}Tax Invoice - {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<table class="doc-header-table">
+    <tr>
+        <td style="width: 50%;">
+            <div style="font-size: 9pt;">
+                <strong>Document Status:</strong> {{ invoice.status }}
+            </div>
+        </td>
+        <td style="width: 50%;">
+            <div class="doc-title">TAX INVOICE</div>
+            <div class="doc-meta">
+                <strong>Invoice No:</strong> {{ invoice.invoice_number }}<br>
+                <strong>Date:</strong> {{ invoice.invoice_date|date:"Y-m-d" }}
+            </div>
+        </td>
+    </tr>
+</table>
+
+<div class="party-box">
+    <strong>Billed To:</strong><br>
+    <strong>{{ party.name }}</strong><br>
+    {% if party.address %}{{ party.address }}<br>{% endif %}
+    <!-- NOTE: party_gstin_snapshot is the legally-correct snapshot of party GSTIN at issue time; do NOT read live party.gstin directly for the tax invoice line. -->
+    <strong>GSTIN:</strong> {{ invoice.party_gstin_snapshot|default:"Not provided" }}
+    {% if invoice.rent_run %}
+    <br><strong>Billed Period:</strong> {{ invoice.rent_run.period_start|date:"Y-m-d" }} to {{ invoice.rent_run.period_end|date:"Y-m-d" }}
+    {% endif %}
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th class="center" style="width: 10%;">S.No.</th>
+            <th style="width: 65%;">Description</th>
+            <th class="right" style="width: 25%;">Amount (₹)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for line in invoice.lines.all %}
+        <tr>
+            <td class="center">{{ forloop.counter }}</td>
+            <td>{{ line.description }}</td>
+            <td class="right">₹{{ line.amount|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+        <tr style="border-top: 2px solid #cbd5e0;">
+            <td colspan="2" class="right"><strong>Subtotal</strong></td>
+            <td class="right">₹{{ invoice.subtotal|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td colspan="2" class="right">GST ({{ invoice.gst_rate }}%)</td>
+            <td class="right">₹{{ invoice.gst_amount|floatformat:2 }}</td>
+        </tr>
+        <tr class="total-row">
+            <td colspan="2" class="right"><strong>Total Amount</strong></td>
+            <td class="right"><strong>₹{{ invoice.total_amount|floatformat:2 }}</strong></td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="words-block">
+    <strong>Amount in Words:</strong> {{ amount_in_words }}
+</div>
+
+<table class="signatures-table">
+    <tr>
+        <td></td>
+        <td class="right-align">
+            <strong>For: {{ facility.name }}</strong>
+            <div class="sig-space"></div>
+            <strong>Authorised Signatory</strong>
+        </td>
+    </tr>
+</table>
+{% endblock %}
