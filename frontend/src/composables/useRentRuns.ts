@@ -1,7 +1,15 @@
 import { computed, type Ref, type ComputedRef } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { fetchRentRuns, fetchRentRun, createRentRun, postRentRun, cancelRentRun } from '../api/billing'
-import type { RentRunCreateInput } from '../api/billing'
+import {
+  fetchRentRuns,
+  fetchRentRun,
+  previewRentRun,
+  createRentRun,
+  postRentRun,
+  cancelRentRun,
+  generateRentRunPdf
+} from '../api/billing'
+import type { RentRunCreateInput, RentRunPreviewInput } from '../api/billing'
 
 export function useRentRunList(
   facilityId: Ref<number | undefined> | ComputedRef<number | undefined>,
@@ -30,6 +38,12 @@ export function useRentRunDetail(id: Ref<number | null> | ComputedRef<number | n
   })
 }
 
+export function usePreviewRentRun() {
+  return useMutation({
+    mutationFn: (body: RentRunPreviewInput) => previewRentRun(body)
+  })
+}
+
 export function useCreateRentRun() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -54,6 +68,16 @@ export function useCancelRentRun() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => cancelRentRun(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rent-runs'] })
+    }
+  })
+}
+
+export function useGenerateRentRunPdf() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => generateRentRunPdf(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rent-runs'] })
     }

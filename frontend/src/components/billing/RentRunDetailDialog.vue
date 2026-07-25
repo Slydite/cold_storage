@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import { Download } from 'lucide-vue-next'
+import { Download, Printer } from 'lucide-vue-next'
+import { useToast } from 'primevue/usetoast'
 import { formatCurrency, formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
+import { useGenerateRentRunPdf } from '../../composables/useRentRuns'
 import type { RentRunOutput } from '../../api/billing'
 
 interface Props {
@@ -16,10 +19,46 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
+  pdfGenerated: [updatedRun: RentRunOutput]
 }>()
 
+const toast = useToast()
+const generatePdfMutation = useGenerateRentRunPdf()
+const activePdfUrl = ref<string | null>(null)
+
 const handleClose = () => {
+  activePdfUrl.value = null
   emit('update:visible', false)
+}
+
+function resolvePdfUrl(url: string | null): string {
+  if (!url) return '#'
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return url.startsWith('/') ? url : `/${url}`
+}
+
+const currentPdfUrl = computed(() => activePdfUrl.value || props.rentRun?.pdf_url || null)
+
+const handleGeneratePdf = async () => {
+  if (!props.rentRun) return
+  try {
+    const updated = await generatePdfMutation.mutateAsync(props.rentRun.id)
+    activePdfUrl.value = updated.pdf_url
+    toast.add({
+      severity: 'success',
+      summary: 'PDF Generated',
+      detail: `PDF ready for Rent Run #${updated.id}`,
+      life: 4000
+    })
+    emit('pdfGenerated', updated)
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'PDF Generation Failed',
+      detail: err instanceof Error ? err.message : 'Failed to generate PDF',
+      life: 5000
+    })
+  }
 }
 
 const handleExportLines = () => {
@@ -54,7 +93,7 @@ const handleExportLines = () => {
     @update:visible="emit('update:visible', $event)"
     modal
     :header="props.rentRun ? `Rent Run Details #${props.rentRun.id}` : 'Rent Run Details'"
-    :style="{ width: '820px', maxWidth: '95vw' }"
+    :style="{ width: '840px', maxWidth: '95vw' }"
     :dismissableMask="true"
     @hide="handleClose"
   >
@@ -88,13 +127,66 @@ const handleExportLines = () => {
         </div>
       </div>
 
+      <!-- Audit Parameters Panel -->
+      <div class="audit-params-card">
+        <div class="params-header">
+          <span class="params-title">Run Parameters</span>
+        </div>
+        <div class="params-grid">
+          <div class="param-chip">
+            <span class="param-label">Party Scope:</span>
+            <span class="param-val">{{ props.rentRun.party_name || 'All Parties' }}</span>
+          </div>
+          <div class="param-chip">
+            <span class="param-label">Commodity Scope:</span>
+            <span class="param-val">{{ props.rentRun.commodity_name || 'All Commodities' }}</span>
+          </div>
+          <div class="param-chip">
+            <span class="param-label">Chamber Scope:</span>
+            <span class="param-val">{{ props.rentRun.chamber || 'All Chambers' }}</span>
+          </div>
+          <div class="param-chip">
+            <span class="param-label">Min Days Rule:</span>
+            <span class="param-val">{{ props.rentRun.min_billing_days ?? 0 }} day(s)</span>
+          </div>
+        </div>
+        <div v-if="props.rentRun.notes" class="notes-row">
+          <span class="param-label">Auditor Notes:</span>
+          <span class="notes-val">{{ props.rentRun.notes }}</span>
+        </div>
+      </div>
+
       <!-- Lines Section -->
       <div class="lines-header">
         <h4 class="lines-title">Line Items Billed ({{ props.rentRun.lines ? props.rentRun.lines.length : 0 }})</h4>
-        <button class="btn-outlined btn-sm" type="button" @click="handleExportLines">
-          <Download :size="14" />
-          <span>Export Lines CSV</span>
-        </button>
+        <div class="header-action-group">
+          <a
+            v-if="currentPdfUrl"
+            :href="resolvePdfUrl(currentPdfUrl)"
+            target="_blank"
+            download
+            class="btn-outlined btn-sm"
+            title="Download PDF statement"
+          >
+            <Download :size="14" />
+            <span>Download PDF</span>
+          </a>
+          <button
+            v-else
+            class="btn-outlined btn-sm"
+            type="button"
+            :disabled="generatePdfMutation.isPending.value"
+            @click="handleGeneratePdf"
+          >
+            <Printer :size="14" />
+            <span>{{ generatePdfMutation.isPending.value ? 'Generating...' : 'Generate PDF' }}</span>
+          </button>
+
+          <button class="btn-outlined btn-sm" type="button" @click="handleExportLines">
+            <Download :size="14" />
+            <span>Export Lines CSV</span>
+          </button>
+        </div>
       </div>
 
       <div class="table-card">
@@ -200,6 +292,64 @@ const handleExportLines = () => {
   color: var(--accent-primary);
 }
 
+.audit-params-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.params-header {
+  border-bottom: 1px dashed var(--border-subtle);
+  padding-bottom: 6px;
+}
+
+.params-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.params-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.param-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.param-label {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.param-val {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.notes-row {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.notes-val {
+  color: var(--text-primary);
+  font-style: italic;
+}
+
 .lines-header {
   display: flex;
   align-items: center;
@@ -213,9 +363,18 @@ const handleExportLines = () => {
   color: var(--text-primary);
 }
 
+.header-action-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .btn-sm {
   padding: 6px 12px;
   font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .line-amount {
@@ -232,6 +391,9 @@ const handleExportLines = () => {
 
 @media (max-width: 640px) {
   .summary-card {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .params-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }

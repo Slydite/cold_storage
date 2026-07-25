@@ -18,7 +18,8 @@ import {
   XCircle,
   AlertCircle,
   RefreshCw,
-  Receipt
+  Receipt,
+  Printer
 } from 'lucide-vue-next'
 import { formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
@@ -30,6 +31,7 @@ interface Props {
   loading: boolean
   error: boolean
   errorDetail?: string
+  generatingPdfId?: number | null
 }
 
 const props = defineProps<Props>()
@@ -40,6 +42,7 @@ const emit = defineEmits<{
   view: [rentRun: RentRunOutput]
   post: [id: number]
   cancel: [id: number]
+  generatePdf: [id: number]
 }>()
 
 const confirm = useConfirm()
@@ -89,6 +92,12 @@ function handleClearAll() {
   statusFilter.value = 'all'
 }
 
+function resolvePdfUrl(url: string | null): string {
+  if (!url) return '#'
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return url.startsWith('/') ? url : `/${url}`
+}
+
 const filteredRentRuns = computed(() => {
   let list = props.rentRuns
   if (statusFilter.value !== 'all') {
@@ -102,6 +111,7 @@ const filteredRentRuns = computed(() => {
         r.period_start.includes(q) ||
         r.period_end.includes(q) ||
         r.run_date.includes(q) ||
+        (r.party_name && r.party_name.toLowerCase().includes(q)) ||
         (r.status && r.status.toLowerCase().includes(q))
     )
   }
@@ -109,12 +119,14 @@ const filteredRentRuns = computed(() => {
 })
 
 const handleExport = () => {
-  const headers = ['Rent Run ID', 'Period Start', 'Period End', 'Execution Date', 'Lots Count', 'Total Amount (₹)', 'Status']
+  const headers = ['Rent Run ID', 'Party', 'Period Start', 'Period End', 'Execution Date', 'Min Days', 'Lots Count', 'Total Amount (₹)', 'Status']
   const rows = filteredRentRuns.value.map((r) => [
     `#${r.id}`,
+    r.party_name || 'All Parties',
     r.period_start,
     r.period_end,
     r.run_date,
+    r.min_billing_days ?? 0,
     r.lines ? r.lines.length : 0,
     formatCurrency(Number(r.total_amount)),
     r.status || '-'
@@ -173,7 +185,7 @@ const handleCancelConfirm = (id: number) => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search period, date, status..."
+            placeholder="Search period, party, date, status..."
             class="custom-search-input"
           />
         </div>
@@ -270,6 +282,12 @@ const handleCancelConfirm = (id: number) => {
           </template>
         </Column>
 
+        <Column field="party_name" header="Party" sortable>
+          <template #body="{ data }">
+            <span class="party-name">{{ data.party_name || 'All Parties' }}</span>
+          </template>
+        </Column>
+
         <Column field="period_start" header="Billing Period" sortable>
           <template #body="{ data }">
             <span class="period-text">{{ data.period_start }} &rarr; {{ data.period_end }}</span>
@@ -287,6 +305,12 @@ const handleCancelConfirm = (id: number) => {
               size="small"
               showClear
             />
+          </template>
+        </Column>
+
+        <Column field="min_billing_days" header="Min Days" sortable>
+          <template #body="{ data }">
+            <span class="num-val">{{ data.min_billing_days ?? 0 }} d</span>
           </template>
         </Column>
 
@@ -341,6 +365,27 @@ const handleCancelConfirm = (id: number) => {
               >
                 <Eye :size="16" />
               </button>
+              <a
+                v-if="data.pdf_url"
+                :href="resolvePdfUrl(data.pdf_url)"
+                target="_blank"
+                download
+                class="icon-btn"
+                title="Download PDF"
+              >
+                <Download :size="16" />
+              </a>
+              <button
+                v-else
+                class="icon-btn"
+                title="Generate PDF"
+                type="button"
+                :disabled="props.generatingPdfId === data.id"
+                @click="emit('generatePdf', data.id)"
+              >
+                <Printer :size="16" />
+              </button>
+
               <button
                 v-if="data.status === 'DRAFT'"
                 class="icon-btn"

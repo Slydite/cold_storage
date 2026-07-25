@@ -5,20 +5,22 @@ import type { RateCardInput } from '../api/billing'
 
 export function useRateCardList(
   facilityId: Ref<number | undefined> | ComputedRef<number | undefined>,
-  filters?: Ref<{ commodityId?: number; isActive?: boolean }> | ComputedRef<{ commodityId?: number; isActive?: boolean }>
+  filters?: Ref<{ commodityId?: number; isActive?: boolean; partyId?: number | null }> | ComputedRef<{ commodityId?: number; isActive?: boolean; partyId?: number | null }>
 ) {
   return useQuery({
     queryKey: computed(() => [
       'rate-cards',
       facilityId.value,
       filters?.value?.commodityId,
-      filters?.value?.isActive
+      filters?.value?.isActive,
+      filters?.value?.partyId
     ]),
     queryFn: () =>
       fetchRateCards({
         facilityId: facilityId.value!,
         commodityId: filters?.value?.commodityId,
-        isActive: filters?.value?.isActive
+        isActive: filters?.value?.isActive,
+        partyId: filters?.value?.partyId
       }),
     enabled: computed(() => !!facilityId.value)
   })

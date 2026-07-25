@@ -38,6 +38,7 @@ const activeOptions = [
 function buildDefaultFilters() {
   return {
     commodity_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
     weight_category_display: { value: null, matchMode: FilterMatchMode.CONTAINS }
   }
 }
@@ -77,17 +78,20 @@ const filteredRateCards = computed(() => {
       (r) =>
         r.commodity_name.toLowerCase().includes(q) ||
         r.commodity_code.toLowerCase().includes(q) ||
-        r.weight_category_display.toLowerCase().includes(q)
+        r.weight_category_display.toLowerCase().includes(q) ||
+        (r.party_name && r.party_name.toLowerCase().includes(q)) ||
+        (!r.party_name && 'default'.includes(q))
     )
   }
   return list
 })
 
 const handleExport = () => {
-  const headers = ['Commodity', 'Code', 'Weight Category', 'Rate (₹/bag/month)', 'Effective From', 'Active']
+  const headers = ['Commodity', 'Code', 'Applies To', 'Weight Category', 'Rate (₹/bag/month)', 'Effective From', 'Active']
   const rows = filteredRateCards.value.map((rc) => [
     rc.commodity_name,
     rc.commodity_code,
+    rc.party_name || 'Default',
     rc.weight_category_display,
     formatCurrency(Number(rc.rate_per_bag_per_month)),
     rc.effective_from,
@@ -107,7 +111,7 @@ const handleExport = () => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search commodity or category..."
+            placeholder="Search commodity, party, or category..."
             class="custom-search-input"
           />
         </div>
@@ -209,6 +213,23 @@ const handleExport = () => {
               type="text"
               @input="filterCallback()"
               placeholder="Filter commodity..."
+              class="p-column-filter"
+              size="small"
+            />
+          </template>
+        </Column>
+
+        <Column field="party_name" header="Applies To" sortable>
+          <template #body="{ data }">
+            <span v-if="data.party_name" class="party-name">{{ data.party_name }}</span>
+            <span v-else class="status-pill info">Default (All Parties)</span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter party..."
               class="p-column-filter"
               size="small"
             />

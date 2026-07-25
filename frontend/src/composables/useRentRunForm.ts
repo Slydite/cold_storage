@@ -1,10 +1,10 @@
-import { type Ref, type ComputedRef } from 'vue'
+import { ref, type Ref, type ComputedRef } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
 import { useToast } from 'primevue/usetoast'
-import { useCreateRentRun } from './useRentRuns'
-import type { RentRunCreateInput, RentRunOutput } from '../api/billing'
+import { useCreateRentRun, usePreviewRentRun } from './useRentRuns'
+import type { RentRunCreateInput, RentRunOutput, RentRunPreviewInput, RentRunPreviewOutput } from '../api/billing'
 
 const rentRunFormSchema = z
   .object({
@@ -15,7 +15,12 @@ const rentRunFormSchema = z
     period_end: z
       .date()
       .nullable()
-      .refine((v): v is Date => v != null, { message: 'Period end date is required' })
+      .refine((v): v is Date => v != null, { message: 'Period end date is required' }),
+    party_id: z.number().nullable().optional(),
+    commodity_id: z.number().nullable().optional(),
+    chamber: z.string().optional(),
+    min_billing_days: z.number().min(0, { message: 'Minimum days cannot be negative' }).default(0),
+    notes: z.string().optional()
   })
   .refine(
     (data) => {
@@ -43,6 +48,11 @@ export function useRentRunForm(
 ) {
   const toast = useToast()
   const createRentRunMutation = useCreateRentRun()
+  const previewRentRunMutation = usePreviewRentRun()
+
+  const step = ref<1 | 2>(1)
+  const previewData = ref<RentRunPreviewOutput | null>(null)
+  const previewError = ref<string | null>(null)
 
   const now = new Date()
   const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -52,18 +62,31 @@ export function useRentRunForm(
     validationSchema: toTypedSchema(rentRunFormSchema),
     initialValues: {
       period_start: defaultStart,
-      period_end: defaultEnd
+      period_end: defaultEnd,
+      party_id: null as number | null,
+      commodity_id: null as number | null,
+      chamber: '',
+      min_billing_days: 0,
+      notes: ''
     }
   })
 
   const [period_start, periodStartProps] = defineField('period_start')
   const [period_end, periodEndProps] = defineField('period_end')
+  const [party_id, partyIdProps] = defineField('party_id')
+  const [commodity_id, commodityIdProps] = defineField('commodity_id')
+  const [chamber, chamberProps] = defineField('chamber')
+  const [min_billing_days, minBillingDaysProps] = defineField('min_billing_days')
+  const [notes, notesProps] = defineField('notes')
 
   const handleResetForm = () => {
     resetForm()
+    step.value = 1
+    previewData.value = null
+    previewError.value = null
   }
 
-  const submitForm = async () => {
+  const handlePreview = handleSubmit(async (formValues) => {
     if (!facilityId.value) {
       toast.add({
         severity: 'error',
@@ -74,11 +97,60 @@ export function useRentRunForm(
       return
     }
 
+    const payload: RentRunPreviewInput = {
+      facility_id: facilityId.value,
+      period_start: formatDateToYMD(formValues.period_start),
+      period_end: formatDateToYMD(formValues.period_end),
+      party_id: formValues.party_id ?? undefined,
+      commodity_id: formValues.commodity_id ?? undefined,
+      chamber: formValues.chamber && formValues.chamber.trim() ? formValues.chamber.trim() : undefined,
+      min_billing_days: formValues.min_billing_days ?? 0
+    }
+
+    previewError.value = null
+    try {
+      const res = await previewRentRunMutation.mutateAsync(payload)
+      previewData.value = res
+      step.value = 2
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to preview rent run'
+      previewError.value = msg
+      toast.add({
+        severity: 'error',
+        summary: 'Preview Failed',
+        detail: msg,
+        life: 5000
+      })
+    }
+  })
+
+  const backToParameters = () => {
+    step.value = 1
+  }
+
+  const submitForm = async () => {
+    if (!facilityId.value) return
+    if (!previewData.value) return
+    if (previewData.value.missing_rate_cards && previewData.value.missing_rate_cards.length > 0) {
+      toast.add({
+        severity: 'error',
+        summary: 'Cannot Create Rent Run',
+        detail: 'There are missing rate cards that must be added first.',
+        life: 5000
+      })
+      return
+    }
+
     const submitFn = handleSubmit(async (formValues) => {
       const payload: RentRunCreateInput = {
         facility_id: facilityId.value!,
         period_start: formatDateToYMD(formValues.period_start),
-        period_end: formatDateToYMD(formValues.period_end)
+        period_end: formatDateToYMD(formValues.period_end),
+        party_id: formValues.party_id ?? undefined,
+        commodity_id: formValues.commodity_id ?? undefined,
+        chamber: formValues.chamber && formValues.chamber.trim() ? formValues.chamber.trim() : undefined,
+        min_billing_days: formValues.min_billing_days ?? 0,
+        notes: formValues.notes && formValues.notes.trim() ? formValues.notes.trim() : undefined
       }
 
       try {
@@ -104,7 +176,6 @@ export function useRentRunForm(
           onSuccessCallback(result)
         }
       } catch (err: unknown) {
-        // Surface the backend's detail message verbatim
         const msg = err instanceof Error ? err.message : 'Failed to execute rent run'
         toast.add({
           severity: 'error',
@@ -123,9 +194,25 @@ export function useRentRunForm(
     periodStartProps,
     period_end,
     periodEndProps,
+    party_id,
+    partyIdProps,
+    commodity_id,
+    commodityIdProps,
+    chamber,
+    chamberProps,
+    min_billing_days,
+    minBillingDaysProps,
+    notes,
+    notesProps,
+    step,
+    previewData,
+    previewError,
+    isPreviewing: previewRentRunMutation.isPending,
+    isSubmitting: createRentRunMutation.isPending,
+    handlePreview,
+    backToParameters,
     errors,
     submitForm,
-    isSubmitting: createRentRunMutation.isPending,
     resetForm: handleResetForm
   }
 }

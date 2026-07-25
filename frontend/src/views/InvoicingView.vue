@@ -11,6 +11,8 @@ import {
 import InvoiceTable from '../components/invoicing/InvoiceTable.vue'
 import GenerateInvoiceDialog from '../components/invoicing/GenerateInvoiceDialog.vue'
 
+import type { InvoiceOutput } from '../api/invoicing'
+
 const toast = useToast()
 const { facilityId } = useFacility()
 
@@ -106,12 +108,15 @@ async function handleGeneratePdf(id: number) {
   }
 }
 
-function handleGenerateSuccess(count: number, partyNames: string[]) {
+function handleGenerateSuccess(createdInvoices: InvoiceOutput[]) {
+  const count = createdInvoices.length
+  const numbers = createdInvoices.map((inv) => inv.invoice_number).join(', ')
+  const partyNames = Array.from(new Set(createdInvoices.map((inv) => inv.party_name).filter(Boolean))).join(', ')
   toast.add({
     severity: 'success',
     summary: 'Invoices Generated',
-    detail: `Created ${count} invoice(s) for ${partyNames.join(', ')}.`,
-    life: 5000
+    detail: `Created ${count} invoice(s) [${numbers}] for ${partyNames}.`,
+    life: 6000
   })
 }
 

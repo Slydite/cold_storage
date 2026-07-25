@@ -1,7 +1,7 @@
-import { facilitiesList } from './generated/sdk.gen'
-import type { FacilityOutput } from './generated/types.gen'
+import { facilitiesList, facilitiesCreate, facilitiesUpdate } from './generated/sdk.gen'
+import type { FacilityOutput, FacilityInput } from './generated/types.gen'
 
-export type { FacilityOutput }
+export type { FacilityOutput, FacilityInput }
 
 function extractErrorMessage(error: unknown, fallback: string): string {
   if (typeof error === 'object' && error !== null) {
@@ -25,4 +25,29 @@ export async function fetchFacilities(): Promise<FacilityOutput[]> {
     throw new Error(extractErrorMessage(res.error, 'Failed to fetch facilities'))
   }
   return res.data ?? []
+}
+
+export async function createFacility(body: FacilityInput): Promise<FacilityOutput> {
+  const res = await facilitiesCreate({ body })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to create facility'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from facility creation')
+  }
+  return res.data
+}
+
+export async function updateFacility(id: number, body: FacilityInput): Promise<FacilityOutput> {
+  const res = await facilitiesUpdate({
+    path: { id },
+    body
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to update facility'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from facility update')
+  }
+  return res.data
 }

@@ -5,7 +5,9 @@ import {
   rentRunsRetrieve,
   rentRunsCreate,
   rentRunsPostCreate,
-  rentRunsCancelCreate
+  rentRunsCancelCreate,
+  rentRunsPreviewCreate,
+  rentRunsGeneratePdfCreate
 } from './generated/sdk.gen'
 import type {
   RateCardOutput,
@@ -13,6 +15,10 @@ import type {
   RentRunOutput,
   RentRunCreateInput,
   RentRunLineOutput,
+  RentRunPreviewInput,
+  RentRunPreviewOutput,
+  RentRunPreviewLine,
+  MissingRateCard,
   StatusEnum,
   WeightCategoryEnum
 } from './generated/types.gen'
@@ -23,6 +29,10 @@ export type {
   RentRunOutput,
   RentRunCreateInput,
   RentRunLineOutput,
+  RentRunPreviewInput,
+  RentRunPreviewOutput,
+  RentRunPreviewLine,
+  MissingRateCard,
   StatusEnum,
   WeightCategoryEnum
 }
@@ -47,12 +57,14 @@ export async function fetchRateCards(params: {
   facilityId: number
   commodityId?: number
   isActive?: boolean
+  partyId?: number | null
 }): Promise<RateCardOutput[]> {
   const res = await rateCardsList({
     query: {
       facility_id: params.facilityId,
       commodity_id: params.commodityId,
-      is_active: params.isActive
+      is_active: params.isActive,
+      party_id: params.partyId !== undefined && params.partyId !== null ? String(params.partyId) : undefined
     }
   })
   if (res.error) {
@@ -103,6 +115,19 @@ export async function fetchRentRun(id: number): Promise<RentRunOutput> {
   return res.data
 }
 
+export async function previewRentRun(body: RentRunPreviewInput): Promise<RentRunPreviewOutput> {
+  const res = await rentRunsPreviewCreate({
+    body
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to preview rent run'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from rent run preview')
+  }
+  return res.data
+}
+
 export async function createRentRun(body: RentRunCreateInput): Promise<RentRunOutput> {
   const res = await rentRunsCreate({
     body
@@ -138,6 +163,19 @@ export async function cancelRentRun(id: number): Promise<RentRunOutput> {
   }
   if (!res.data) {
     throw new Error('No data returned from cancelling rent run')
+  }
+  return res.data
+}
+
+export async function generateRentRunPdf(id: number): Promise<RentRunOutput> {
+  const res = await rentRunsGeneratePdfCreate({
+    path: { id }
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to generate PDF for rent run'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from PDF generation')
   }
   return res.data
 }

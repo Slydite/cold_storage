@@ -7,6 +7,7 @@ import DatePicker from 'primevue/datepicker'
 import Checkbox from 'primevue/checkbox'
 import { useQuery } from '@tanstack/vue-query'
 import { fetchCommodities } from '../../api/commodity'
+import { fetchParties } from '../../api/party'
 import { useRateCardForm } from '../../composables/useRateCardForm'
 
 interface Props {
@@ -29,7 +30,24 @@ const commoditiesQuery = useQuery({
   enabled: computed(() => !!props.facilityId && props.visible)
 })
 
+const partiesQuery = useQuery({
+  queryKey: computed(() => ['parties', props.facilityId]),
+  queryFn: () => fetchParties({ facilityId: props.facilityId! }),
+  enabled: computed(() => !!props.facilityId && props.visible)
+})
+
 const commodities = computed(() => commoditiesQuery.data.value || [])
+
+const partyOptions = computed(() => {
+  const list = (partiesQuery.data.value || []).map((p) => ({
+    label: `${p.name} (${p.code})`,
+    value: p.id
+  }))
+  return [
+    { label: 'Default rate (all parties)', value: null },
+    ...list
+  ]
+})
 
 const weightCategoryOptions = [
   { label: '20 kg Bag (KG_20)', value: 'KG_20' },
@@ -40,6 +58,8 @@ const weightCategoryOptions = [
 const {
   commodity_id,
   commodityIdProps,
+  party_id,
+  partyIdProps,
   weight_category,
   weightCategoryProps,
   rate_per_bag_per_month,
@@ -73,7 +93,7 @@ const handleSave = () => {
     @update:visible="emit('update:visible', $event)"
     modal
     header="Create Rate Card"
-    :style="{ width: '460px', maxWidth: '95vw' }"
+    :style="{ width: '480px', maxWidth: '95vw' }"
     :dismissableMask="true"
     @hide="handleClose"
   >
@@ -92,6 +112,23 @@ const handleSave = () => {
           :invalid="!!errors.commodity_id"
         />
         <small v-if="errors.commodity_id" class="field-error">{{ errors.commodity_id }}</small>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Applies To Party</label>
+        <Select
+          v-model="party_id"
+          v-bind="partyIdProps"
+          :options="partyOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select Party or Default"
+          :loading="partiesQuery.isLoading.value"
+          class="w-full"
+        />
+        <small class="field-hint">
+          A party-specific rate always overrides the default rate for that party, even if the default is newer.
+        </small>
       </div>
 
       <div class="form-group">
@@ -198,6 +235,12 @@ const handleSave = () => {
 .field-error {
   color: var(--status-danger-color);
   font-size: 11.5px;
+}
+
+.field-hint {
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  line-height: 1.3;
 }
 
 .form-group-checkbox {

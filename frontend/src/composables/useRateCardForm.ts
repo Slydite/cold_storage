@@ -11,6 +11,7 @@ const rateCardFormSchema = z.object({
     .number()
     .nullable()
     .refine((v): v is number => v != null && v > 0, { message: 'Commodity is required' }),
+  party_id: z.number().nullable().optional(),
   weight_category: z
     .enum(['KG_20', 'KG_50', 'OTHER'] as const, {
       message: 'Weight category is required'
@@ -44,6 +45,7 @@ export function useRateCardForm(
     validationSchema: toTypedSchema(rateCardFormSchema),
     initialValues: {
       commodity_id: null as number | null,
+      party_id: null as number | null,
       weight_category: 'KG_50' as WeightCategoryEnum,
       rate_per_bag_per_month: null as number | null,
       effective_from: new Date(),
@@ -52,6 +54,7 @@ export function useRateCardForm(
   })
 
   const [commodity_id, commodityIdProps] = defineField('commodity_id')
+  const [party_id, partyIdProps] = defineField('party_id')
   const [weight_category, weightCategoryProps] = defineField('weight_category')
   const [rate_per_bag_per_month, ratePerBagProps] = defineField('rate_per_bag_per_month')
   const [effective_from, effectiveFromProps] = defineField('effective_from')
@@ -78,6 +81,7 @@ export function useRateCardForm(
       const payload: RateCardInput = {
         facility_id: facilityId.value!,
         commodity_id: formValues.commodity_id,
+        party_id: formValues.party_id ?? null,
         weight_category: formValues.weight_category,
         rate_per_bag_per_month: String(formValues.rate_per_bag_per_month),
         effective_from: formattedDate,
@@ -113,6 +117,8 @@ export function useRateCardForm(
   return {
     commodity_id,
     commodityIdProps,
+    party_id,
+    partyIdProps,
     weight_category,
     weightCategoryProps,
     rate_per_bag_per_month,

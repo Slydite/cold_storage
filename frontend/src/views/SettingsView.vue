@@ -1,74 +1,160 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
-import { Save } from 'lucide-vue-next'
-import { useToast } from 'primevue/usetoast'
+import Tabs from 'primevue/tabs'
+import TabList from 'primevue/tablist'
+import Tab from 'primevue/tab'
+import TabPanels from 'primevue/tabpanels'
+import TabPanel from 'primevue/tabpanel'
+import { Building, Layers, Package, Users } from 'lucide-vue-next'
 
-const toast = useToast()
-
-const facilityName = ref('Main Cold Storage')
-const gstin = ref('24AAAAA0000A1Z5')
-const address = ref('Plot 42, Cold Chain Logistics Park, GIDC Estate')
-const defaultRateUnit = ref('MT')
-
-const saveSettings = () => {
-  toast.add({ severity: 'success', summary: 'Settings Saved', detail: 'Facility configuration updated successfully.', life: 3000 })
-}
+import FacilityForm from '../components/settings/FacilityForm.vue'
+import FacilityListTable from '../components/settings/FacilityListTable.vue'
+import FloorManager from '../components/settings/FloorManager.vue'
+import ChamberManager from '../components/settings/ChamberManager.vue'
+import CommodityManager from '../components/settings/CommodityManager.vue'
+import UserManager from '../components/settings/UserManager.vue'
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="settings-card">
-      <h3 class="card-title">Facility Configuration</h3>
-      <p class="card-desc">Manage multi-chamber parameters, GSTIN details, and default billing units.</p>
+  <div class="page-container settings-page">
+    <header class="settings-header">
+      <h2 class="page-title">Settings & System Management</h2>
+      <p class="page-subtitle">Configure working facilities, floors, chambers, commodities, and user accounts.</p>
+    </header>
 
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Facility Name</label>
-          <InputText v-model="facilityName" class="w-full" />
-        </div>
+    <Tabs value="facility" class="settings-tabs">
+      <TabList class="custom-tab-list">
+        <Tab value="facility" class="tab-item">
+          <Building :size="16" />
+          <span>Facility Management</span>
+        </Tab>
+        <Tab value="locations" class="tab-item">
+          <Layers :size="16" />
+          <span>Floors & Chambers</span>
+        </Tab>
+        <Tab value="commodities" class="tab-item">
+          <Package :size="16" />
+          <span>Commodities</span>
+        </Tab>
+        <Tab value="users" class="tab-item">
+          <Users :size="16" />
+          <span>User Accounts</span>
+        </Tab>
+      </TabList>
 
-        <div class="form-group">
-          <label class="form-label">GSTIN Number</label>
-          <InputText v-model="gstin" class="w-full" />
-        </div>
+      <TabPanels class="custom-tab-panels">
+        <TabPanel value="facility">
+          <div class="facility-tab-content">
+            <FacilityForm />
+            <FacilityListTable />
+          </div>
+        </TabPanel>
 
-        <div class="form-group span-2">
-          <label class="form-label">Facility Address</label>
-          <InputText v-model="address" class="w-full" />
-        </div>
+        <TabPanel value="locations">
+          <div class="locations-tab-content">
+            <FloorManager />
+            <ChamberManager />
+          </div>
+        </TabPanel>
 
-        <div class="form-group">
-          <label class="form-label">Default Rate Unit</label>
-          <Select v-model="defaultRateUnit" :options="['MT', 'Bag', 'Box', 'Kg']" class="w-full" />
-        </div>
-      </div>
+        <TabPanel value="commodities">
+          <CommodityManager />
+        </TabPanel>
 
-      <div class="actions-row">
-        <button class="btn-primary" @click="saveSettings">
-          <Save :size="16" />
-          <span>Save Settings</span>
-        </button>
-      </div>
-    </div>
+        <TabPanel value="users">
+          <UserManager />
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   </div>
 </template>
 
 <style scoped>
-.page-container { display: flex; flex-direction: column; gap: 16px; }
-.settings-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 24px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px; max-width: 800px; }
-.card-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
-.card-desc { font-size: 12.5px; color: var(--text-secondary); }
-.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 8px; }
-.span-2 { grid-column: span 2; }
-@media (max-width: 640px) {
-  .form-grid { grid-template-columns: 1fr; }
-  .span-2 { grid-column: span 1; }
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
-.form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
-.w-full { width: 100%; }
-.actions-row { display: flex; justify-content: flex-end; margin-top: 12px; }
-.btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 10px; background-color: var(--accent-primary); color: #ffffff; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+.settings-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.page-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.settings-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.custom-tab-list {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: var(--shadow-card);
+  overflow-x: auto;
+}
+
+.tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.tab-item:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-hover);
+}
+
+.tab-item[aria-selected="true"],
+.tab-item.p-tab-active {
+  color: #ffffff;
+  background: var(--accent-primary);
+}
+
+.custom-tab-panels {
+  padding: 0;
+  background: transparent;
+}
+
+.facility-tab-content,
+.locations-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 640px) {
+  .custom-tab-list {
+    padding: 4px;
+  }
+  .tab-item {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+}
 </style>
