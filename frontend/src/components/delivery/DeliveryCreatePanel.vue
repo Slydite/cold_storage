@@ -27,14 +27,11 @@ const confirm = useConfirm()
 
 const facilityIdRef = computed(() => props.facilityId)
 
-// Fetch in-stock lots for the facility (and filtered by selected party)
-const partyIdRef = computed<number | undefined>(() => party_id.value ?? undefined)
-
+// Fetch in-stock lots for the facility
 const lotsQuery = useLotList(
   facilityIdRef,
   computed(() => ({
-    inStockOnly: true,
-    partyId: partyIdRef.value
+    inStockOnly: true
   }))
 )
 
@@ -269,7 +266,6 @@ const handleSaveAndPost = () => {
             </tbody>
           </table>
         </div>
-        <small v-if="typeof errors.lines === 'string'" class="field-error">{{ errors.lines }}</small>
 
         <button class="btn-outlined add-item-btn" type="button" @click="addLineRow">
           <Plus :size="15" />

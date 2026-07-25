@@ -1,4 +1,4 @@
-import { computed, type Ref, type ComputedRef } from 'vue'
+import { ref, computed, type Ref, type ComputedRef } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
@@ -29,8 +29,12 @@ const deliveryNoteFormSchema = z.object({
     .refine((v): v is Date => v != null, { message: 'Dispatch date is required' }),
   vehicle_number: z.string().optional(),
   driver_name: z.string().optional(),
-  remarks: z.string().optional(),
-  lines: z.array(lineItemSchema).min(1, 'At least one line item is required')
+  remarks: z.string().optional()
+})
+
+const createDefaultLine = (): FormDeliveryLine => ({
+  lot_id: null,
+  qty: 1
 })
 
 export function useDeliveryNoteForm(
@@ -41,20 +45,14 @@ export function useDeliveryNoteForm(
   const toast = useToast()
   const createMutation = useCreateDeliveryNote()
 
-  const { handleSubmit, errors, defineField, values, resetForm, setFieldValue } = useForm({
+  const { handleSubmit, errors, defineField, resetForm } = useForm({
     validationSchema: toTypedSchema(deliveryNoteFormSchema),
     initialValues: {
       party_id: null,
       dispatch_date: new Date(),
       vehicle_number: '',
       driver_name: '',
-      remarks: '',
-      lines: [
-        {
-          lot_id: null,
-          qty: 1
-        }
-      ]
+      remarks: ''
     }
   })
 
@@ -64,27 +62,22 @@ export function useDeliveryNoteForm(
   const [driver_name, driverNameProps] = defineField('driver_name')
   const [remarks, remarksProps] = defineField('remarks')
 
-  const lines = computed<FormDeliveryLine[]>(() => values.lines || [])
+  const lines = ref<FormDeliveryLine[]>([createDefaultLine()])
 
   const addLineRow = () => {
-    const current = values.lines ? [...values.lines] : []
-    current.push({
+    lines.value.push({
       lot_id: null,
       qty: 1
     })
-    setFieldValue('lines', current)
   }
 
   const removeLineRow = (index: number) => {
-    if (!values.lines || values.lines.length <= 1) return
-    const current = [...values.lines]
-    current.splice(index, 1)
-    setFieldValue('lines', current)
+    if (lines.value.length <= 1) return
+    lines.value.splice(index, 1)
   }
 
   const totalQty = computed(() => {
-    if (!values.lines) return 0
-    return values.lines.reduce((sum, line) => sum + (line?.qty || 0), 0)
+    return lines.value.reduce((sum, line) => sum + (line?.qty || 0), 0)
   })
 
   const getLotAvailable = (lotId: number | null): number | null => {
@@ -94,7 +87,7 @@ export function useDeliveryNoteForm(
   }
 
   const getLineQtyError = (index: number): string | null => {
-    const line = values.lines?.[index]
+    const line = lines.value[index]
     if (!line || line.lot_id == null) return null
     const avail = getLotAvailable(line.lot_id)
     if (avail !== null && line.qty > avail) {
@@ -104,9 +97,13 @@ export function useDeliveryNoteForm(
   }
 
   const hasQtyExceeded = computed(() => {
-    if (!values.lines) return false
-    return values.lines.some((_, idx) => getLineQtyError(idx) !== null)
+    return lines.value.some((_, idx) => getLineQtyError(idx) !== null)
   })
+
+  const handleResetForm = () => {
+    resetForm()
+    lines.value = [createDefaultLine()]
+  }
 
   const submitForm = async (targetStatus: 'DRAFT' | 'POSTED') => {
     if (!facilityId.value) {
@@ -130,8 +127,21 @@ export function useDeliveryNoteForm(
     }
 
     const submitFn = handleSubmit(async (formValues) => {
-      for (let i = 0; i < formValues.lines.length; i++) {
-        const line: ValidatedDeliveryLine | undefined = formValues.lines[i]
+      const parsed = z.array(lineItemSchema).min(1, 'At least one line item is required').safeParse(lines.value)
+      if (!parsed.success) {
+        const firstIssue = parsed.error.issues[0]
+        const msg = firstIssue ? firstIssue.message : 'Invalid line items'
+        toast.add({
+          severity: 'error',
+          summary: 'Validation Error',
+          detail: msg,
+          life: 4000
+        })
+        return
+      }
+
+      for (let i = 0; i < parsed.data.length; i++) {
+        const line: ValidatedDeliveryLine | undefined = parsed.data[i]
         if (!line) continue
         const avail = getLotAvailable(line.lot_id)
         if (avail !== null && line.qty > avail) {
@@ -150,7 +160,7 @@ export function useDeliveryNoteForm(
       const dd = String(formValues.dispatch_date.getDate()).padStart(2, '0')
       const formattedDate = `${yyyy}-${mm}-${dd}`
 
-      const formattedLines: DeliveryLineInput[] = formValues.lines.map((line: ValidatedDeliveryLine) => ({
+      const formattedLines: DeliveryLineInput[] = parsed.data.map((line: ValidatedDeliveryLine) => ({
         lot_id: line.lot_id,
         qty: line.qty
       }))
@@ -198,7 +208,6 @@ export function useDeliveryNoteForm(
     remarksProps,
     lines,
     errors,
-    setFieldValue,
     addLineRow,
     removeLineRow,
     totalQty,
@@ -207,6 +216,6 @@ export function useDeliveryNoteForm(
     hasQtyExceeded,
     submitForm,
     isSubmitting: createMutation.isPending,
-    resetForm
+    resetForm: handleResetForm
   }
 }

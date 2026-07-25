@@ -243,7 +243,6 @@ const {
             </tbody>
           </table>
         </div>
-        <small v-if="typeof errors.items === 'string'" class="field-error">{{ errors.items }}</small>
 
         <button class="btn-outlined add-item-btn" type="button" @click="addItemRow">
           <Plus :size="15" />

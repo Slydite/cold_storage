@@ -1,4 +1,4 @@
-import { computed, type Ref, type ComputedRef } from 'vue'
+import { ref, computed, type Ref, type ComputedRef } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
@@ -33,8 +33,15 @@ const grnFormSchema = z.object({
     .refine((v): v is Date => v != null, { message: 'Receipt date is required' }),
   vehicle_number: z.string().optional(),
   driver_name: z.string().optional(),
-  remarks: z.string().optional(),
-  items: z.array(lineItemSchema).min(1, 'At least one line item is required')
+  remarks: z.string().optional()
+})
+
+const createDefaultLineItem = (): FormLineItem => ({
+  commodity_id: null,
+  chamber: 'Chamber A',
+  initial_qty: 100,
+  unit_weight: null,
+  rent_rate_per_unit: null
 })
 
 export function useGrnForm(
@@ -44,23 +51,14 @@ export function useGrnForm(
   const toast = useToast()
   const createGrnMutation = useCreateGrn()
 
-  const { handleSubmit, errors, defineField, values, resetForm, setFieldValue } = useForm({
+  const { handleSubmit, errors, defineField, resetForm } = useForm({
     validationSchema: toTypedSchema(grnFormSchema),
     initialValues: {
       party_id: null,
       receipt_date: new Date(),
       vehicle_number: '',
       driver_name: '',
-      remarks: '',
-      items: [
-        {
-          commodity_id: null,
-          chamber: 'Chamber A',
-          initial_qty: 100,
-          unit_weight: null,
-          rent_rate_per_unit: null
-        }
-      ]
+      remarks: ''
     }
   })
 
@@ -70,30 +68,25 @@ export function useGrnForm(
   const [driver_name, driverNameProps] = defineField('driver_name')
   const [remarks, remarksProps] = defineField('remarks')
 
-  const items = computed<FormLineItem[]>(() => values.items || [])
+  const items = ref<FormLineItem[]>([createDefaultLineItem()])
 
   const addItemRow = () => {
-    const current = values.items ? [...values.items] : []
-    current.push({
+    items.value.push({
       commodity_id: null,
       chamber: 'Chamber A',
       initial_qty: 1,
       unit_weight: null,
       rent_rate_per_unit: null
     })
-    setFieldValue('items', current)
   }
 
   const removeItemRow = (index: number) => {
-    if (!values.items || values.items.length <= 1) return
-    const current = [...values.items]
-    current.splice(index, 1)
-    setFieldValue('items', current)
+    if (items.value.length <= 1) return
+    items.value.splice(index, 1)
   }
 
   const totalNetWeight = computed(() => {
-    if (!values.items) return 0
-    return values.items.reduce((sum, item) => {
+    return items.value.reduce((sum, item) => {
       const qty = item.initial_qty || 0
       const weight = item.unit_weight != null ? Number(item.unit_weight) : 0
       return sum + qty * weight
@@ -101,13 +94,17 @@ export function useGrnForm(
   })
 
   const totalAmount = computed(() => {
-    if (!values.items) return 0
-    return values.items.reduce((sum, item) => {
+    return items.value.reduce((sum, item) => {
       const qty = item.initial_qty || 0
       const rate = item.rent_rate_per_unit != null ? Number(item.rent_rate_per_unit) : 0
       return sum + qty * rate
     }, 0)
   })
+
+  const handleResetForm = () => {
+    resetForm()
+    items.value = [createDefaultLineItem()]
+  }
 
   const submitForm = async (targetStatus: 'DRAFT' | 'POSTED') => {
     if (!facilityId.value) {
@@ -121,12 +118,25 @@ export function useGrnForm(
     }
 
     const submitFn = handleSubmit(async (formValues) => {
+      const parsed = z.array(lineItemSchema).min(1, 'At least one line item is required').safeParse(items.value)
+      if (!parsed.success) {
+        const firstIssue = parsed.error.issues[0]
+        const msg = firstIssue ? firstIssue.message : 'Invalid line items'
+        toast.add({
+          severity: 'error',
+          summary: 'Validation Error',
+          detail: msg,
+          life: 4000
+        })
+        return
+      }
+
       const yyyy = formValues.receipt_date.getFullYear()
       const mm = String(formValues.receipt_date.getMonth() + 1).padStart(2, '0')
       const dd = String(formValues.receipt_date.getDate()).padStart(2, '0')
       const formattedDate = `${yyyy}-${mm}-${dd}`
 
-      const formattedItems: LotItemInput[] = formValues.items.map((item: ValidatedLineItem) => ({
+      const formattedItems: LotItemInput[] = parsed.data.map((item: ValidatedLineItem) => ({
         commodity_id: item.commodity_id,
         chamber: item.chamber || undefined,
         initial_qty: item.initial_qty,
@@ -184,13 +194,13 @@ export function useGrnForm(
     remarksProps,
     items,
     errors,
-    setFieldValue,
     addItemRow,
     removeItemRow,
     totalNetWeight,
     totalAmount,
     submitForm,
     isSubmitting: createGrnMutation.isPending,
-    resetForm
+    resetForm: handleResetForm
   }
 }
+
