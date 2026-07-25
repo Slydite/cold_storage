@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from simple_history.models import HistoricalRecords
 from apps.facilities.models import Facility
@@ -38,6 +39,20 @@ class Commodity(models.Model):
 
 
 class GRN(models.Model):
+    """
+    Goods Receipt Note model matching paper GRN ("रसीद") form.
+
+    NOTE on loading_charge vs loading_unloading_rate_per_bag:
+    loading_charge is the flat total amount actually charged.
+    loading_unloading_rate_per_bag records the agreed per-bag rate captured from the paper form.
+    Reconciling the two (total = rate * bags) is deliberately NOT enforced in v1 because the paper
+    process allows a negotiated flat override.
+
+    NOTE on preservation_rate_per_bag_per_month:
+    Captured here at intake for documentary purposes to match the paper form.
+    Billing does NOT read this field — apps.billing resolves rates from RateCard (including per-party overrides)
+    at run time. This field is solely the documentary record of what was written on the receipt.
+    """
     class Status(models.TextChoices):
         DRAFT = 'DRAFT', 'Draft'
         POSTED = 'POSTED', 'Posted'
@@ -50,8 +65,16 @@ class GRN(models.Model):
     vehicle_number = models.CharField(max_length=50, blank=True)
     driver_name = models.CharField(max_length=100, blank=True)
     remarks = models.TextField(blank=True)
-    loading_charge = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    loading_charge = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.POSTED)
+
+    bill_no = models.CharField(max_length=50, blank=True)
+    bilty_no = models.CharField(max_length=50, blank=True)
+    transporter = models.CharField(max_length=255, blank=True)
+    preservation_rate_per_bag_per_month = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    loading_unloading_rate_per_bag = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    inward_time = models.TimeField(null=True, blank=True)
+    pdf_file = models.FileField(upload_to='grns/', null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -76,10 +99,15 @@ class Lot(models.Model):
     floor = models.CharField(max_length=50, blank=True)
     rack = models.CharField(max_length=50, blank=True)
 
+    floor_ref = models.ForeignKey('locations.Floor', null=True, blank=True, on_delete=models.PROTECT, related_name='lots')
+    chamber_ref = models.ForeignKey('locations.Chamber', null=True, blank=True, on_delete=models.PROTECT, related_name='lots')
+
+    special_remarks = models.CharField(max_length=255, blank=True)  # Paper form's "विशेष विवरण" column
+
     initial_qty = models.PositiveIntegerField()
     remaining_qty = models.PositiveIntegerField()
-    unit_weight = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Weight in KG
-    rent_rate_per_unit = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    unit_weight = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))  # Weight in KG
+    rent_rate_per_unit = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 
     inward_date = models.DateField()
 

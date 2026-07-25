@@ -23,6 +23,7 @@ urlpatterns = [
     path('api/', include('apps.delivery.urls')),
     path('api/', include('apps.billing.urls')),
     path('api/', include('apps.invoicing.urls')),
+    path('api/', include('apps.locations.urls')),
     path('api/', include('apps.reports.urls')),
     path('api/', include(router.urls)),
 

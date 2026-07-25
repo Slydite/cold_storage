@@ -7,6 +7,8 @@ class Role(models.TextChoices):
 
 
 class UserProfile(models.Model):
+    Role = Role
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

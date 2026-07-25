@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework import status
@@ -47,10 +48,17 @@ class FacilityViewSet(ViewSet):
             facility = create_facility(
                 name=serializer.validated_data['name'],
                 code=serializer.validated_data['code'],
-                address=serializer.validated_data.get('address', '')
+                address=serializer.validated_data.get('address', ''),
+                gstin=serializer.validated_data.get('gstin', ''),
+                phone=serializer.validated_data.get('phone', ''),
+                factory_phone=serializer.validated_data.get('factory_phone', ''),
+                bank_account_no=serializer.validated_data.get('bank_account_no', ''),
+                bank_ifsc=serializer.validated_data.get('bank_ifsc', ''),
+                terms_and_conditions=serializer.validated_data.get('terms_and_conditions', '')
             )
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except (DjangoValidationError, Exception) as e:
+            msg = e.message if hasattr(e, 'message') else str(e)
+            return Response({"detail": str(msg)}, status=status.HTTP_400_BAD_REQUEST)
         
         output_serializer = FacilityOutputSerializer(facility)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
@@ -69,10 +77,18 @@ class FacilityViewSet(ViewSet):
                 facility_id=pk,
                 name=serializer.validated_data['name'],
                 code=serializer.validated_data['code'],
-                address=serializer.validated_data.get('address', '')
+                address=serializer.validated_data.get('address', ''),
+                gstin=serializer.validated_data.get('gstin', ''),
+                phone=serializer.validated_data.get('phone', ''),
+                factory_phone=serializer.validated_data.get('factory_phone', ''),
+                bank_account_no=serializer.validated_data.get('bank_account_no', ''),
+                bank_ifsc=serializer.validated_data.get('bank_ifsc', ''),
+                terms_and_conditions=serializer.validated_data.get('terms_and_conditions', '')
             )
-        except Exception as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except (DjangoValidationError, Exception) as e:
+            msg = e.message if hasattr(e, 'message') else str(e)
+            return Response({"detail": str(msg)}, status=status.HTTP_400_BAD_REQUEST)
             
         output_serializer = FacilityOutputSerializer(facility)
         return Response(output_serializer.data)
+

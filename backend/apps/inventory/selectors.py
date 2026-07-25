@@ -44,6 +44,8 @@ def get_lots_list(
     commodity_id: int = None,
     chamber: str = None,
     floor: str = None,
+    floor_id: int = None,
+    chamber_id: int = None,
     in_stock_only: bool = False
 ) -> QuerySet[Lot]:
     """
@@ -51,18 +53,24 @@ def get_lots_list(
     facility_id is optional: omit it to view stock across every facility
     (cold storage), e.g. for the "all cold storages" inventory view.
     """
-    qs = Lot.objects.filter(grn__status=GRN.Status.POSTED).select_related('facility', 'grn', 'grn__party', 'commodity')
+    qs = Lot.objects.filter(grn__status=GRN.Status.POSTED).select_related(
+        'facility', 'grn', 'grn__party', 'commodity', 'floor_ref', 'chamber_ref'
+    )
     if facility_id:
         qs = qs.filter(facility_id=facility_id)
 
     if floor:
         qs = qs.filter(floor__iexact=floor)
+    if floor_id:
+        qs = qs.filter(floor_ref_id=floor_id)
     if party_id:
         qs = qs.filter(grn__party_id=party_id)
     if commodity_id:
         qs = qs.filter(commodity_id=commodity_id)
     if chamber:
         qs = qs.filter(chamber__iexact=chamber)
+    if chamber_id:
+        qs = qs.filter(chamber_ref_id=chamber_id)
     if in_stock_only:
         qs = qs.filter(remaining_qty__gt=0)
 
@@ -73,4 +81,7 @@ def get_lot_by_id(lot_id: int) -> Lot:
     """
     Fetch a lot by ID.
     """
-    return Lot.objects.select_related('grn', 'grn__party', 'commodity').get(pk=lot_id)
+    return Lot.objects.select_related(
+        'grn', 'grn__party', 'commodity', 'floor_ref', 'chamber_ref'
+    ).get(pk=lot_id)
+

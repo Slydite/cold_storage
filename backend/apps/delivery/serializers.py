@@ -13,6 +13,7 @@ class DeliveryNoteCreateInputSerializer(serializers.Serializer):
     dispatch_date = serializers.DateField()
     vehicle_number = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
     driver_name = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
+    transporter = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     remarks = serializers.CharField(max_length=1000, required=False, allow_blank=True, default='')
     status = serializers.ChoiceField(choices=DeliveryNote.Status.choices, default=DeliveryNote.Status.DRAFT)
     lines = DeliveryLineInputSerializer(many=True, required=False, default=list)
@@ -34,6 +35,7 @@ class DeliveryLineOutputSerializer(serializers.ModelSerializer):
             'commodity_name',
             'commodity_code',
             'qty',
+            'balance_after',
             'created_at',
             'updated_at'
         ]
@@ -42,6 +44,7 @@ class DeliveryLineOutputSerializer(serializers.ModelSerializer):
 class DeliveryNoteOutputSerializer(serializers.ModelSerializer):
     party_name = serializers.CharField(source='party.name', read_only=True)
     party_code = serializers.CharField(source='party.code', read_only=True)
+    pdf_url = serializers.SerializerMethodField()
     lines = DeliveryLineOutputSerializer(many=True, read_only=True)
 
     class Meta:
@@ -56,9 +59,14 @@ class DeliveryNoteOutputSerializer(serializers.ModelSerializer):
             'dispatch_date',
             'vehicle_number',
             'driver_name',
+            'transporter',
             'remarks',
             'status',
+            'pdf_url',
             'lines',
             'created_at',
             'updated_at'
         ]
+
+    def get_pdf_url(self, obj) -> str | None:
+        return obj.pdf_file.url if obj.pdf_file else None

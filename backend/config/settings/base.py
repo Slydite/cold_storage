@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     # Local apps
     'apps.accounts',
     'apps.facilities',
+    'apps.locations',
     'apps.parties',
     'apps.inventory',
     'apps.delivery',

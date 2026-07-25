@@ -15,7 +15,8 @@ from .selectors import (
 from .services import (
     create_delivery_note,
     post_delivery_note,
-    cancel_delivery_note
+    cancel_delivery_note,
+    generate_delivery_note_pdf
 )
 from .serializers import (
     DeliveryNoteCreateInputSerializer,
@@ -85,6 +86,7 @@ class DeliveryNoteViewSet(ViewSet):
                 dispatch_date=serializer.validated_data['dispatch_date'],
                 vehicle_number=serializer.validated_data.get('vehicle_number', ''),
                 driver_name=serializer.validated_data.get('driver_name', ''),
+                transporter=serializer.validated_data.get('transporter', ''),
                 remarks=serializer.validated_data.get('remarks', ''),
                 status=serializer.validated_data.get('status', DeliveryNote.Status.DRAFT),
                 lines=serializer.validated_data.get('lines', [])
@@ -118,3 +120,18 @@ class DeliveryNoteViewSet(ViewSet):
         except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(DeliveryNoteOutputSerializer(dn).data)
+
+    @extend_schema(
+        responses={200: DeliveryNoteOutputSerializer, 400: None},
+        summary="Generate PDF for a Delivery Note"
+    )
+    @action(detail=True, methods=['post'], url_path='generate-pdf')
+    def generate_pdf(self, request, pk=None):
+        try:
+            generate_delivery_note_pdf(delivery_note_id=pk)
+            dn = get_delivery_note_by_id(pk)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except (DeliveryNote.DoesNotExist, ValueError):
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(DeliveryNoteOutputSerializer(dn).data, status=status.HTTP_200_OK)

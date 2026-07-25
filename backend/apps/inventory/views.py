@@ -22,7 +22,8 @@ from .services import (
     create_grn,
     post_grn,
     cancel_grn,
-    withdraw_stock_from_lot
+    withdraw_stock_from_lot,
+    generate_grn_pdf
 )
 from .serializers import (
     CommodityInputSerializer,
@@ -188,6 +189,12 @@ class GRNViewSet(ViewSet):
                 driver_name=serializer.validated_data.get('driver_name', ''),
                 remarks=serializer.validated_data.get('remarks', ''),
                 loading_charge=serializer.validated_data.get('loading_charge', 0),
+                bill_no=serializer.validated_data.get('bill_no', ''),
+                bilty_no=serializer.validated_data.get('bilty_no', ''),
+                transporter=serializer.validated_data.get('transporter', ''),
+                preservation_rate_per_bag_per_month=serializer.validated_data.get('preservation_rate_per_bag_per_month', 0),
+                loading_unloading_rate_per_bag=serializer.validated_data.get('loading_unloading_rate_per_bag', 0),
+                inward_time=serializer.validated_data.get('inward_time', None),
                 status=serializer.validated_data.get('status', GRN.Status.POSTED),
                 items=serializer.validated_data.get('items', [])
             )
@@ -221,6 +228,21 @@ class GRNViewSet(ViewSet):
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(GRNOutputSerializer(grn).data)
 
+    @extend_schema(
+        responses={200: GRNOutputSerializer, 400: None},
+        summary="Generate PDF for a GRN"
+    )
+    @action(detail=True, methods=['post'], url_path='generate-pdf')
+    def generate_pdf(self, request, pk=None):
+        try:
+            generate_grn_pdf(grn_id=pk)
+            grn = get_grn_by_id(pk)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except (GRN.DoesNotExist, ValueError):
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(GRNOutputSerializer(grn).data, status=status.HTTP_200_OK)
+
 
 class LotViewSet(ViewSet):
     permission_classes = [IsAuthenticated]
@@ -231,8 +253,10 @@ class LotViewSet(ViewSet):
             OpenApiParameter('facility_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Facility (cold storage) ID. Omit to view stock across every facility."),
             OpenApiParameter('party_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Party ID"),
             OpenApiParameter('commodity_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Commodity ID"),
-            OpenApiParameter('chamber', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Chamber"),
-            OpenApiParameter('floor', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Floor"),
+            OpenApiParameter('chamber', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Chamber text"),
+            OpenApiParameter('floor', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Floor text"),
+            OpenApiParameter('floor_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Floor ID"),
+            OpenApiParameter('chamber_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Chamber ID"),
             OpenApiParameter('in_stock_only', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description="Only show lots with remaining_qty > 0"),
         ],
         responses={200: LotOutputSerializer(many=True)},
@@ -244,6 +268,8 @@ class LotViewSet(ViewSet):
         commodity_id = request.query_params.get('commodity_id')
         chamber = request.query_params.get('chamber')
         floor = request.query_params.get('floor')
+        floor_id = request.query_params.get('floor_id')
+        chamber_id = request.query_params.get('chamber_id')
         in_stock_param = request.query_params.get('in_stock_only')
 
         in_stock_only = False
@@ -257,13 +283,16 @@ class LotViewSet(ViewSet):
                 commodity_id=int(commodity_id) if commodity_id else None,
                 chamber=chamber,
                 floor=floor,
+                floor_id=int(floor_id) if floor_id else None,
+                chamber_id=int(chamber_id) if chamber_id else None,
                 in_stock_only=in_stock_only
             )
         except ValueError:
-            raise ValidationError({"facility_id": "Invalid query parameter format."})
+            raise ValidationError({"detail": "Invalid query parameter format."})
 
         serializer = LotOutputSerializer(lots, many=True)
         return Response(serializer.data)
+
 
     @extend_schema(
         responses={200: LotOutputSerializer, 404: None},

@@ -17,8 +17,10 @@ class DeliveryNote(models.Model):
     dispatch_date = models.DateField()
     vehicle_number = models.CharField(max_length=50, blank=True)
     driver_name = models.CharField(max_length=100, blank=True)
+    transporter = models.CharField(max_length=255, blank=True)
     remarks = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    pdf_file = models.FileField(upload_to='delivery_notes/', null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -38,6 +40,11 @@ class DeliveryLine(models.Model):
     delivery_note = models.ForeignKey(DeliveryNote, on_delete=models.CASCADE, related_name='lines')
     lot = models.ForeignKey(Lot, on_delete=models.PROTECT, related_name='delivery_lines')
     qty = models.PositiveIntegerField()
+    balance_after = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Lot remaining_qty immediately AFTER this line was posted (paper form Balance column). NULL for draft lines."
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
