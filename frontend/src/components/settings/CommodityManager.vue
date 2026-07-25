@@ -44,9 +44,9 @@ const unitOptions = [
 const commoditySchema = z.object({
   name: z.string().min(1, 'Commodity name is required'),
   code: z.string().min(1, 'Commodity code is required'),
-  unit: z.string().default('Bags'),
+  unit: z.string(),
   description: z.string().optional(),
-  is_active: z.boolean().default(true)
+  is_active: z.boolean()
 })
 
 const { handleSubmit, errors, defineField, resetForm } = useForm({

@@ -47,6 +47,9 @@ Read this before writing any code. Follow it even when not explicitly reminded i
 6. **Every write action** (create/edit/delete) shows a toast confirmation or error — the person using this is doing data entry all day and needs unambiguous feedback.
 
 7. **Forms use `vee-validate` + `zod` schemas**, shared between create and edit forms where the shape overlaps — don't duplicate validation logic per form.
+   - This project runs **zod v4**, so `required_error` does not exist — use `.min(1, 'msg')`.
+   - **Never use `.default()` in a schema passed to `toTypedSchema`.** `@vee-validate/zod` still targets zod v3, where `_def.defaultValue` is a function; in v4 it is a plain value, so `useForm()` throws `value._def.defaultValue is not a function` at setup and takes the whole render tree down with it — every screen, not just the offending form. Put defaults in `useForm({ initialValues })` instead.
+   - Editable arrays/objects the template mutates with `v-model` must be plain `ref`s, never a `computed` over vee-validate's `values` — that silently wipes user input as they type.
 
 8. **Responsive down to 375px width** — this app gets wrapped in a Flutter WebView later, so mobile-width usability isn't optional.
 

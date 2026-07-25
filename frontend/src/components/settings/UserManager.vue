@@ -60,7 +60,7 @@ const formSchema = computed(() => {
     first_name: z.string().optional(),
     last_name: z.string().optional(),
     email: z.string().email('Invalid email format').or(z.literal('')).optional(),
-    role: z.string().default('ADMIN')
+    role: z.string()
   })
 })
 

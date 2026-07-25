@@ -29,8 +29,8 @@ const editingFloor = ref<FloorOutput | null>(null)
 
 const floorSchema = z.object({
   name: z.string().min(1, 'Floor name is required'),
-  sort_order: z.number().default(0),
-  is_active: z.boolean().default(true)
+  sort_order: z.number(),
+  is_active: z.boolean()
 })
 
 const { handleSubmit, errors, defineField, resetForm } = useForm({

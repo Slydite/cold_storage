@@ -19,7 +19,7 @@ const rentRunFormSchema = z
     party_id: z.number().nullable().optional(),
     commodity_id: z.number().nullable().optional(),
     chamber: z.string().optional(),
-    min_billing_days: z.number().min(0, { message: 'Minimum days cannot be negative' }).default(0),
+    min_billing_days: z.number().min(0, { message: 'Minimum days cannot be negative' }),
     notes: z.string().optional()
   })
   .refine(

@@ -58,9 +58,9 @@ const chamberSchema = z.object({
     .nullable()
     .refine((v): v is number => v != null && v > 0, { message: 'Floor selection is required' }),
   name: z.string().min(1, 'Chamber name is required'),
-  sort_order: z.number().default(0),
+  sort_order: z.number(),
   capacity_bags: z.number().nullable().optional(),
-  is_active: z.boolean().default(true)
+  is_active: z.boolean()
 })
 
 const { handleSubmit, errors, defineField, resetForm } = useForm({
