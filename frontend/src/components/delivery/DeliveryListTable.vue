@@ -14,11 +14,13 @@ import {
   FilterX,
   Download,
   Plus,
+  Eye,
   AlertCircle,
   RefreshCw,
   Truck,
   FileCheck,
-  XCircle
+  XCircle,
+  Printer
 } from 'lucide-vue-next'
 import { formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
@@ -32,6 +34,7 @@ interface Props {
   errorDetail?: string
   searchQuery: string
   selectedStatus: string
+  generatingPdfId?: number | null
 }
 
 const props = defineProps<Props>()
@@ -41,9 +44,17 @@ const emit = defineEmits<{
   'update:selectedStatus': [status: string]
   newDelivery: []
   retry: []
+  view: [delivery: DeliveryNoteOutput]
   post: [id: number]
   cancel: [id: number]
+  generatePdf: [id: number]
 }>()
+
+function resolvePdfUrl(url: string | null): string {
+  if (!url) return '#'
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return url.startsWith('/') ? url : `/${url}`
+}
 
 const confirm = useConfirm()
 
@@ -257,7 +268,7 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
       >
         <Column field="dn_number" header="DN No." sortable>
           <template #body="{ data }">
-            <span class="code-link">{{ data.dn_number }}</span>
+            <span class="code-link clickable" @click="emit('view', data)">{{ data.dn_number }}</span>
           </template>
           <template #filter="{ filterModel, filterCallback }">
             <InputText
@@ -353,8 +364,12 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
 
         <Column header="Actions">
           <template #body="{ data }">
-            <div v-if="data.status === 'DRAFT'" class="row-actions">
+            <div class="row-actions">
+              <button class="icon-btn" title="View details" type="button" @click="emit('view', data)">
+                <Eye :size="16" />
+              </button>
               <button
+                v-if="data.status === 'DRAFT'"
                 class="icon-btn"
                 title="Post Delivery Note"
                 type="button"
@@ -363,6 +378,7 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
                 <FileCheck :size="16" />
               </button>
               <button
+                v-if="data.status === 'DRAFT'"
                 class="icon-btn danger-hover"
                 title="Cancel Delivery Note"
                 type="button"
@@ -370,8 +386,27 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
               >
                 <XCircle :size="16" />
               </button>
+              <a
+                v-if="data.pdf_url"
+                :href="resolvePdfUrl(data.pdf_url)"
+                target="_blank"
+                download
+                class="icon-btn"
+                title="Download PDF"
+              >
+                <Download :size="16" />
+              </a>
+              <button
+                v-else
+                class="icon-btn"
+                title="Generate PDF"
+                type="button"
+                :disabled="props.generatingPdfId === data.id"
+                @click="emit('generatePdf', data.id)"
+              >
+                <Printer :size="16" />
+              </button>
             </div>
-            <span v-else class="icon-muted">-</span>
           </template>
         </Column>
       </DataTable>
@@ -380,6 +415,10 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
 </template>
 
 <style scoped>
+.code-link.clickable {
+  cursor: pointer;
+}
+
 .master-list-container {
   display: flex;
   flex-direction: column;

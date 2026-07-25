@@ -18,7 +18,8 @@ import {
   RefreshCw,
   Package,
   FileCheck,
-  XCircle
+  XCircle,
+  Printer
 } from 'lucide-vue-next'
 import { chamberOptions } from '../../constants/chambers'
 import { formatQty } from '../../utils/format'
@@ -34,6 +35,7 @@ interface Props {
   searchQuery: string
   selectedChamber: string
   selectedPeriod: string
+  generatingPdfId?: number | null
 }
 
 const props = defineProps<Props>()
@@ -47,7 +49,14 @@ const emit = defineEmits<{
   view: [grn: GrnOutput]
   post: [id: number]
   cancel: [id: number]
+  generatePdf: [id: number]
 }>()
+
+function resolvePdfUrl(url: string | null): string {
+  if (!url) return '#'
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return url.startsWith('/') ? url : `/${url}`
+}
 
 const periodOptions = [
   { label: 'This Month', value: 'this_month' },
@@ -230,7 +239,7 @@ const handleExport = () => {
       >
         <Column field="grn_number" header="GRN No." sortable>
           <template #body="{ data }">
-            <span class="code-link">{{ data.grn_number }}</span>
+            <span class="code-link clickable" @click="emit('view', data)">{{ data.grn_number }}</span>
           </template>
           <template #filter="{ filterModel, filterCallback }">
             <InputText
@@ -332,6 +341,26 @@ const handleExport = () => {
               >
                 <XCircle :size="16" />
               </button>
+              <a
+                v-if="data.pdf_url"
+                :href="resolvePdfUrl(data.pdf_url)"
+                target="_blank"
+                download
+                class="icon-btn"
+                title="Download PDF"
+              >
+                <Download :size="16" />
+              </a>
+              <button
+                v-else
+                class="icon-btn"
+                title="Generate PDF"
+                type="button"
+                :disabled="props.generatingPdfId === data.id"
+                @click="emit('generatePdf', data.id)"
+              >
+                <Printer :size="16" />
+              </button>
             </div>
           </template>
         </Column>
@@ -341,6 +370,10 @@ const handleExport = () => {
 </template>
 
 <style scoped>
+.code-link.clickable {
+  cursor: pointer;
+}
+
 .master-list-container {
   flex: 1;
   min-width: 0;

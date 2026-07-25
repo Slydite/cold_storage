@@ -4,6 +4,36 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
+export type ChamberInput = {
+    facility_id: number;
+    floor_id: number;
+    name: string;
+    sort_order?: number;
+    capacity_bags?: number | null;
+    is_active?: boolean;
+};
+
+export type ChamberOutput = {
+    readonly id: number;
+    readonly floor_id: number;
+    readonly floor_name: string;
+    readonly facility_id: number;
+    name: string;
+    sort_order?: number;
+    capacity_bags?: number | null;
+    is_active?: boolean;
+    readonly created_at: string;
+    readonly updated_at: string;
+};
+
+export type ChamberUpdateInput = {
+    floor_id?: number;
+    name?: string;
+    sort_order?: number;
+    capacity_bags?: number | null;
+    is_active?: boolean;
+};
+
 export type CommodityInput = {
     facility_id: number;
     name: string;
@@ -54,6 +84,10 @@ export type DeliveryLineOutput = {
     readonly commodity_name: string;
     readonly commodity_code: string;
     qty: number;
+    /**
+     * Lot remaining_qty immediately AFTER this line was posted (paper form Balance column). NULL for draft lines.
+     */
+    balance_after?: number | null;
     readonly created_at: string;
     readonly updated_at: string;
 };
@@ -64,6 +98,7 @@ export type DeliveryNoteCreateInput = {
     dispatch_date: string;
     vehicle_number?: string;
     driver_name?: string;
+    transporter?: string;
     remarks?: string;
     status?: StatusEnum;
     lines?: Array<DeliveryLineInput>;
@@ -79,8 +114,10 @@ export type DeliveryNoteOutput = {
     dispatch_date: string;
     vehicle_number?: string;
     driver_name?: string;
+    transporter?: string;
     remarks?: string;
     status?: StatusEnum;
+    readonly pdf_url: string | null;
     readonly lines: Array<DeliveryLineOutput>;
     readonly created_at: string;
     readonly updated_at: string;
@@ -90,6 +127,12 @@ export type FacilityInput = {
     name: string;
     code: string;
     address?: string;
+    gstin?: string;
+    phone?: string;
+    factory_phone?: string;
+    bank_account_no?: string;
+    bank_ifsc?: string;
+    terms_and_conditions?: string;
 };
 
 export type FacilityOutput = {
@@ -97,8 +140,37 @@ export type FacilityOutput = {
     name: string;
     code: string;
     address?: string;
+    gstin?: string | string;
+    phone?: string;
+    factory_phone?: string;
+    bank_account_no?: string;
+    bank_ifsc?: string;
+    terms_and_conditions?: string;
     readonly created_at: string;
     readonly updated_at: string;
+};
+
+export type FloorInput = {
+    facility_id: number;
+    name: string;
+    sort_order?: number;
+    is_active?: boolean;
+};
+
+export type FloorOutput = {
+    readonly id: number;
+    readonly facility_id: number;
+    name: string;
+    sort_order?: number;
+    is_active?: boolean;
+    readonly created_at: string;
+    readonly updated_at: string;
+};
+
+export type FloorUpdateInput = {
+    name?: string;
+    sort_order?: number;
+    is_active?: boolean;
 };
 
 export type GrnCreateInput = {
@@ -109,6 +181,12 @@ export type GrnCreateInput = {
     driver_name?: string;
     remarks?: string;
     loading_charge?: string;
+    bill_no?: string;
+    bilty_no?: string;
+    transporter?: string;
+    preservation_rate_per_bag_per_month?: string;
+    loading_unloading_rate_per_bag?: string;
+    inward_time?: string | null;
     status?: StatusEnum;
     items?: Array<LotItemInput>;
 };
@@ -125,7 +203,14 @@ export type GrnOutput = {
     driver_name?: string;
     remarks?: string;
     loading_charge?: string;
+    bill_no?: string;
+    bilty_no?: string;
+    transporter?: string;
+    preservation_rate_per_bag_per_month?: string;
+    loading_unloading_rate_per_bag?: string;
+    inward_time?: string | null;
     status?: StatusEnum;
+    readonly pdf_url: string | null;
     readonly lots: Array<LotOutput>;
     readonly created_at: string;
     readonly updated_at: string;
@@ -173,6 +258,9 @@ export type LotItemInput = {
     chamber?: string;
     floor?: string;
     rack?: string;
+    floor_id?: number | null;
+    chamber_id?: number | null;
+    special_remarks?: string;
     initial_qty: number;
     unit_weight?: string;
     rent_rate_per_unit?: string;
@@ -195,6 +283,11 @@ export type LotOutput = {
     chamber?: string;
     floor?: string;
     rack?: string;
+    readonly floor_ref_id: number | null;
+    readonly chamber_ref_id: number | null;
+    readonly floor_name: string | null;
+    readonly chamber_name: string | null;
+    special_remarks?: string;
     initial_qty: number;
     remaining_qty: number;
     unit_weight?: string;
@@ -206,6 +299,13 @@ export type LotOutput = {
 
 export type LotWithdrawalInput = {
     qty: number;
+};
+
+export type MissingRateCard = {
+    commodity_id: number;
+    commodity_name: string;
+    weight_category: string;
+    lot_number: string;
 };
 
 export type PartyInput = {
@@ -240,6 +340,7 @@ export type PartyOutput = {
 export type RateCardInput = {
     facility_id: number;
     commodity_id: number;
+    party_id?: number | null;
     weight_category: WeightCategoryEnum;
     rate_per_bag_per_month: string;
     effective_from: string;
@@ -249,6 +350,9 @@ export type RateCardInput = {
 export type RateCardOutput = {
     readonly id: number;
     readonly facility_id: number;
+    readonly party_id: number | null;
+    readonly party_name: string | null;
+    readonly is_default: boolean;
     readonly commodity_id: number;
     readonly commodity_name: string;
     readonly commodity_code: string;
@@ -265,6 +369,11 @@ export type RentRunCreateInput = {
     facility_id: number;
     period_start: string;
     period_end: string;
+    party_id?: number | null;
+    commodity_id?: number | null;
+    chamber?: string;
+    min_billing_days?: number;
+    notes?: string;
 };
 
 export type RentRunLineOutput = {
@@ -286,13 +395,57 @@ export type RentRunOutput = {
     readonly facility_id: number;
     period_start: string;
     period_end: string;
+    readonly party_id: number | null;
+    readonly party_name: string | null;
+    readonly commodity_id: number | null;
+    readonly commodity_name: string | null;
+    chamber?: string;
+    min_billing_days?: number;
+    notes?: string;
     status?: StatusEnum;
     readonly run_date: string;
     readonly lines: Array<RentRunLineOutput>;
     readonly total_amount: number;
+    readonly pdf_url: string | null;
     readonly created_at: string;
     readonly updated_at: string;
 };
+
+export type RentRunPreviewInput = {
+    facility_id: number;
+    period_start: string;
+    period_end: string;
+    party_id?: number | null;
+    commodity_id?: number | null;
+    chamber?: string;
+    min_billing_days?: number;
+};
+
+export type RentRunPreviewLine = {
+    lot_id: number;
+    lot_number: string;
+    commodity_id: number;
+    commodity_name: string;
+    party_id: number;
+    party_name: string;
+    qty: number;
+    weight_category: string;
+    rate_per_bag_per_month: string;
+    days_stored: number;
+    amount: string;
+    rate_source: string;
+};
+
+export type RentRunPreviewOutput = {
+    lines: Array<RentRunPreviewLine>;
+    total_amount: string;
+    missing_rate_cards: Array<MissingRateCard>;
+};
+
+/**
+ * * `ADMIN` - Admin
+ */
+export type RoleEnum = 'ADMIN';
 
 /**
  * * `DRAFT` - Draft
@@ -308,12 +461,58 @@ export type StatusEnum = 'DRAFT' | 'POSTED' | 'CANCELLED';
  */
 export type TypeEnum = 'DEPOSITOR' | 'VENDOR' | 'TRANSPORTER';
 
+export type UserCreateInput = {
+    username: string;
+    email?: string | string;
+    first_name?: string;
+    last_name?: string;
+    role?: RoleEnum;
+    is_active?: boolean;
+};
+
+export type UserListOutput = {
+    readonly id: number;
+    /**
+     * Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+     */
+    username: string;
+    /**
+     * Email address
+     */
+    email?: string | string;
+    first_name?: string;
+    last_name?: string;
+    /**
+     * Active
+     *
+     * Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
+     */
+    is_active?: boolean;
+    readonly role: string;
+    date_joined?: string;
+    last_login?: string | null;
+};
+
+export type UserUpdateInput = {
+    email?: string | string;
+    first_name?: string;
+    last_name?: string;
+    role?: RoleEnum;
+};
+
 /**
  * * `KG_20` - 20 kg bag
  * * `KG_50` - 50 kg bag
  * * `OTHER` - Other
  */
 export type WeightCategoryEnum = 'KG_20' | 'KG_50' | 'OTHER';
+
+export type ChamberOutputWritable = {
+    name: string;
+    sort_order?: number;
+    capacity_bags?: number | null;
+    is_active?: boolean;
+};
 
 export type CommodityOutputWritable = {
     name: string;
@@ -338,6 +537,10 @@ export type CurrentUserOutputWritable = {
 
 export type DeliveryLineOutputWritable = {
     qty: number;
+    /**
+     * Lot remaining_qty immediately AFTER this line was posted (paper form Balance column). NULL for draft lines.
+     */
+    balance_after?: number | null;
 };
 
 export type DeliveryNoteOutputWritable = {
@@ -345,6 +548,7 @@ export type DeliveryNoteOutputWritable = {
     dispatch_date: string;
     vehicle_number?: string;
     driver_name?: string;
+    transporter?: string;
     remarks?: string;
     status?: StatusEnum;
 };
@@ -353,6 +557,18 @@ export type FacilityOutputWritable = {
     name: string;
     code: string;
     address?: string;
+    gstin?: string | string;
+    phone?: string;
+    factory_phone?: string;
+    bank_account_no?: string;
+    bank_ifsc?: string;
+    terms_and_conditions?: string;
+};
+
+export type FloorOutputWritable = {
+    name: string;
+    sort_order?: number;
+    is_active?: boolean;
 };
 
 export type GrnOutputWritable = {
@@ -362,6 +578,12 @@ export type GrnOutputWritable = {
     driver_name?: string;
     remarks?: string;
     loading_charge?: string;
+    bill_no?: string;
+    bilty_no?: string;
+    transporter?: string;
+    preservation_rate_per_bag_per_month?: string;
+    loading_unloading_rate_per_bag?: string;
+    inward_time?: string | null;
     status?: StatusEnum;
 };
 
@@ -391,6 +613,7 @@ export type LotOutputWritable = {
     chamber?: string;
     floor?: string;
     rack?: string;
+    special_remarks?: string;
     initial_qty: number;
     remaining_qty: number;
     unit_weight?: string;
@@ -428,7 +651,49 @@ export type RentRunLineOutputWritable = {
 export type RentRunOutputWritable = {
     period_start: string;
     period_end: string;
+    chamber?: string;
+    min_billing_days?: number;
+    notes?: string;
     status?: StatusEnum;
+};
+
+export type UserCreateInputWritable = {
+    username: string;
+    password: string;
+    email?: string | string;
+    first_name?: string;
+    last_name?: string;
+    role?: RoleEnum;
+    is_active?: boolean;
+};
+
+export type UserListOutputWritable = {
+    /**
+     * Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+     */
+    username: string;
+    /**
+     * Email address
+     */
+    email?: string | string;
+    first_name?: string;
+    last_name?: string;
+    /**
+     * Active
+     *
+     * Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
+     */
+    is_active?: boolean;
+    date_joined?: string;
+    last_login?: string | null;
+};
+
+export type UserUpdateInputWritable = {
+    email?: string | string;
+    first_name?: string;
+    last_name?: string;
+    role?: RoleEnum;
+    password?: string;
 };
 
 export type AuthCsrfRetrieveData = {
@@ -495,6 +760,102 @@ export type AuthMeRetrieveResponses = {
 };
 
 export type AuthMeRetrieveResponse = AuthMeRetrieveResponses[keyof AuthMeRetrieveResponses];
+
+export type ChambersListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filter by Facility ID
+         */
+        facility_id?: number;
+        /**
+         * Filter by Floor ID
+         */
+        floor_id?: number;
+        /**
+         * Filter by active status
+         */
+        is_active?: boolean;
+    };
+    url: '/api/chambers/';
+};
+
+export type ChambersListResponses = {
+    200: Array<ChamberOutput>;
+};
+
+export type ChambersListResponse = ChambersListResponses[keyof ChambersListResponses];
+
+export type ChambersCreateData = {
+    body: ChamberInput;
+    path?: never;
+    query?: never;
+    url: '/api/chambers/';
+};
+
+export type ChambersCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type ChambersCreateResponses = {
+    201: ChamberOutput;
+};
+
+export type ChambersCreateResponse = ChambersCreateResponses[keyof ChambersCreateResponses];
+
+export type ChambersRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this chamber.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/chambers/{id}/';
+};
+
+export type ChambersRetrieveErrors = {
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type ChambersRetrieveResponses = {
+    200: ChamberOutput;
+};
+
+export type ChambersRetrieveResponse = ChambersRetrieveResponses[keyof ChambersRetrieveResponses];
+
+export type ChambersUpdateData = {
+    body?: ChamberUpdateInput;
+    path: {
+        /**
+         * A unique integer value identifying this chamber.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/chambers/{id}/';
+};
+
+export type ChambersUpdateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type ChambersUpdateResponses = {
+    200: ChamberOutput;
+};
+
+export type ChambersUpdateResponse = ChambersUpdateResponses[keyof ChambersUpdateResponses];
 
 export type CommoditiesListData = {
     body?: never;
@@ -684,6 +1045,31 @@ export type DeliveryNotesCancelCreateResponses = {
 
 export type DeliveryNotesCancelCreateResponse = DeliveryNotesCancelCreateResponses[keyof DeliveryNotesCancelCreateResponses];
 
+export type DeliveryNotesGeneratePdfCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Delivery Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/delivery-notes/{id}/generate-pdf/';
+};
+
+export type DeliveryNotesGeneratePdfCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type DeliveryNotesGeneratePdfCreateResponses = {
+    200: DeliveryNoteOutput;
+};
+
+export type DeliveryNotesGeneratePdfCreateResponse = DeliveryNotesGeneratePdfCreateResponses[keyof DeliveryNotesGeneratePdfCreateResponses];
+
 export type DeliveryNotesPostCreateData = {
     body?: never;
     path: {
@@ -792,6 +1178,98 @@ export type FacilitiesUpdateResponses = {
 
 export type FacilitiesUpdateResponse = FacilitiesUpdateResponses[keyof FacilitiesUpdateResponses];
 
+export type FloorsListData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Filter by active status
+         */
+        is_active?: boolean;
+    };
+    url: '/api/floors/';
+};
+
+export type FloorsListResponses = {
+    200: Array<FloorOutput>;
+};
+
+export type FloorsListResponse = FloorsListResponses[keyof FloorsListResponses];
+
+export type FloorsCreateData = {
+    body: FloorInput;
+    path?: never;
+    query?: never;
+    url: '/api/floors/';
+};
+
+export type FloorsCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type FloorsCreateResponses = {
+    201: FloorOutput;
+};
+
+export type FloorsCreateResponse = FloorsCreateResponses[keyof FloorsCreateResponses];
+
+export type FloorsRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this floor.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/floors/{id}/';
+};
+
+export type FloorsRetrieveErrors = {
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type FloorsRetrieveResponses = {
+    200: FloorOutput;
+};
+
+export type FloorsRetrieveResponse = FloorsRetrieveResponses[keyof FloorsRetrieveResponses];
+
+export type FloorsUpdateData = {
+    body?: FloorUpdateInput;
+    path: {
+        /**
+         * A unique integer value identifying this floor.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/floors/{id}/';
+};
+
+export type FloorsUpdateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type FloorsUpdateResponses = {
+    200: FloorOutput;
+};
+
+export type FloorsUpdateResponse = FloorsUpdateResponses[keyof FloorsUpdateResponses];
+
 export type GrnsListData = {
     body?: never;
     path?: never;
@@ -887,6 +1365,31 @@ export type GrnsCancelCreateResponses = {
 };
 
 export type GrnsCancelCreateResponse = GrnsCancelCreateResponses[keyof GrnsCancelCreateResponses];
+
+export type GrnsGeneratePdfCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Goods Receipt Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/grns/{id}/generate-pdf/';
+};
+
+export type GrnsGeneratePdfCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type GrnsGeneratePdfCreateResponses = {
+    200: GrnOutput;
+};
+
+export type GrnsGeneratePdfCreateResponse = GrnsGeneratePdfCreateResponses[keyof GrnsGeneratePdfCreateResponses];
 
 export type GrnsPostCreateData = {
     body?: never;
@@ -1064,9 +1567,13 @@ export type LotsListData = {
     path?: never;
     query?: {
         /**
-         * Filter by Chamber
+         * Filter by Chamber text
          */
         chamber?: string;
+        /**
+         * Filter by Chamber ID
+         */
+        chamber_id?: number;
         /**
          * Filter by Commodity ID
          */
@@ -1076,9 +1583,13 @@ export type LotsListData = {
          */
         facility_id?: number;
         /**
-         * Filter by Floor
+         * Filter by Floor text
          */
         floor?: string;
+        /**
+         * Filter by Floor ID
+         */
+        floor_id?: number;
         /**
          * Only show lots with remaining_qty > 0
          */
@@ -1259,6 +1770,14 @@ export type RateCardsListData = {
          * Filter by active status
          */
         is_active?: boolean;
+        /**
+         * Filter for default rate cards (party=NULL)
+         */
+        is_default?: boolean;
+        /**
+         * Filter by Party ID (or 'null' for default rate cards)
+         */
+        party_id?: string;
     };
     url: '/api/rate-cards/';
 };
@@ -1406,6 +1925,31 @@ export type RentRunsCancelCreateResponses = {
 
 export type RentRunsCancelCreateResponse = RentRunsCancelCreateResponses[keyof RentRunsCancelCreateResponses];
 
+export type RentRunsGeneratePdfCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Rent Run.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/rent-runs/{id}/generate-pdf/';
+};
+
+export type RentRunsGeneratePdfCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type RentRunsGeneratePdfCreateResponses = {
+    200: RentRunOutput;
+};
+
+export type RentRunsGeneratePdfCreateResponse = RentRunsGeneratePdfCreateResponses[keyof RentRunsGeneratePdfCreateResponses];
+
 export type RentRunsPostCreateData = {
     body?: never;
     path: {
@@ -1430,3 +1974,310 @@ export type RentRunsPostCreateResponses = {
 };
 
 export type RentRunsPostCreateResponse = RentRunsPostCreateResponses[keyof RentRunsPostCreateResponses];
+
+export type RentRunsPreviewCreateData = {
+    body: RentRunPreviewInput;
+    path?: never;
+    query?: never;
+    url: '/api/rent-runs/preview/';
+};
+
+export type RentRunsPreviewCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type RentRunsPreviewCreateResponses = {
+    200: RentRunPreviewOutput;
+};
+
+export type RentRunsPreviewCreateResponse = RentRunsPreviewCreateResponses[keyof RentRunsPreviewCreateResponses];
+
+export type ReportsDnRegisterRetrieveData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by dispatch_date >= date_from
+         */
+        date_from?: string;
+        /**
+         * Filter by dispatch_date <= date_to
+         */
+        date_to?: string;
+        /**
+         * Response format: 'json' (default) or 'csv'. Named export_format (not 'format') to avoid colliding with DRF's reserved content-negotiation query parameter.
+         */
+        export_format?: string;
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Filter by Delivery Note status
+         */
+        status?: string;
+    };
+    url: '/api/reports/dn-register/';
+};
+
+export type ReportsDnRegisterRetrieveResponses = {
+    /**
+     * No response body
+     */
+    200: unknown;
+};
+
+export type ReportsGrnRegisterRetrieveData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by receipt_date >= date_from
+         */
+        date_from?: string;
+        /**
+         * Filter by receipt_date <= date_to
+         */
+        date_to?: string;
+        /**
+         * Response format: 'json' (default) or 'csv'. Named export_format (not 'format') to avoid colliding with DRF's reserved content-negotiation query parameter.
+         */
+        export_format?: string;
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Filter by GRN status
+         */
+        status?: string;
+    };
+    url: '/api/reports/grn-register/';
+};
+
+export type ReportsGrnRegisterRetrieveResponses = {
+    /**
+     * No response body
+     */
+    200: unknown;
+};
+
+export type ReportsInvoicesRetrieveData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by invoice_date >= date_from
+         */
+        date_from?: string;
+        /**
+         * Filter by invoice_date <= date_to
+         */
+        date_to?: string;
+        /**
+         * Response format: 'json' (default) or 'csv'. Named export_format (not 'format') to avoid colliding with DRF's reserved content-negotiation query parameter.
+         */
+        export_format?: string;
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Filter by Invoice status
+         */
+        status?: string;
+    };
+    url: '/api/reports/invoices/';
+};
+
+export type ReportsInvoicesRetrieveResponses = {
+    /**
+     * No response body
+     */
+    200: unknown;
+};
+
+export type ReportsRentRunsRetrieveData = {
+    body?: never;
+    path: {
+        rent_run_id: number;
+    };
+    query?: {
+        /**
+         * Response format: 'json' (default) or 'csv'. Named export_format (not 'format') to avoid colliding with DRF's reserved content-negotiation query parameter.
+         */
+        export_format?: string;
+    };
+    url: '/api/reports/rent-runs/{rent_run_id}/';
+};
+
+export type ReportsRentRunsRetrieveResponses = {
+    /**
+     * No response body
+     */
+    200: unknown;
+};
+
+export type ReportsStockSummaryRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Response format: 'json' (default) or 'csv'. Named export_format (not 'format') to avoid colliding with DRF's reserved content-negotiation query parameter.
+         */
+        export_format?: string;
+        /**
+         * Filter by Facility ID (omit for all facilities)
+         */
+        facility_id?: number;
+    };
+    url: '/api/reports/stock-summary/';
+};
+
+export type ReportsStockSummaryRetrieveResponses = {
+    /**
+     * No response body
+     */
+    200: unknown;
+};
+
+export type UsersListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filter by active status
+         */
+        is_active?: boolean;
+    };
+    url: '/api/users/';
+};
+
+export type UsersListResponses = {
+    200: Array<UserListOutput>;
+};
+
+export type UsersListResponse = UsersListResponses[keyof UsersListResponses];
+
+export type UsersCreateData = {
+    body: UserCreateInputWritable;
+    path?: never;
+    query?: never;
+    url: '/api/users/';
+};
+
+export type UsersCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type UsersCreateResponses = {
+    201: UserListOutput;
+};
+
+export type UsersCreateResponse = UsersCreateResponses[keyof UsersCreateResponses];
+
+export type UsersRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this user.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/users/{id}/';
+};
+
+export type UsersRetrieveErrors = {
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type UsersRetrieveResponses = {
+    200: UserListOutput;
+};
+
+export type UsersRetrieveResponse = UsersRetrieveResponses[keyof UsersRetrieveResponses];
+
+export type UsersUpdateData = {
+    body?: UserUpdateInputWritable;
+    path: {
+        /**
+         * A unique integer value identifying this user.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/users/{id}/';
+};
+
+export type UsersUpdateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type UsersUpdateResponses = {
+    200: UserListOutput;
+};
+
+export type UsersUpdateResponse = UsersUpdateResponses[keyof UsersUpdateResponses];
+
+export type UsersActivateCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this user.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/users/{id}/activate/';
+};
+
+export type UsersActivateCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type UsersActivateCreateResponses = {
+    200: UserListOutput;
+};
+
+export type UsersActivateCreateResponse = UsersActivateCreateResponses[keyof UsersActivateCreateResponses];
+
+export type UsersDeactivateCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this user.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/users/{id}/deactivate/';
+};
+
+export type UsersDeactivateCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type UsersDeactivateCreateResponses = {
+    200: UserListOutput;
+};
+
+export type UsersDeactivateCreateResponse = UsersDeactivateCreateResponses[keyof UsersDeactivateCreateResponses];

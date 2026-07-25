@@ -3,7 +3,8 @@ import {
   grnsRetrieve,
   grnsCreate,
   grnsPostCreate,
-  grnsCancelCreate
+  grnsCancelCreate,
+  grnsGeneratePdfCreate
 } from './generated/sdk.gen'
 import type {
   GrnOutput,
@@ -97,6 +98,19 @@ export async function cancelGrn(id: number): Promise<GrnOutput> {
   }
   if (!res.data) {
     throw new Error('No data returned from cancelling GRN')
+  }
+  return res.data
+}
+
+export async function generateGrnPdf(id: number): Promise<GrnOutput> {
+  const res = await grnsGeneratePdfCreate({
+    path: { id }
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to generate PDF for Goods Receipt Note'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from GRN PDF generation')
   }
   return res.data
 }

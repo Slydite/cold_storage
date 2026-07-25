@@ -76,6 +76,129 @@ paths:
               schema:
                 $ref: '#/components/schemas/CurrentUserOutput'
           description: ''
+  /api/chambers/:
+    get:
+      operationId: chambers_list
+      summary: List chambers
+      parameters:
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+      - in: query
+        name: floor_id
+        schema:
+          type: integer
+        description: Filter by Floor ID
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Filter by active status
+      tags:
+      - chambers
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChamberOutput'
+          description: ''
+    post:
+      operationId: chambers_create
+      summary: Create a new chamber
+      tags:
+      - chambers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChamberInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChamberInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChamberInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChamberOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/chambers/{id}/:
+    get:
+      operationId: chambers_retrieve
+      summary: Retrieve a chamber by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this chamber.
+        required: true
+      tags:
+      - chambers
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChamberOutput'
+          description: ''
+        '404':
+          description: No response body
+    put:
+      operationId: chambers_update
+      summary: Update an existing chamber
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this chamber.
+        required: true
+      tags:
+      - chambers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChamberUpdateInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChamberUpdateInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChamberUpdateInput'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChamberOutput'
+          description: ''
+        '400':
+          description: No response body
   /api/commodities/:
     get:
       operationId: commodities_list
@@ -310,6 +433,31 @@ paths:
           description: ''
         '400':
           description: No response body
+  /api/delivery-notes/{id}/generate-pdf/:
+    post:
+      operationId: delivery_notes_generate_pdf_create
+      summary: Generate PDF for a Delivery Note
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Delivery Note.
+        required: true
+      tags:
+      - delivery-notes
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryNoteOutput'
+          description: ''
+        '400':
+          description: No response body
   /api/delivery-notes/{id}/post/:
     post:
       operationId: delivery_notes_post_create
@@ -443,6 +591,125 @@ paths:
           description: ''
         '400':
           description: No response body
+  /api/floors/:
+    get:
+      operationId: floors_list
+      summary: List all floors for a facility
+      parameters:
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Filter by active status
+      tags:
+      - floors
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FloorOutput'
+          description: ''
+    post:
+      operationId: floors_create
+      summary: Create a new floor
+      tags:
+      - floors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FloorInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FloorInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FloorInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FloorOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/floors/{id}/:
+    get:
+      operationId: floors_retrieve
+      summary: Retrieve a floor by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this floor.
+        required: true
+      tags:
+      - floors
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FloorOutput'
+          description: ''
+        '404':
+          description: No response body
+    put:
+      operationId: floors_update
+      summary: Update an existing floor
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this floor.
+        required: true
+      tags:
+      - floors
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FloorUpdateInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FloorUpdateInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FloorUpdateInput'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FloorOutput'
+          description: ''
+        '400':
+          description: No response body
   /api/grns/:
     get:
       operationId: grns_list
@@ -536,6 +803,31 @@ paths:
     post:
       operationId: grns_cancel_create
       summary: Cancel a DRAFT GRN
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Goods Receipt Note.
+        required: true
+      tags:
+      - grns
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GRNOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/grns/{id}/generate-pdf/:
+    post:
+      operationId: grns_generate_pdf_create
+      summary: Generate PDF for a GRN
       parameters:
       - in: path
         name: id
@@ -757,7 +1049,12 @@ paths:
         name: chamber
         schema:
           type: string
-        description: Filter by Chamber
+        description: Filter by Chamber text
+      - in: query
+        name: chamber_id
+        schema:
+          type: integer
+        description: Filter by Chamber ID
       - in: query
         name: commodity_id
         schema:
@@ -773,7 +1070,12 @@ paths:
         name: floor
         schema:
           type: string
-        description: Filter by Floor
+        description: Filter by Floor text
+      - in: query
+        name: floor_id
+        schema:
+          type: integer
+        description: Filter by Floor ID
       - in: query
         name: in_stock_only
         schema:
@@ -1006,6 +1308,16 @@ paths:
         schema:
           type: boolean
         description: Filter by active status
+      - in: query
+        name: is_default
+        schema:
+          type: boolean
+        description: Filter for default rate cards (party=NULL)
+      - in: query
+        name: party_id
+        schema:
+          type: string
+        description: Filter by Party ID (or 'null' for default rate cards)
       tags:
       - rate-cards
       security:
@@ -1183,6 +1495,31 @@ paths:
           description: ''
         '400':
           description: No response body
+  /api/rent-runs/{id}/generate-pdf/:
+    post:
+      operationId: rent_runs_generate_pdf_create
+      summary: Generate PDF for a rent run
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Rent Run.
+        required: true
+      tags:
+      - rent-runs
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentRunOutput'
+          description: ''
+        '400':
+          description: No response body
   /api/rent-runs/{id}/post/:
     post:
       operationId: rent_runs_post_create
@@ -1208,8 +1545,495 @@ paths:
           description: ''
         '400':
           description: No response body
+  /api/rent-runs/preview/:
+    post:
+      operationId: rent_runs_preview_create
+      summary: Preview a rent run without persisting changes
+      tags:
+      - rent-runs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RentRunPreviewInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RentRunPreviewInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RentRunPreviewInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentRunPreviewOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/reports/dn-register/:
+    get:
+      operationId: reports_dn_register_retrieve
+      summary: List Delivery Notes (DN) report
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+        description: Filter by dispatch_date >= date_from
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+        description: Filter by dispatch_date <= date_to
+      - in: query
+        name: export_format
+        schema:
+          type: string
+        description: 'Response format: ''json'' (default) or ''csv''. Named export_format
+          (not ''format'') to avoid colliding with DRF''s reserved content-negotiation
+          query parameter.'
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter by Delivery Note status
+      tags:
+      - reports
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/grn-register/:
+    get:
+      operationId: reports_grn_register_retrieve
+      summary: List Goods Receipt Notes (GRN) report
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+        description: Filter by receipt_date >= date_from
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+        description: Filter by receipt_date <= date_to
+      - in: query
+        name: export_format
+        schema:
+          type: string
+        description: 'Response format: ''json'' (default) or ''csv''. Named export_format
+          (not ''format'') to avoid colliding with DRF''s reserved content-negotiation
+          query parameter.'
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter by GRN status
+      tags:
+      - reports
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/invoices/:
+    get:
+      operationId: reports_invoices_retrieve
+      summary: List Invoices report
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+        description: Filter by invoice_date >= date_from
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+        description: Filter by invoice_date <= date_to
+      - in: query
+        name: export_format
+        schema:
+          type: string
+        description: 'Response format: ''json'' (default) or ''csv''. Named export_format
+          (not ''format'') to avoid colliding with DRF''s reserved content-negotiation
+          query parameter.'
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter by Invoice status
+      tags:
+      - reports
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/rent-runs/{rent_run_id}/:
+    get:
+      operationId: reports_rent_runs_retrieve
+      summary: Rent run detail report export
+      parameters:
+      - in: query
+        name: export_format
+        schema:
+          type: string
+        description: 'Response format: ''json'' (default) or ''csv''. Named export_format
+          (not ''format'') to avoid colliding with DRF''s reserved content-negotiation
+          query parameter.'
+      - in: path
+        name: rent_run_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - reports
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reports/stock-summary/:
+    get:
+      operationId: reports_stock_summary_retrieve
+      summary: Stock summary report grouped by commodity and chamber
+      parameters:
+      - in: query
+        name: export_format
+        schema:
+          type: string
+        description: 'Response format: ''json'' (default) or ''csv''. Named export_format
+          (not ''format'') to avoid colliding with DRF''s reserved content-negotiation
+          query parameter.'
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID (omit for all facilities)
+      tags:
+      - reports
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/users/:
+    get:
+      operationId: users_list
+      description: |-
+        User management endpoints.
+        NOTE: Currently protected by permission_classes = [IsAuthenticated] in accordance with standing.md §9.
+        Because 'ADMIN' is the only role today, any authenticated user can manage users.
+        Must be revisited when role-based access control (RBAC) is expanded.
+      summary: List user accounts
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Filter by active status
+      tags:
+      - users
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserListOutput'
+          description: ''
+    post:
+      operationId: users_create
+      description: |-
+        User management endpoints.
+        NOTE: Currently protected by permission_classes = [IsAuthenticated] in accordance with standing.md §9.
+        Because 'ADMIN' is the only role today, any authenticated user can manage users.
+        Must be revisited when role-based access control (RBAC) is expanded.
+      summary: Create a new user account
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreateInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreateInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/users/{id}/:
+    get:
+      operationId: users_retrieve
+      description: |-
+        User management endpoints.
+        NOTE: Currently protected by permission_classes = [IsAuthenticated] in accordance with standing.md §9.
+        Because 'ADMIN' is the only role today, any authenticated user can manage users.
+        Must be revisited when role-based access control (RBAC) is expanded.
+      summary: Retrieve a user account by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListOutput'
+          description: ''
+        '404':
+          description: No response body
+    put:
+      operationId: users_update
+      description: |-
+        User management endpoints.
+        NOTE: Currently protected by permission_classes = [IsAuthenticated] in accordance with standing.md §9.
+        Because 'ADMIN' is the only role today, any authenticated user can manage users.
+        Must be revisited when role-based access control (RBAC) is expanded.
+      summary: Update an existing user account
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserUpdateInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserUpdateInput'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/users/{id}/activate/:
+    post:
+      operationId: users_activate_create
+      description: |-
+        User management endpoints.
+        NOTE: Currently protected by permission_classes = [IsAuthenticated] in accordance with standing.md §9.
+        Because 'ADMIN' is the only role today, any authenticated user can manage users.
+        Must be revisited when role-based access control (RBAC) is expanded.
+      summary: Re-activate a user account
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/users/{id}/deactivate/:
+    post:
+      operationId: users_deactivate_create
+      description: |-
+        User management endpoints.
+        NOTE: Currently protected by permission_classes = [IsAuthenticated] in accordance with standing.md §9.
+        Because 'ADMIN' is the only role today, any authenticated user can manage users.
+        Must be revisited when role-based access control (RBAC) is expanded.
+      summary: Deactivate a user account
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListOutput'
+          description: ''
+        '400':
+          description: No response body
 components:
   schemas:
+    ChamberInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        floor_id:
+          type: integer
+        name:
+          type: string
+          maxLength: 50
+        sort_order:
+          type: integer
+          default: 0
+        capacity_bags:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - facility_id
+      - floor_id
+      - name
+    ChamberOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        floor_id:
+          type: integer
+          readOnly: true
+        floor_name:
+          type: string
+          readOnly: true
+        facility_id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        sort_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        capacity_bags:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - facility_id
+      - floor_id
+      - floor_name
+      - id
+      - name
+      - updated_at
+    ChamberUpdateInput:
+      type: object
+      properties:
+        floor_id:
+          type: integer
+        name:
+          type: string
+          maxLength: 50
+        sort_order:
+          type: integer
+        capacity_bags:
+          type: integer
+          nullable: true
+        is_active:
+          type: boolean
     CommodityInput:
       type: object
       properties:
@@ -1346,6 +2170,14 @@ components:
           maximum: 9223372036854775807
           minimum: 0
           format: int64
+        balance_after:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+          description: Lot remaining_qty immediately AFTER this line was posted (paper
+            form Balance column). NULL for draft lines.
         created_at:
           type: string
           format: date-time
@@ -1383,6 +2215,10 @@ components:
           type: string
           default: ''
           maxLength: 100
+        transporter:
+          type: string
+          default: ''
+          maxLength: 255
         remarks:
           type: string
           default: ''
@@ -1429,10 +2265,17 @@ components:
         driver_name:
           type: string
           maxLength: 100
+        transporter:
+          type: string
+          maxLength: 255
         remarks:
           type: string
         status:
           $ref: '#/components/schemas/StatusEnum'
+        pdf_url:
+          type: string
+          nullable: true
+          readOnly: true
         lines:
           type: array
           items:
@@ -1456,6 +2299,7 @@ components:
       - party_code
       - party_id
       - party_name
+      - pdf_url
       - updated_at
     FacilityInput:
       type: object
@@ -1470,6 +2314,29 @@ components:
           type: string
           default: ''
           maxLength: 1000
+        gstin:
+          type: string
+          default: ''
+          maxLength: 15
+        phone:
+          type: string
+          default: ''
+          maxLength: 20
+        factory_phone:
+          type: string
+          default: ''
+          maxLength: 20
+        bank_account_no:
+          type: string
+          default: ''
+          maxLength: 40
+        bank_ifsc:
+          type: string
+          default: ''
+          maxLength: 20
+        terms_and_conditions:
+          type: string
+          default: ''
       required:
       - code
       - name
@@ -1487,6 +2354,27 @@ components:
           maxLength: 50
         address:
           type: string
+        gstin:
+          oneOf:
+          - type: string
+            pattern: ^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$
+            maxLength: 15
+          - type: string
+            maxLength: 0
+        phone:
+          type: string
+          maxLength: 20
+        factory_phone:
+          type: string
+          maxLength: 20
+        bank_account_no:
+          type: string
+          maxLength: 40
+        bank_ifsc:
+          type: string
+          maxLength: 20
+        terms_and_conditions:
+          type: string
         created_at:
           type: string
           format: date-time
@@ -1501,6 +2389,66 @@ components:
       - id
       - name
       - updated_at
+    FloorInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        name:
+          type: string
+          maxLength: 50
+        sort_order:
+          type: integer
+          default: 0
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - facility_id
+      - name
+    FloorOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility_id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        sort_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - facility_id
+      - id
+      - name
+      - updated_at
+    FloorUpdateInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        sort_order:
+          type: integer
+        is_active:
+          type: boolean
     GRNCreateInput:
       type: object
       properties:
@@ -1528,6 +2476,32 @@ components:
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
           default: '0.00'
+        bill_no:
+          type: string
+          default: ''
+          maxLength: 50
+        bilty_no:
+          type: string
+          default: ''
+          maxLength: 50
+        transporter:
+          type: string
+          default: ''
+          maxLength: 255
+        preservation_rate_per_bag_per_month:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          default: '0.00'
+        loading_unloading_rate_per_bag:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          default: '0.00'
+        inward_time:
+          type: string
+          format: time
+          nullable: true
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
@@ -1576,8 +2550,33 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        bill_no:
+          type: string
+          maxLength: 50
+        bilty_no:
+          type: string
+          maxLength: 50
+        transporter:
+          type: string
+          maxLength: 255
+        preservation_rate_per_bag_per_month:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        loading_unloading_rate_per_bag:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        inward_time:
+          type: string
+          format: time
+          nullable: true
         status:
           $ref: '#/components/schemas/StatusEnum'
+        pdf_url:
+          type: string
+          nullable: true
+          readOnly: true
         lots:
           type: array
           items:
@@ -1600,6 +2599,7 @@ components:
       - party_code
       - party_id
       - party_name
+      - pdf_url
       - receipt_date
       - updated_at
     GenerateInvoicesInput:
@@ -1741,6 +2741,16 @@ components:
           type: string
           default: ''
           maxLength: 50
+        floor_id:
+          type: integer
+          nullable: true
+        chamber_id:
+          type: integer
+          nullable: true
+        special_remarks:
+          type: string
+          default: ''
+          maxLength: 255
         initial_qty:
           type: integer
           minimum: 1
@@ -1808,6 +2818,25 @@ components:
         rack:
           type: string
           maxLength: 50
+        floor_ref_id:
+          type: integer
+          readOnly: true
+          nullable: true
+        chamber_ref_id:
+          type: integer
+          readOnly: true
+          nullable: true
+        floor_name:
+          type: string
+          readOnly: true
+          nullable: true
+        chamber_name:
+          type: string
+          readOnly: true
+          nullable: true
+        special_remarks:
+          type: string
+          maxLength: 255
         initial_qty:
           type: integer
           maximum: 9223372036854775807
@@ -1838,6 +2867,8 @@ components:
           format: date-time
           readOnly: true
       required:
+      - chamber_name
+      - chamber_ref_id
       - commodity_code
       - commodity_id
       - commodity_name
@@ -1845,6 +2876,8 @@ components:
       - created_at
       - facility_id
       - facility_name
+      - floor_name
+      - floor_ref_id
       - grn_id
       - grn_number
       - id
@@ -1864,6 +2897,22 @@ components:
           minimum: 1
       required:
       - qty
+    MissingRateCard:
+      type: object
+      properties:
+        commodity_id:
+          type: integer
+        commodity_name:
+          type: string
+        weight_category:
+          type: string
+        lot_number:
+          type: string
+      required:
+      - commodity_id
+      - commodity_name
+      - lot_number
+      - weight_category
     PartyInput:
       type: object
       properties:
@@ -1972,6 +3021,9 @@ components:
           type: integer
         commodity_id:
           type: integer
+        party_id:
+          type: integer
+          nullable: true
         weight_category:
           $ref: '#/components/schemas/WeightCategoryEnum'
         rate_per_bag_per_month:
@@ -1998,6 +3050,17 @@ components:
           readOnly: true
         facility_id:
           type: integer
+          readOnly: true
+        party_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        party_name:
+          type: string
+          readOnly: true
+          nullable: true
+        is_default:
+          type: boolean
           readOnly: true
         commodity_id:
           type: integer
@@ -2038,6 +3101,9 @@ components:
       - effective_from
       - facility_id
       - id
+      - is_default
+      - party_id
+      - party_name
       - rate_per_bag_per_month
       - updated_at
       - weight_category
@@ -2053,6 +3119,22 @@ components:
         period_end:
           type: string
           format: date
+        party_id:
+          type: integer
+          nullable: true
+        commodity_id:
+          type: integer
+          nullable: true
+        chamber:
+          type: string
+          default: ''
+        min_billing_days:
+          type: integer
+          minimum: 0
+          default: 0
+        notes:
+          type: string
+          default: ''
       required:
       - facility_id
       - period_end
@@ -2125,6 +3207,32 @@ components:
         period_end:
           type: string
           format: date
+        party_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        party_name:
+          type: string
+          readOnly: true
+          nullable: true
+        commodity_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        commodity_name:
+          type: string
+          readOnly: true
+          nullable: true
+        chamber:
+          type: string
+          maxLength: 50
+        min_billing_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        notes:
+          type: string
         status:
           $ref: '#/components/schemas/StatusEnum'
         run_date:
@@ -2140,6 +3248,10 @@ components:
           type: number
           format: double
           readOnly: true
+        pdf_url:
+          type: string
+          nullable: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -2149,15 +3261,116 @@ components:
           format: date-time
           readOnly: true
       required:
+      - commodity_id
+      - commodity_name
       - created_at
       - facility_id
       - id
       - lines
+      - party_id
+      - party_name
+      - pdf_url
       - period_end
       - period_start
       - run_date
       - total_amount
       - updated_at
+    RentRunPreviewInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        party_id:
+          type: integer
+          nullable: true
+        commodity_id:
+          type: integer
+          nullable: true
+        chamber:
+          type: string
+          default: ''
+        min_billing_days:
+          type: integer
+          minimum: 0
+          default: 0
+      required:
+      - facility_id
+      - period_end
+      - period_start
+    RentRunPreviewLine:
+      type: object
+      properties:
+        lot_id:
+          type: integer
+        lot_number:
+          type: string
+        commodity_id:
+          type: integer
+        commodity_name:
+          type: string
+        party_id:
+          type: integer
+        party_name:
+          type: string
+        qty:
+          type: integer
+        weight_category:
+          type: string
+        rate_per_bag_per_month:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        days_stored:
+          type: integer
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        rate_source:
+          type: string
+      required:
+      - amount
+      - commodity_id
+      - commodity_name
+      - days_stored
+      - lot_id
+      - lot_number
+      - party_id
+      - party_name
+      - qty
+      - rate_per_bag_per_month
+      - rate_source
+      - weight_category
+    RentRunPreviewOutput:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/RentRunPreviewLine'
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        missing_rate_cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/MissingRateCard'
+      required:
+      - lines
+      - missing_rate_cards
+      - total_amount
+    RoleEnum:
+      enum:
+      - ADMIN
+      type: string
+      description: '* `ADMIN` - Admin'
     StatusEnum:
       enum:
       - DRAFT
@@ -2178,6 +3391,105 @@ components:
         * `DEPOSITOR` - Depositor/Customer
         * `VENDOR` - Vendor
         * `TRANSPORTER` - Transporter
+    UserCreateInput:
+      type: object
+      properties:
+        username:
+          type: string
+          maxLength: 150
+        password:
+          type: string
+          writeOnly: true
+        email:
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        first_name:
+          type: string
+          default: ''
+          maxLength: 150
+        last_name:
+          type: string
+          default: ''
+          maxLength: 150
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          default: ADMIN
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - password
+      - username
+    UserListOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          title: Email address
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        is_active:
+          type: boolean
+          title: Active
+          description: Designates whether this user should be treated as active. Unselect
+            this instead of deleting accounts.
+        role:
+          type: string
+          readOnly: true
+        date_joined:
+          type: string
+          format: date-time
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - role
+      - username
+    UserUpdateInput:
+      type: object
+      properties:
+        email:
+          oneOf:
+          - type: string
+            format: email
+          - type: string
+            maxLength: 0
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        password:
+          type: string
+          writeOnly: true
     WeightCategoryEnum:
       enum:
       - KG_20

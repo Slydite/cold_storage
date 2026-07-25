@@ -1,6 +1,6 @@
 import { computed, type Ref, type ComputedRef } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { fetchGrns, createGrn, postGrn, cancelGrn } from '../api/grn'
+import { fetchGrns, createGrn, postGrn, cancelGrn, generateGrnPdf } from '../api/grn'
 import type { GrnCreateInput } from '../api/grn'
 
 export function useGrnList(
@@ -49,6 +49,16 @@ export function useCancelGrn() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => cancelGrn(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['grns'] })
+    }
+  })
+}
+
+export function useGenerateGrnPdf() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => generateGrnPdf(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grns'] })
     }

@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsListData, GrnsListResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesGeneratePdfCreateData, InvoicesGeneratePdfCreateErrors, InvoicesGeneratePdfCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, RateCardsCreateData, RateCardsCreateErrors, RateCardsCreateResponses, RateCardsListData, RateCardsListResponses, RateCardsRetrieveData, RateCardsRetrieveErrors, RateCardsRetrieveResponses, RentRunsCancelCreateData, RentRunsCancelCreateErrors, RentRunsCancelCreateResponses, RentRunsCreateData, RentRunsCreateErrors, RentRunsCreateResponses, RentRunsListData, RentRunsListResponses, RentRunsPostCreateData, RentRunsPostCreateErrors, RentRunsPostCreateResponses, RentRunsRetrieveData, RentRunsRetrieveErrors, RentRunsRetrieveResponses } from './types.gen';
+import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, ChambersCreateData, ChambersCreateErrors, ChambersCreateResponses, ChambersListData, ChambersListResponses, ChambersRetrieveData, ChambersRetrieveErrors, ChambersRetrieveResponses, ChambersUpdateData, ChambersUpdateErrors, ChambersUpdateResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesGeneratePdfCreateData, DeliveryNotesGeneratePdfCreateErrors, DeliveryNotesGeneratePdfCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, FloorsCreateData, FloorsCreateErrors, FloorsCreateResponses, FloorsListData, FloorsListResponses, FloorsRetrieveData, FloorsRetrieveErrors, FloorsRetrieveResponses, FloorsUpdateData, FloorsUpdateErrors, FloorsUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsGeneratePdfCreateData, GrnsGeneratePdfCreateErrors, GrnsGeneratePdfCreateResponses, GrnsListData, GrnsListResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesGeneratePdfCreateData, InvoicesGeneratePdfCreateErrors, InvoicesGeneratePdfCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, RateCardsCreateData, RateCardsCreateErrors, RateCardsCreateResponses, RateCardsListData, RateCardsListResponses, RateCardsRetrieveData, RateCardsRetrieveErrors, RateCardsRetrieveResponses, RentRunsCancelCreateData, RentRunsCancelCreateErrors, RentRunsCancelCreateResponses, RentRunsCreateData, RentRunsCreateErrors, RentRunsCreateResponses, RentRunsGeneratePdfCreateData, RentRunsGeneratePdfCreateErrors, RentRunsGeneratePdfCreateResponses, RentRunsListData, RentRunsListResponses, RentRunsPostCreateData, RentRunsPostCreateErrors, RentRunsPostCreateResponses, RentRunsPreviewCreateData, RentRunsPreviewCreateErrors, RentRunsPreviewCreateResponses, RentRunsRetrieveData, RentRunsRetrieveErrors, RentRunsRetrieveResponses, ReportsDnRegisterRetrieveData, ReportsDnRegisterRetrieveResponses, ReportsGrnRegisterRetrieveData, ReportsGrnRegisterRetrieveResponses, ReportsInvoicesRetrieveData, ReportsInvoicesRetrieveResponses, ReportsRentRunsRetrieveData, ReportsRentRunsRetrieveResponses, ReportsStockSummaryRetrieveData, ReportsStockSummaryRetrieveResponses, UsersActivateCreateData, UsersActivateCreateErrors, UsersActivateCreateResponses, UsersCreateData, UsersCreateErrors, UsersCreateResponses, UsersDeactivateCreateData, UsersDeactivateCreateErrors, UsersDeactivateCreateResponses, UsersListData, UsersListResponses, UsersRetrieveData, UsersRetrieveErrors, UsersRetrieveResponses, UsersUpdateData, UsersUpdateErrors, UsersUpdateResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -72,6 +72,66 @@ export const authMeRetrieve = <ThrowOnError extends boolean = false>(options?: O
         }, { scheme: 'basic', type: 'http' }],
     url: '/api/auth/me/',
     ...options
+});
+
+/**
+ * List chambers
+ */
+export const chambersList = <ThrowOnError extends boolean = false>(options?: Options<ChambersListData, ThrowOnError>): RequestResult<ChambersListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ChambersListResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/chambers/',
+    ...options
+});
+
+/**
+ * Create a new chamber
+ */
+export const chambersCreate = <ThrowOnError extends boolean = false>(options: Options<ChambersCreateData, ThrowOnError>): RequestResult<ChambersCreateResponses, ChambersCreateErrors, ThrowOnError> => (options.client ?? client).post<ChambersCreateResponses, ChambersCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/chambers/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieve a chamber by ID
+ */
+export const chambersRetrieve = <ThrowOnError extends boolean = false>(options: Options<ChambersRetrieveData, ThrowOnError>): RequestResult<ChambersRetrieveResponses, ChambersRetrieveErrors, ThrowOnError> => (options.client ?? client).get<ChambersRetrieveResponses, ChambersRetrieveErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/chambers/{id}/',
+    ...options
+});
+
+/**
+ * Update an existing chamber
+ */
+export const chambersUpdate = <ThrowOnError extends boolean = false>(options: Options<ChambersUpdateData, ThrowOnError>): RequestResult<ChambersUpdateResponses, ChambersUpdateErrors, ThrowOnError> => (options.client ?? client).put<ChambersUpdateResponses, ChambersUpdateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/chambers/{id}/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -191,6 +251,19 @@ export const deliveryNotesCancelCreate = <ThrowOnError extends boolean = false>(
 });
 
 /**
+ * Generate PDF for a Delivery Note
+ */
+export const deliveryNotesGeneratePdfCreate = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesGeneratePdfCreateData, ThrowOnError>): RequestResult<DeliveryNotesGeneratePdfCreateResponses, DeliveryNotesGeneratePdfCreateErrors, ThrowOnError> => (options.client ?? client).post<DeliveryNotesGeneratePdfCreateResponses, DeliveryNotesGeneratePdfCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/delivery-notes/{id}/generate-pdf/',
+    ...options
+});
+
+/**
  * Post a DRAFT Delivery Note
  */
 export const deliveryNotesPostCreate = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesPostCreateData, ThrowOnError>): RequestResult<DeliveryNotesPostCreateResponses, DeliveryNotesPostCreateErrors, ThrowOnError> => (options.client ?? client).post<DeliveryNotesPostCreateResponses, DeliveryNotesPostCreateErrors, ThrowOnError>({
@@ -264,6 +337,66 @@ export const facilitiesUpdate = <ThrowOnError extends boolean = false>(options: 
 });
 
 /**
+ * List all floors for a facility
+ */
+export const floorsList = <ThrowOnError extends boolean = false>(options: Options<FloorsListData, ThrowOnError>): RequestResult<FloorsListResponses, unknown, ThrowOnError> => (options.client ?? client).get<FloorsListResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/floors/',
+    ...options
+});
+
+/**
+ * Create a new floor
+ */
+export const floorsCreate = <ThrowOnError extends boolean = false>(options: Options<FloorsCreateData, ThrowOnError>): RequestResult<FloorsCreateResponses, FloorsCreateErrors, ThrowOnError> => (options.client ?? client).post<FloorsCreateResponses, FloorsCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/floors/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieve a floor by ID
+ */
+export const floorsRetrieve = <ThrowOnError extends boolean = false>(options: Options<FloorsRetrieveData, ThrowOnError>): RequestResult<FloorsRetrieveResponses, FloorsRetrieveErrors, ThrowOnError> => (options.client ?? client).get<FloorsRetrieveResponses, FloorsRetrieveErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/floors/{id}/',
+    ...options
+});
+
+/**
+ * Update an existing floor
+ */
+export const floorsUpdate = <ThrowOnError extends boolean = false>(options: Options<FloorsUpdateData, ThrowOnError>): RequestResult<FloorsUpdateResponses, FloorsUpdateErrors, ThrowOnError> => (options.client ?? client).put<FloorsUpdateResponses, FloorsUpdateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/floors/{id}/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * List Goods Receipt Notes (GRNs)
  */
 export const grnsList = <ThrowOnError extends boolean = false>(options: Options<GrnsListData, ThrowOnError>): RequestResult<GrnsListResponses, unknown, ThrowOnError> => (options.client ?? client).get<GrnsListResponses, unknown, ThrowOnError>({
@@ -316,6 +449,19 @@ export const grnsCancelCreate = <ThrowOnError extends boolean = false>(options: 
             type: 'apiKey'
         }, { scheme: 'basic', type: 'http' }],
     url: '/api/grns/{id}/cancel/',
+    ...options
+});
+
+/**
+ * Generate PDF for a GRN
+ */
+export const grnsGeneratePdfCreate = <ThrowOnError extends boolean = false>(options: Options<GrnsGeneratePdfCreateData, ThrowOnError>): RequestResult<GrnsGeneratePdfCreateResponses, GrnsGeneratePdfCreateErrors, ThrowOnError> => (options.client ?? client).post<GrnsGeneratePdfCreateResponses, GrnsGeneratePdfCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/grns/{id}/generate-pdf/',
     ...options
 });
 
@@ -617,6 +763,19 @@ export const rentRunsCancelCreate = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
+ * Generate PDF for a rent run
+ */
+export const rentRunsGeneratePdfCreate = <ThrowOnError extends boolean = false>(options: Options<RentRunsGeneratePdfCreateData, ThrowOnError>): RequestResult<RentRunsGeneratePdfCreateResponses, RentRunsGeneratePdfCreateErrors, ThrowOnError> => (options.client ?? client).post<RentRunsGeneratePdfCreateResponses, RentRunsGeneratePdfCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/rent-runs/{id}/generate-pdf/',
+    ...options
+});
+
+/**
  * Post a DRAFT rent run
  */
 export const rentRunsPostCreate = <ThrowOnError extends boolean = false>(options: Options<RentRunsPostCreateData, ThrowOnError>): RequestResult<RentRunsPostCreateResponses, RentRunsPostCreateErrors, ThrowOnError> => (options.client ?? client).post<RentRunsPostCreateResponses, RentRunsPostCreateErrors, ThrowOnError>({
@@ -626,5 +785,203 @@ export const rentRunsPostCreate = <ThrowOnError extends boolean = false>(options
             type: 'apiKey'
         }, { scheme: 'basic', type: 'http' }],
     url: '/api/rent-runs/{id}/post/',
+    ...options
+});
+
+/**
+ * Preview a rent run without persisting changes
+ */
+export const rentRunsPreviewCreate = <ThrowOnError extends boolean = false>(options: Options<RentRunsPreviewCreateData, ThrowOnError>): RequestResult<RentRunsPreviewCreateResponses, RentRunsPreviewCreateErrors, ThrowOnError> => (options.client ?? client).post<RentRunsPreviewCreateResponses, RentRunsPreviewCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/rent-runs/preview/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List Delivery Notes (DN) report
+ */
+export const reportsDnRegisterRetrieve = <ThrowOnError extends boolean = false>(options: Options<ReportsDnRegisterRetrieveData, ThrowOnError>): RequestResult<ReportsDnRegisterRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<ReportsDnRegisterRetrieveResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/reports/dn-register/',
+    ...options
+});
+
+/**
+ * List Goods Receipt Notes (GRN) report
+ */
+export const reportsGrnRegisterRetrieve = <ThrowOnError extends boolean = false>(options: Options<ReportsGrnRegisterRetrieveData, ThrowOnError>): RequestResult<ReportsGrnRegisterRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<ReportsGrnRegisterRetrieveResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/reports/grn-register/',
+    ...options
+});
+
+/**
+ * List Invoices report
+ */
+export const reportsInvoicesRetrieve = <ThrowOnError extends boolean = false>(options: Options<ReportsInvoicesRetrieveData, ThrowOnError>): RequestResult<ReportsInvoicesRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<ReportsInvoicesRetrieveResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/reports/invoices/',
+    ...options
+});
+
+/**
+ * Rent run detail report export
+ */
+export const reportsRentRunsRetrieve = <ThrowOnError extends boolean = false>(options: Options<ReportsRentRunsRetrieveData, ThrowOnError>): RequestResult<ReportsRentRunsRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<ReportsRentRunsRetrieveResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/reports/rent-runs/{rent_run_id}/',
+    ...options
+});
+
+/**
+ * Stock summary report grouped by commodity and chamber
+ */
+export const reportsStockSummaryRetrieve = <ThrowOnError extends boolean = false>(options?: Options<ReportsStockSummaryRetrieveData, ThrowOnError>): RequestResult<ReportsStockSummaryRetrieveResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ReportsStockSummaryRetrieveResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/reports/stock-summary/',
+    ...options
+});
+
+/**
+ * List user accounts
+ *
+ * User management endpoints.
+ * NOTE: Currently protected by permission_classes = [IsAuthenticated] in accordance with standing.md §9.
+ * Because 'ADMIN' is the only role today, any authenticated user can manage users.
+ * Must be revisited when role-based access control (RBAC) is expanded.
+ */
+export const usersList = <ThrowOnError extends boolean = false>(options?: Options<UsersListData, ThrowOnError>): RequestResult<UsersListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<UsersListResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/users/',
+    ...options
+});
+
+/**
+ * Create a new user account
+ *
+ * User management endpoints.
+ * NOTE: Currently protected by permission_classes = [IsAuthenticated] in accordance with standing.md §9.
+ * Because 'ADMIN' is the only role today, any authenticated user can manage users.
+ * Must be revisited when role-based access control (RBAC) is expanded.
+ */
+export const usersCreate = <ThrowOnError extends boolean = false>(options: Options<UsersCreateData, ThrowOnError>): RequestResult<UsersCreateResponses, UsersCreateErrors, ThrowOnError> => (options.client ?? client).post<UsersCreateResponses, UsersCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/users/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieve a user account by ID
+ *
+ * User management endpoints.
+ * NOTE: Currently protected by permission_classes = [IsAuthenticated] in accordance with standing.md §9.
+ * Because 'ADMIN' is the only role today, any authenticated user can manage users.
+ * Must be revisited when role-based access control (RBAC) is expanded.
+ */
+export const usersRetrieve = <ThrowOnError extends boolean = false>(options: Options<UsersRetrieveData, ThrowOnError>): RequestResult<UsersRetrieveResponses, UsersRetrieveErrors, ThrowOnError> => (options.client ?? client).get<UsersRetrieveResponses, UsersRetrieveErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/users/{id}/',
+    ...options
+});
+
+/**
+ * Update an existing user account
+ *
+ * User management endpoints.
+ * NOTE: Currently protected by permission_classes = [IsAuthenticated] in accordance with standing.md §9.
+ * Because 'ADMIN' is the only role today, any authenticated user can manage users.
+ * Must be revisited when role-based access control (RBAC) is expanded.
+ */
+export const usersUpdate = <ThrowOnError extends boolean = false>(options: Options<UsersUpdateData, ThrowOnError>): RequestResult<UsersUpdateResponses, UsersUpdateErrors, ThrowOnError> => (options.client ?? client).put<UsersUpdateResponses, UsersUpdateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/users/{id}/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Re-activate a user account
+ *
+ * User management endpoints.
+ * NOTE: Currently protected by permission_classes = [IsAuthenticated] in accordance with standing.md §9.
+ * Because 'ADMIN' is the only role today, any authenticated user can manage users.
+ * Must be revisited when role-based access control (RBAC) is expanded.
+ */
+export const usersActivateCreate = <ThrowOnError extends boolean = false>(options: Options<UsersActivateCreateData, ThrowOnError>): RequestResult<UsersActivateCreateResponses, UsersActivateCreateErrors, ThrowOnError> => (options.client ?? client).post<UsersActivateCreateResponses, UsersActivateCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/users/{id}/activate/',
+    ...options
+});
+
+/**
+ * Deactivate a user account
+ *
+ * User management endpoints.
+ * NOTE: Currently protected by permission_classes = [IsAuthenticated] in accordance with standing.md §9.
+ * Because 'ADMIN' is the only role today, any authenticated user can manage users.
+ * Must be revisited when role-based access control (RBAC) is expanded.
+ */
+export const usersDeactivateCreate = <ThrowOnError extends boolean = false>(options: Options<UsersDeactivateCreateData, ThrowOnError>): RequestResult<UsersDeactivateCreateResponses, UsersDeactivateCreateErrors, ThrowOnError> => (options.client ?? client).post<UsersDeactivateCreateResponses, UsersDeactivateCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/users/{id}/deactivate/',
     ...options
 });

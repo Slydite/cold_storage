@@ -4,7 +4,8 @@ import {
   fetchDeliveryNotes,
   createDeliveryNote,
   postDeliveryNote,
-  cancelDeliveryNote
+  cancelDeliveryNote,
+  generateDeliveryNotePdf
 } from '../api/delivery'
 import type { DeliveryNoteCreateInput } from '../api/delivery'
 
@@ -54,6 +55,16 @@ export function useCancelDeliveryNote() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => cancelDeliveryNote(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['delivery-notes'] })
+    }
+  })
+}
+
+export function useGenerateDeliveryNotePdf() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => generateDeliveryNotePdf(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['delivery-notes'] })
     }
