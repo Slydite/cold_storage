@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
+import InputText from 'primevue/inputtext'
+import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
 import { FilterMatchMode } from '@primevue/core/api'
-import { Search, Download, AlertCircle, RefreshCw, Package } from 'lucide-vue-next'
+import { Search, Filter, FilterX, Download, AlertCircle, RefreshCw, Package } from 'lucide-vue-next'
 import { chamberOptions } from '../../constants/chambers'
 import { formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
+import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
 import type { LotOutput } from '../../api/lot'
 import type { FacilityOutput } from '../../api/facility'
 import type { PartyOutput } from '../../api/party'
@@ -46,15 +49,6 @@ const statusOptions = [
   { label: 'All Lots', value: 'all' }
 ]
 
-const filters = ref({
-  lot_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  facility_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  floor: { value: null, matchMode: FilterMatchMode.EQUALS },
-  chamber: { value: null, matchMode: FilterMatchMode.EQUALS },
-  party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  commodity_name: { value: null, matchMode: FilterMatchMode.CONTAINS }
-})
-
 const facilityFilterOptions = computed(() => [
   { label: 'All Cold Storages', value: undefined },
   ...(props.facilities || []).map((f) => ({ label: f.name, value: f.id }))
@@ -70,10 +64,59 @@ const floorOptions = computed(() => {
   ]
 })
 
+const floorFilterOptions = computed(() => {
+  const distinctFloors = [
+    ...new Set(props.lots.map((l) => l.floor).filter((f): f is string => Boolean(f)))
+  ]
+  return distinctFloors.map((f) => ({ label: `Floor ${f}`, value: f }))
+})
+
 const partyFilterOptions = computed(() => [
   { label: 'All Parties', value: undefined },
   ...(props.parties || []).map((p) => ({ label: `${p.name} (${p.code})`, value: p.id }))
 ])
+
+function buildDefaultFilters() {
+  return {
+    lot_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    facility_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    floor: { value: null, matchMode: FilterMatchMode.EQUALS },
+    chamber: { value: null, matchMode: FilterMatchMode.EQUALS },
+    party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    commodity_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    inward_date: { value: null, matchMode: FilterMatchMode.CONTAINS }
+  }
+}
+
+const extraActiveCount = computed(() => {
+  let count = 0
+  if (props.searchQuery && props.searchQuery.trim() !== '') count++
+  if (props.selectedFacilityId !== undefined) count++
+  if (props.selectedFloor && props.selectedFloor !== 'all') count++
+  if (props.selectedChamber && props.selectedChamber !== 'all') count++
+  if (props.selectedPartyId !== undefined) count++
+  if (props.selectedStatus && props.selectedStatus !== 'active') count++
+  return count
+})
+
+const {
+  filters,
+  showFilterRow,
+  activeFilterCount,
+  hasActiveFilters,
+  clearFilters,
+  toggleFilterRow
+} = useTableFilters(buildDefaultFilters, extraActiveCount)
+
+function handleClearAll() {
+  clearFilters()
+  emit('update:searchQuery', '')
+  emit('update:selectedFacilityId', undefined)
+  emit('update:selectedFloor', 'all')
+  emit('update:selectedChamber', 'all')
+  emit('update:selectedPartyId', undefined)
+  emit('update:selectedStatus', 'active')
+}
 
 const handleExport = () => {
   const headers = [
@@ -165,6 +208,28 @@ const handleExport = () => {
       </div>
 
       <div class="toolbar-actions">
+        <button
+          class="btn-outlined"
+          :class="{ active: showFilterRow }"
+          type="button"
+          :aria-pressed="showFilterRow"
+          @click="toggleFilterRow"
+          title="Toggle inline column filters"
+        >
+          <Filter :size="15" />
+          <span>Filters</span>
+          <span v-if="hasActiveFilters" class="filter-count-badge">{{ activeFilterCount }}</span>
+        </button>
+        <button
+          class="btn-outlined"
+          type="button"
+          :disabled="!hasActiveFilters"
+          @click="handleClearAll"
+          title="Clear all active filters and search"
+        >
+          <FilterX :size="15" />
+          <span>Clear Filters</span>
+        </button>
         <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
           <span>Export</span>
@@ -201,7 +266,7 @@ const handleExport = () => {
       <DataTable
         :value="props.lots"
         v-model:filters="filters"
-        filterDisplay="menu"
+        :filterDisplay="showFilterRow ? 'row' : 'menu'"
         paginator
         :rows="10"
         :rowsPerPageOptions="[10, 25, 50]"
@@ -217,11 +282,31 @@ const handleExport = () => {
           <template #body="{ data }">
             <span class="code-link">{{ data.lot_number }}</span>
           </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter Lot No."
+              class="p-column-filter"
+              size="small"
+            />
+          </template>
         </Column>
 
         <Column field="facility_name" header="Cold Storage" sortable>
           <template #body="{ data }">
             <span>{{ data.facility_name || '-' }}</span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter Storage"
+              class="p-column-filter"
+              size="small"
+            />
           </template>
         </Column>
 
@@ -230,13 +315,47 @@ const handleExport = () => {
             <span class="party-name" v-if="data.party_name">{{ data.party_name }}</span>
             <span v-else>-</span>
           </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter Party"
+              class="p-column-filter"
+              size="small"
+            />
+          </template>
         </Column>
 
-        <Column field="commodity_name" header="Item / Product" sortable />
+        <Column field="commodity_name" header="Item / Product" sortable>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter Item"
+              class="p-column-filter"
+              size="small"
+            />
+          </template>
+        </Column>
 
         <Column field="floor" header="Floor" sortable>
           <template #body="{ data }">
             <span>{{ data.floor || '-' }}</span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <Select
+              v-model="filterModel.value"
+              @change="filterCallback()"
+              :options="floorFilterOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Floor"
+              class="p-column-filter"
+              size="small"
+              showClear
+            />
           </template>
         </Column>
 
@@ -244,9 +363,34 @@ const handleExport = () => {
           <template #body="{ data }">
             <span>{{ data.chamber || '-' }}</span>
           </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <Select
+              v-model="filterModel.value"
+              @change="filterCallback()"
+              :options="chamberOptions.filter((c) => c.value !== 'all')"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Chamber"
+              class="p-column-filter"
+              size="small"
+              showClear
+            />
+          </template>
         </Column>
 
-        <Column field="inward_date" header="In Date" sortable />
+        <Column field="inward_date" header="In Date" sortable>
+          <template #filter="{ filterModel, filterCallback }">
+            <DatePicker
+              v-model="filterModel.value"
+              @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
+              dateFormat="yy-mm-dd"
+              placeholder="YYYY-MM-DD"
+              class="p-column-filter"
+              size="small"
+              showClear
+            />
+          </template>
+        </Column>
 
         <Column field="initial_qty" header="In Qty" sortable>
           <template #body="{ data }">

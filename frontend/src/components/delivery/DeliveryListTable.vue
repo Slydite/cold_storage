@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
+import InputText from 'primevue/inputtext'
+import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
 import { useConfirm } from 'primevue/useconfirm'
 import { FilterMatchMode } from '@primevue/core/api'
 import {
   Search,
   Filter,
+  FilterX,
   Download,
   Plus,
   AlertCircle,
@@ -19,6 +22,7 @@ import {
 } from 'lucide-vue-next'
 import { formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
+import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
 import type { DeliveryNoteOutput } from '../../api/delivery'
 
 interface Props {
@@ -50,13 +54,43 @@ const statusOptions = [
   { label: 'Cancelled', value: 'CANCELLED' }
 ]
 
-const filters = ref({
-  dn_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  dispatch_date: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  vehicle_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  status: { value: null, matchMode: FilterMatchMode.EQUALS }
+const statusFilterOptions = [
+  { label: 'DRAFT', value: 'DRAFT' },
+  { label: 'POSTED', value: 'POSTED' },
+  { label: 'CANCELLED', value: 'CANCELLED' }
+]
+
+function buildDefaultFilters() {
+  return {
+    dn_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    dispatch_date: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    vehicle_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    status: { value: null, matchMode: FilterMatchMode.EQUALS }
+  }
+}
+
+const extraActiveCount = computed(() => {
+  let count = 0
+  if (props.searchQuery && props.searchQuery.trim() !== '') count++
+  if (props.selectedStatus && props.selectedStatus !== 'all') count++
+  return count
 })
+
+const {
+  filters,
+  showFilterRow,
+  activeFilterCount,
+  hasActiveFilters,
+  clearFilters,
+  toggleFilterRow
+} = useTableFilters(buildDefaultFilters, extraActiveCount)
+
+function handleClearAll() {
+  clearFilters()
+  emit('update:searchQuery', '')
+  emit('update:selectedStatus', 'all')
+}
 
 function computeTotalQty(dn: DeliveryNoteOutput): number {
   if (!dn.lines || dn.lines.length === 0) return 0
@@ -143,9 +177,27 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
       </div>
 
       <div class="toolbar-actions">
-        <button class="btn-outlined" type="button">
+        <button
+          class="btn-outlined"
+          :class="{ active: showFilterRow }"
+          type="button"
+          :aria-pressed="showFilterRow"
+          @click="toggleFilterRow"
+          title="Toggle inline column filters"
+        >
           <Filter :size="15" />
           <span>Filters</span>
+          <span v-if="hasActiveFilters" class="filter-count-badge">{{ activeFilterCount }}</span>
+        </button>
+        <button
+          class="btn-outlined"
+          type="button"
+          :disabled="!hasActiveFilters"
+          @click="handleClearAll"
+          title="Clear all active filters and search"
+        >
+          <FilterX :size="15" />
+          <span>Clear Filters</span>
         </button>
         <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
@@ -191,7 +243,7 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
       <DataTable
         :value="props.deliveries"
         v-model:filters="filters"
-        filterDisplay="menu"
+        :filterDisplay="showFilterRow ? 'row' : 'menu'"
         paginator
         :rows="10"
         :rowsPerPageOptions="[10, 25, 50]"
@@ -207,19 +259,61 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
           <template #body="{ data }">
             <span class="code-link">{{ data.dn_number }}</span>
           </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter DN No."
+              class="p-column-filter"
+              size="small"
+            />
+          </template>
         </Column>
 
-        <Column field="dispatch_date" header="Dispatch Date" sortable />
+        <Column field="dispatch_date" header="Dispatch Date" sortable>
+          <template #filter="{ filterModel, filterCallback }">
+            <DatePicker
+              v-model="filterModel.value"
+              @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
+              dateFormat="yy-mm-dd"
+              placeholder="YYYY-MM-DD"
+              class="p-column-filter"
+              size="small"
+              showClear
+            />
+          </template>
+        </Column>
 
         <Column field="party_name" header="Party" sortable>
           <template #body="{ data }">
             <span class="party-name">{{ data.party_name }}</span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter party..."
+              class="p-column-filter"
+              size="small"
+            />
           </template>
         </Column>
 
         <Column field="vehicle_number" header="Vehicle No.">
           <template #body="{ data }">
             <span>{{ data.vehicle_number || '-' }}</span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter vehicle..."
+              class="p-column-filter"
+              size="small"
+            />
           </template>
         </Column>
 
@@ -241,6 +335,19 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
             >
               {{ data.status }}
             </span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <Select
+              v-model="filterModel.value"
+              @change="filterCallback()"
+              :options="statusFilterOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Status"
+              class="p-column-filter"
+              size="small"
+              showClear
+            />
           </template>
         </Column>
 

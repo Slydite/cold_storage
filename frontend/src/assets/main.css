@@ -259,6 +259,38 @@ html, body {
   border-color: var(--accent-primary);
 }
 
+.btn-outlined.active,
+.btn-outlined[aria-pressed="true"] {
+  background-color: var(--accent-primary-light);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.btn-outlined:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.filter-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  background-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+.p-column-filter {
+  width: 100%;
+}
+
 .btn-text {
   background: transparent;
   border: none;

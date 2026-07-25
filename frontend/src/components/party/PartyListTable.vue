@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
+import InputText from 'primevue/inputtext'
 import Skeleton from 'primevue/skeleton'
 import { FilterMatchMode } from '@primevue/core/api'
-import { Search, Plus, Download, Phone, Mail, AlertCircle, RefreshCw, Users } from 'lucide-vue-next'
+import { Search, Filter, FilterX, Plus, Download, Phone, Mail, AlertCircle, RefreshCw, Users } from 'lucide-vue-next'
 import { exportToCsv } from '../../utils/csvExport'
+import { useTableFilters } from '../../composables/useTableFilters'
 import type { PartyOutput } from '../../api/party'
 
 interface Props {
@@ -34,13 +36,43 @@ const typeOptions = [
   { label: 'Transporters', value: 'TRANSPORTER' }
 ]
 
-const filters = ref({
-  code: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  type_display: { value: null, matchMode: FilterMatchMode.EQUALS },
-  phone: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  email: { value: null, matchMode: FilterMatchMode.CONTAINS }
+const typeFilterOptions = [
+  { label: 'Depositor', value: 'DEPOSITOR' },
+  { label: 'Vendor', value: 'VENDOR' },
+  { label: 'Transporter', value: 'TRANSPORTER' }
+]
+
+function buildDefaultFilters() {
+  return {
+    code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    type_display: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    phone: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    email: { value: null, matchMode: FilterMatchMode.CONTAINS }
+  }
+}
+
+const extraActiveCount = computed(() => {
+  let count = 0
+  if (props.searchQuery && props.searchQuery.trim() !== '') count++
+  if (props.selectedType && props.selectedType !== 'all') count++
+  return count
 })
+
+const {
+  filters,
+  showFilterRow,
+  activeFilterCount,
+  hasActiveFilters,
+  clearFilters,
+  toggleFilterRow
+} = useTableFilters(buildDefaultFilters, extraActiveCount)
+
+function handleClearAll() {
+  clearFilters()
+  emit('update:searchQuery', '')
+  emit('update:selectedType', 'all')
+}
 
 const handleExport = () => {
   const headers = ['Code', 'Party Name', 'Type', 'Phone', 'Email', 'GSTIN', 'Address']
@@ -83,6 +115,28 @@ const handleExport = () => {
       </div>
 
       <div class="toolbar-actions">
+        <button
+          class="btn-outlined"
+          :class="{ active: showFilterRow }"
+          type="button"
+          :aria-pressed="showFilterRow"
+          @click="toggleFilterRow"
+          title="Toggle inline column filters"
+        >
+          <Filter :size="15" />
+          <span>Filters</span>
+          <span v-if="hasActiveFilters" class="filter-count-badge">{{ activeFilterCount }}</span>
+        </button>
+        <button
+          class="btn-outlined"
+          type="button"
+          :disabled="!hasActiveFilters"
+          @click="handleClearAll"
+          title="Clear all active filters and search"
+        >
+          <FilterX :size="15" />
+          <span>Clear Filters</span>
+        </button>
         <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
           <span>Export</span>
@@ -127,7 +181,7 @@ const handleExport = () => {
       <DataTable
         :value="props.parties"
         v-model:filters="filters"
-        filterDisplay="menu"
+        :filterDisplay="showFilterRow ? 'row' : 'menu'"
         paginator
         :rows="10"
         :rowsPerPageOptions="[10, 25, 50]"
@@ -143,17 +197,50 @@ const handleExport = () => {
           <template #body="{ data }">
             <span class="code-link">{{ data.code }}</span>
           </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter Code"
+              class="p-column-filter"
+              size="small"
+            />
+          </template>
         </Column>
 
         <Column field="name" header="Party Name" sortable>
           <template #body="{ data }">
             <span class="party-name">{{ data.name }}</span>
           </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter Name"
+              class="p-column-filter"
+              size="small"
+            />
+          </template>
         </Column>
 
         <Column field="type_display" header="Type" sortable>
           <template #body="{ data }">
             <span>{{ data.type_display || data.type }}</span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <Select
+              v-model="filterModel.value"
+              @change="filterCallback()"
+              :options="typeFilterOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Type"
+              class="p-column-filter"
+              size="small"
+              showClear
+            />
           </template>
         </Column>
 
@@ -165,6 +252,16 @@ const handleExport = () => {
             </div>
             <span v-else>-</span>
           </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter Phone"
+              class="p-column-filter"
+              size="small"
+            />
+          </template>
         </Column>
 
         <Column field="email" header="Email">
@@ -174,6 +271,16 @@ const handleExport = () => {
               <span>{{ data.email }}</span>
             </div>
             <span v-else>-</span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter Email"
+              class="p-column-filter"
+              size="small"
+            />
           </template>
         </Column>
 

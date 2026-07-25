@@ -3,11 +3,13 @@ import { ref, computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
+import InputText from 'primevue/inputtext'
 import Skeleton from 'primevue/skeleton'
 import { FilterMatchMode } from '@primevue/core/api'
-import { Search, Download, Plus, AlertCircle, RefreshCw, Layers } from 'lucide-vue-next'
+import { Search, Filter, FilterX, Download, Plus, AlertCircle, RefreshCw, Layers } from 'lucide-vue-next'
 import { formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
+import { useTableFilters } from '../../composables/useTableFilters'
 import type { RateCardOutput } from '../../api/billing'
 
 interface Props {
@@ -33,10 +35,34 @@ const activeOptions = [
   { label: 'Inactive Only', value: 'inactive' }
 ]
 
-const filters = ref({
-  commodity_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  weight_category_display: { value: null, matchMode: FilterMatchMode.CONTAINS }
+function buildDefaultFilters() {
+  return {
+    commodity_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    weight_category_display: { value: null, matchMode: FilterMatchMode.CONTAINS }
+  }
+}
+
+const extraActiveCount = computed(() => {
+  let count = 0
+  if (searchQuery.value.trim() !== '') count++
+  if (activeFilter.value !== 'all') count++
+  return count
 })
+
+const {
+  filters,
+  showFilterRow,
+  activeFilterCount,
+  hasActiveFilters,
+  clearFilters,
+  toggleFilterRow
+} = useTableFilters(buildDefaultFilters, extraActiveCount)
+
+function handleClearAll() {
+  clearFilters()
+  searchQuery.value = ''
+  activeFilter.value = 'all'
+}
 
 const filteredRateCards = computed(() => {
   let list = props.rateCards
@@ -95,6 +121,28 @@ const handleExport = () => {
       </div>
 
       <div class="toolbar-actions">
+        <button
+          class="btn-outlined"
+          :class="{ active: showFilterRow }"
+          type="button"
+          :aria-pressed="showFilterRow"
+          @click="toggleFilterRow"
+          title="Toggle inline column filters"
+        >
+          <Filter :size="15" />
+          <span>Filters</span>
+          <span v-if="hasActiveFilters" class="filter-count-badge">{{ activeFilterCount }}</span>
+        </button>
+        <button
+          class="btn-outlined"
+          type="button"
+          :disabled="!hasActiveFilters"
+          @click="handleClearAll"
+          title="Clear all active filters and search"
+        >
+          <FilterX :size="15" />
+          <span>Clear Filters</span>
+        </button>
         <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
           <span>Export CSV</span>
@@ -139,6 +187,7 @@ const handleExport = () => {
       <DataTable
         :value="filteredRateCards"
         v-model:filters="filters"
+        :filterDisplay="showFilterRow ? 'row' : 'menu'"
         paginator
         :rows="5"
         :rowsPerPageOptions="[5, 10, 25]"
@@ -154,11 +203,31 @@ const handleExport = () => {
             <span class="party-name">{{ data.commodity_name }}</span>
             <span class="code-sub"> ({{ data.commodity_code }})</span>
           </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter commodity..."
+              class="p-column-filter"
+              size="small"
+            />
+          </template>
         </Column>
 
         <Column field="weight_category_display" header="Weight Category" sortable>
           <template #body="{ data }">
             <span>{{ data.weight_category_display }}</span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter category..."
+              class="p-column-filter"
+              size="small"
+            />
           </template>
         </Column>
 

@@ -17,13 +17,17 @@ from .selectors import (
 from .services import (
     create_rate_card,
     create_rent_run,
+    preview_rent_run,
     post_rent_run,
-    cancel_rent_run
+    cancel_rent_run,
+    generate_rent_run_pdf
 )
 from .serializers import (
     RateCardInputSerializer,
     RateCardOutputSerializer,
     RentRunCreateInputSerializer,
+    RentRunPreviewInputSerializer,
+    RentRunPreviewOutputSerializer,
     RentRunOutputSerializer
 )
 from .models import RateCard, RentRun
@@ -37,6 +41,8 @@ class RateCardViewSet(ViewSet):
         parameters=[
             OpenApiParameter('facility_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="Filter by Facility ID"),
             OpenApiParameter('commodity_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Commodity ID"),
+            OpenApiParameter('party_id', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Party ID (or 'null' for default rate cards)"),
+            OpenApiParameter('is_default', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description="Filter for default rate cards (party=NULL)"),
             OpenApiParameter('is_active', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description="Filter by active status"),
         ],
         responses={200: RateCardOutputSerializer(many=True)},
@@ -48,6 +54,12 @@ class RateCardViewSet(ViewSet):
             raise ValidationError({"facility_id": "This query parameter is required."})
 
         commodity_id = request.query_params.get('commodity_id')
+        party_id = request.query_params.get('party_id')
+        is_default_param = request.query_params.get('is_default')
+        is_default_filter = None
+        if is_default_param is not None:
+            is_default_filter = is_default_param.lower() in ['true', '1', 'yes']
+
         is_active_param = request.query_params.get('is_active')
         is_active_filter = None
         if is_active_param is not None:
@@ -57,6 +69,8 @@ class RateCardViewSet(ViewSet):
             rate_cards = get_rate_cards_list(
                 facility_id=int(facility_id),
                 commodity_id=int(commodity_id) if commodity_id else None,
+                party_id=party_id,
+                is_default=is_default_filter,
                 is_active=is_active_filter
             )
         except ValueError:
@@ -90,6 +104,7 @@ class RateCardViewSet(ViewSet):
             rate_card = create_rate_card(
                 facility_id=serializer.validated_data['facility_id'],
                 commodity_id=serializer.validated_data['commodity_id'],
+                party_id=serializer.validated_data.get('party_id'),
                 weight_category=serializer.validated_data['weight_category'],
                 rate_per_bag_per_month=serializer.validated_data['rate_per_bag_per_month'],
                 effective_from=serializer.validated_data['effective_from'],
@@ -157,13 +172,44 @@ class RentRunViewSet(ViewSet):
             rent_run = create_rent_run(
                 facility_id=serializer.validated_data['facility_id'],
                 period_start=serializer.validated_data['period_start'],
-                period_end=serializer.validated_data['period_end']
+                period_end=serializer.validated_data['period_end'],
+                party_id=serializer.validated_data.get('party_id'),
+                commodity_id=serializer.validated_data.get('commodity_id'),
+                chamber=serializer.validated_data.get('chamber'),
+                min_billing_days=serializer.validated_data.get('min_billing_days', 0),
+                notes=serializer.validated_data.get('notes', '')
             )
         except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         output_serializer = RentRunOutputSerializer(rent_run)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=RentRunPreviewInputSerializer,
+        responses={200: RentRunPreviewOutputSerializer, 400: None},
+        summary="Preview a rent run without persisting changes"
+    )
+    @action(detail=False, methods=['post'], url_path='preview')
+    def preview(self, request):
+        serializer = RentRunPreviewInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            data = preview_rent_run(
+                facility_id=serializer.validated_data['facility_id'],
+                period_start=serializer.validated_data['period_start'],
+                period_end=serializer.validated_data['period_end'],
+                party_id=serializer.validated_data.get('party_id'),
+                commodity_id=serializer.validated_data.get('commodity_id'),
+                chamber=serializer.validated_data.get('chamber'),
+                min_billing_days=serializer.validated_data.get('min_billing_days', 0)
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        output_serializer = RentRunPreviewOutputSerializer(data)
+        return Response(output_serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
         responses={200: RentRunOutputSerializer, 400: None},
@@ -188,3 +234,17 @@ class RentRunViewSet(ViewSet):
         except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         return Response(RentRunOutputSerializer(rent_run).data)
+
+    @extend_schema(
+        responses={200: RentRunOutputSerializer, 400: None},
+        summary="Generate PDF for a rent run"
+    )
+    @action(detail=True, methods=['post'], url_path='generate-pdf')
+    def generate_pdf(self, request, pk=None):
+        try:
+            generate_rent_run_pdf(rent_run_id=pk)
+            rent_run = get_rent_run_by_id(pk)
+        except (RentRun.DoesNotExist, DjangoValidationError) as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(RentRunOutputSerializer(rent_run).data)
+

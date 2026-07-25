@@ -3,11 +3,14 @@ import { ref, computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
+import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
 import { useConfirm } from 'primevue/useconfirm'
 import { FilterMatchMode } from '@primevue/core/api'
 import {
   Search,
+  Filter,
+  FilterX,
   Download,
   Calculator,
   Eye,
@@ -19,6 +22,7 @@ import {
 } from 'lucide-vue-next'
 import { formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
+import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
 import type { RentRunOutput } from '../../api/billing'
 
 interface Props {
@@ -50,9 +54,40 @@ const statusOptions = [
   { label: 'Cancelled', value: 'CANCELLED' }
 ]
 
-const filters = ref({
-  status: { value: null, matchMode: FilterMatchMode.EQUALS }
+const statusFilterOptions = [
+  { label: 'DRAFT', value: 'DRAFT' },
+  { label: 'POSTED', value: 'POSTED' },
+  { label: 'CANCELLED', value: 'CANCELLED' }
+]
+
+function buildDefaultFilters() {
+  return {
+    status: { value: null, matchMode: FilterMatchMode.EQUALS },
+    run_date: { value: null, matchMode: FilterMatchMode.CONTAINS }
+  }
+}
+
+const extraActiveCount = computed(() => {
+  let count = 0
+  if (searchQuery.value.trim() !== '') count++
+  if (statusFilter.value !== 'all') count++
+  return count
 })
+
+const {
+  filters,
+  showFilterRow,
+  activeFilterCount,
+  hasActiveFilters,
+  clearFilters,
+  toggleFilterRow
+} = useTableFilters(buildDefaultFilters, extraActiveCount)
+
+function handleClearAll() {
+  clearFilters()
+  searchQuery.value = ''
+  statusFilter.value = 'all'
+}
 
 const filteredRentRuns = computed(() => {
   let list = props.rentRuns
@@ -152,6 +187,28 @@ const handleCancelConfirm = (id: number) => {
       </div>
 
       <div class="toolbar-actions">
+        <button
+          class="btn-outlined"
+          :class="{ active: showFilterRow }"
+          type="button"
+          :aria-pressed="showFilterRow"
+          @click="toggleFilterRow"
+          title="Toggle inline column filters"
+        >
+          <Filter :size="15" />
+          <span>Filters</span>
+          <span v-if="hasActiveFilters" class="filter-count-badge">{{ activeFilterCount }}</span>
+        </button>
+        <button
+          class="btn-outlined"
+          type="button"
+          :disabled="!hasActiveFilters"
+          @click="handleClearAll"
+          title="Clear all active filters and search"
+        >
+          <FilterX :size="15" />
+          <span>Clear Filters</span>
+        </button>
         <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
           <span>Export CSV</span>
@@ -196,6 +253,7 @@ const handleCancelConfirm = (id: number) => {
       <DataTable
         :value="filteredRentRuns"
         v-model:filters="filters"
+        :filterDisplay="showFilterRow ? 'row' : 'menu'"
         paginator
         :rows="10"
         :rowsPerPageOptions="[10, 25, 50]"
@@ -218,7 +276,19 @@ const handleCancelConfirm = (id: number) => {
           </template>
         </Column>
 
-        <Column field="run_date" header="Execution Date" sortable />
+        <Column field="run_date" header="Execution Date" sortable>
+          <template #filter="{ filterModel, filterCallback }">
+            <DatePicker
+              v-model="filterModel.value"
+              @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
+              dateFormat="yy-mm-dd"
+              placeholder="YYYY-MM-DD"
+              class="p-column-filter"
+              size="small"
+              showClear
+            />
+          </template>
+        </Column>
 
         <Column header="Lots Billed">
           <template #body="{ data }">
@@ -244,6 +314,19 @@ const handleCancelConfirm = (id: number) => {
             >
               {{ data.status }}
             </span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <Select
+              v-model="filterModel.value"
+              @change="filterCallback()"
+              :options="statusFilterOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Status"
+              class="p-column-filter"
+              size="small"
+              showClear
+            />
           </template>
         </Column>
 

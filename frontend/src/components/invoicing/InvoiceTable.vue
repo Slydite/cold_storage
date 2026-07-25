@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
+import InputText from 'primevue/inputtext'
+import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
 import { FilterMatchMode } from '@primevue/core/api'
 import {
   Search,
+  Filter,
+  FilterX,
   Download,
   Plus,
   AlertCircle,
@@ -18,6 +22,7 @@ import {
 } from 'lucide-vue-next'
 import { formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
+import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
 import type { InvoiceOutput } from '../../api/invoicing'
 
 interface Props {
@@ -49,12 +54,42 @@ const statusOptions = [
   { label: 'Cancelled', value: 'CANCELLED' }
 ]
 
-const filters = ref({
-  invoice_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  invoice_date: { value: null, matchMode: FilterMatchMode.CONTAINS },
-  status: { value: null, matchMode: FilterMatchMode.EQUALS }
+const statusFilterOptions = [
+  { label: 'DRAFT', value: 'DRAFT' },
+  { label: 'POSTED', value: 'POSTED' },
+  { label: 'CANCELLED', value: 'CANCELLED' }
+]
+
+function buildDefaultFilters() {
+  return {
+    invoice_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    invoice_date: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    status: { value: null, matchMode: FilterMatchMode.EQUALS }
+  }
+}
+
+const extraActiveCount = computed(() => {
+  let count = 0
+  if (props.searchQuery && props.searchQuery.trim() !== '') count++
+  if (props.selectedStatus && props.selectedStatus !== '') count++
+  return count
 })
+
+const {
+  filters,
+  showFilterRow,
+  activeFilterCount,
+  hasActiveFilters,
+  clearFilters,
+  toggleFilterRow
+} = useTableFilters(buildDefaultFilters, extraActiveCount)
+
+function handleClearAll() {
+  clearFilters()
+  emit('update:searchQuery', '')
+  emit('update:selectedStatus', '')
+}
 
 function resolvePdfUrl(url: string | null): string {
   if (!url) return '#'
@@ -104,6 +139,28 @@ const handleExport = () => {
       </div>
 
       <div class="toolbar-actions">
+        <button
+          class="btn-outlined"
+          :class="{ active: showFilterRow }"
+          type="button"
+          :aria-pressed="showFilterRow"
+          @click="toggleFilterRow"
+          title="Toggle inline column filters"
+        >
+          <Filter :size="15" />
+          <span>Filters</span>
+          <span v-if="hasActiveFilters" class="filter-count-badge">{{ activeFilterCount }}</span>
+        </button>
+        <button
+          class="btn-outlined"
+          type="button"
+          :disabled="!hasActiveFilters"
+          @click="handleClearAll"
+          title="Clear all active filters and search"
+        >
+          <FilterX :size="15" />
+          <span>Clear Filters</span>
+        </button>
         <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
           <span>Export CSV</span>
@@ -148,7 +205,7 @@ const handleExport = () => {
       <DataTable
         :value="props.invoices"
         v-model:filters="filters"
-        filterDisplay="menu"
+        :filterDisplay="showFilterRow ? 'row' : 'menu'"
         paginator
         :rows="10"
         :rowsPerPageOptions="[10, 25, 50]"
@@ -164,13 +221,45 @@ const handleExport = () => {
           <template #body="{ data }">
             <span class="code-link">{{ data.invoice_number }}</span>
           </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter Invoice No."
+              class="p-column-filter"
+              size="small"
+            />
+          </template>
         </Column>
 
-        <Column field="invoice_date" header="Date" sortable />
+        <Column field="invoice_date" header="Date" sortable>
+          <template #filter="{ filterModel, filterCallback }">
+            <DatePicker
+              v-model="filterModel.value"
+              @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
+              dateFormat="yy-mm-dd"
+              placeholder="YYYY-MM-DD"
+              class="p-column-filter"
+              size="small"
+              showClear
+            />
+          </template>
+        </Column>
 
         <Column field="party_name" header="Party" sortable>
           <template #body="{ data }">
             <span class="party-name">{{ data.party_name }}</span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText
+              v-model="filterModel.value"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter party..."
+              class="p-column-filter"
+              size="small"
+            />
           </template>
         </Column>
 
@@ -210,6 +299,19 @@ const handleExport = () => {
             >
               {{ data.status }}
             </span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <Select
+              v-model="filterModel.value"
+              @change="filterCallback()"
+              :options="statusFilterOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Status"
+              class="p-column-filter"
+              size="small"
+              showClear
+            />
           </template>
         </Column>
 
