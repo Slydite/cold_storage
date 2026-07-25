@@ -3,16 +3,18 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '../../stores/theme'
 import { useAuthStore } from '../../stores/auth'
+import { useSidebar } from '../../composables/useSidebar'
 import { useToast } from 'primevue/usetoast'
 import OverlayBadge from 'primevue/overlaybadge'
 import Menu from 'primevue/menu'
-import { Calendar, Bell, Sun, Moon } from 'lucide-vue-next'
+import { Calendar, Bell, Sun, Moon, Menu as MenuIcon } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const themeStore = useThemeStore()
 const authStore = useAuthStore()
+const { toggle: toggleSidebar } = useSidebar()
 
 const pageMeta = computed(() => ({
   title: (route.meta.title as string) ?? 'Dashboard',
@@ -84,9 +86,20 @@ const menuItems = computed(() => [
 <template>
   <header class="app-header">
     <!-- Header Left Title & Contextual Greeting -->
-    <div class="header-titles">
-      <h2 class="page-title">{{ pageMeta.title }}</h2>
-      <p class="page-subtitle">{{ pageMeta.subtitle }}</p>
+    <div class="header-left">
+      <button
+        class="hamburger-btn"
+        type="button"
+        title="Toggle Navigation Menu"
+        aria-label="Toggle navigation menu"
+        @click="toggleSidebar"
+      >
+        <MenuIcon :size="20" />
+      </button>
+      <div class="header-titles">
+        <h2 class="page-title">{{ pageMeta.title }}</h2>
+        <p class="page-subtitle">{{ pageMeta.subtitle }}</p>
+      </div>
     </div>
 
     <!-- Header Right Controls -->
@@ -145,6 +158,34 @@ const menuItems = computed(() => [
   top: 0;
   z-index: 90;
   transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hamburger-btn {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.hamburger-btn:hover {
+  background-color: var(--bg-surface-hover);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
 }
 
 .header-titles {
@@ -230,5 +271,29 @@ const menuItems = computed(() => [
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
   cursor: pointer;
   border: none;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0 16px;
+  }
+  .hamburger-btn {
+    display: flex;
+  }
+  .page-title {
+    font-size: 18px;
+  }
+  .page-subtitle {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .date-badge {
+    display: none;
+  }
+  .header-actions {
+    gap: 8px;
+  }
 }
 </style>

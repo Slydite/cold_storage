@@ -108,6 +108,7 @@ export type GrnCreateInput = {
     vehicle_number?: string;
     driver_name?: string;
     remarks?: string;
+    loading_charge?: string;
     status?: StatusEnum;
     items?: Array<LotItemInput>;
 };
@@ -123,8 +124,41 @@ export type GrnOutput = {
     vehicle_number?: string;
     driver_name?: string;
     remarks?: string;
+    loading_charge?: string;
     status?: StatusEnum;
     readonly lots: Array<LotOutput>;
+    readonly created_at: string;
+    readonly updated_at: string;
+};
+
+export type GenerateInvoicesInput = {
+    facility_id: number;
+    rent_run_id: number;
+};
+
+export type InvoiceLineOutput = {
+    readonly id: number;
+    description: string;
+    amount: string;
+    readonly rent_run_line_id: number | null;
+};
+
+export type InvoiceOutput = {
+    readonly id: number;
+    readonly facility_id: number;
+    invoice_number: string;
+    readonly party_id: number;
+    readonly party_name: string;
+    party_gstin_snapshot?: string;
+    readonly rent_run_id: number | null;
+    invoice_date: string;
+    status?: StatusEnum;
+    subtotal?: string;
+    gst_rate?: string;
+    gst_amount?: string;
+    total_amount?: string;
+    readonly pdf_url: string | null;
+    readonly lines: Array<InvoiceLineOutput>;
     readonly created_at: string;
     readonly updated_at: string;
 };
@@ -147,7 +181,12 @@ export type LotItemInput = {
 export type LotOutput = {
     readonly id: number;
     readonly facility_id: number;
+    readonly facility_name: string;
     readonly grn_id: number;
+    readonly grn_number: string;
+    readonly party_id: number;
+    readonly party_name: string;
+    readonly party_code: string;
     readonly commodity_id: number;
     readonly commodity_name: string;
     readonly commodity_code: string;
@@ -177,6 +216,7 @@ export type PartyInput = {
     phone?: string;
     email?: string | string;
     address?: string;
+    gstin?: string;
     is_active?: boolean;
 };
 
@@ -191,7 +231,65 @@ export type PartyOutput = {
     phone?: string;
     email?: string | string;
     address?: string;
+    gstin?: string | string;
     is_active?: boolean;
+    readonly created_at: string;
+    readonly updated_at: string;
+};
+
+export type RateCardInput = {
+    facility_id: number;
+    commodity_id: number;
+    weight_category: WeightCategoryEnum;
+    rate_per_bag_per_month: string;
+    effective_from: string;
+    is_active?: boolean;
+};
+
+export type RateCardOutput = {
+    readonly id: number;
+    readonly facility_id: number;
+    readonly commodity_id: number;
+    readonly commodity_name: string;
+    readonly commodity_code: string;
+    weight_category: WeightCategoryEnum;
+    readonly weight_category_display: string;
+    rate_per_bag_per_month: string;
+    effective_from: string;
+    is_active?: boolean;
+    readonly created_at: string;
+    readonly updated_at: string;
+};
+
+export type RentRunCreateInput = {
+    facility_id: number;
+    period_start: string;
+    period_end: string;
+};
+
+export type RentRunLineOutput = {
+    readonly id: number;
+    readonly lot_id: number;
+    readonly lot_number: string;
+    readonly commodity_name: string;
+    readonly party_id: number;
+    readonly party_name: string;
+    qty: number;
+    weight_category: WeightCategoryEnum;
+    rate_per_bag_per_month: string;
+    days_stored: number;
+    amount: string;
+};
+
+export type RentRunOutput = {
+    readonly id: number;
+    readonly facility_id: number;
+    period_start: string;
+    period_end: string;
+    status?: StatusEnum;
+    readonly run_date: string;
+    readonly lines: Array<RentRunLineOutput>;
+    readonly total_amount: number;
     readonly created_at: string;
     readonly updated_at: string;
 };
@@ -209,6 +307,13 @@ export type StatusEnum = 'DRAFT' | 'POSTED' | 'CANCELLED';
  * * `TRANSPORTER` - Transporter
  */
 export type TypeEnum = 'DEPOSITOR' | 'VENDOR' | 'TRANSPORTER';
+
+/**
+ * * `KG_20` - 20 kg bag
+ * * `KG_50` - 50 kg bag
+ * * `OTHER` - Other
+ */
+export type WeightCategoryEnum = 'KG_20' | 'KG_50' | 'OTHER';
 
 export type CommodityOutputWritable = {
     name: string;
@@ -256,7 +361,24 @@ export type GrnOutputWritable = {
     vehicle_number?: string;
     driver_name?: string;
     remarks?: string;
+    loading_charge?: string;
     status?: StatusEnum;
+};
+
+export type InvoiceLineOutputWritable = {
+    description: string;
+    amount: string;
+};
+
+export type InvoiceOutputWritable = {
+    invoice_number: string;
+    party_gstin_snapshot?: string;
+    invoice_date: string;
+    status?: StatusEnum;
+    subtotal?: string;
+    gst_rate?: string;
+    gst_amount?: string;
+    total_amount?: string;
 };
 
 export type LoginInputWritable = {
@@ -284,7 +406,29 @@ export type PartyOutputWritable = {
     phone?: string;
     email?: string | string;
     address?: string;
+    gstin?: string | string;
     is_active?: boolean;
+};
+
+export type RateCardOutputWritable = {
+    weight_category: WeightCategoryEnum;
+    rate_per_bag_per_month: string;
+    effective_from: string;
+    is_active?: boolean;
+};
+
+export type RentRunLineOutputWritable = {
+    qty: number;
+    weight_category: WeightCategoryEnum;
+    rate_per_bag_per_month: string;
+    days_stored: number;
+    amount: string;
+};
+
+export type RentRunOutputWritable = {
+    period_start: string;
+    period_end: string;
+    status?: StatusEnum;
 };
 
 export type AuthCsrfRetrieveData = {
@@ -769,10 +913,156 @@ export type GrnsPostCreateResponses = {
 
 export type GrnsPostCreateResponse = GrnsPostCreateResponses[keyof GrnsPostCreateResponses];
 
-export type LotsListData = {
+export type InvoicesListData = {
     body?: never;
     path?: never;
     query: {
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Filter by Party ID
+         */
+        party_id?: number;
+        /**
+         * Filter by status (DRAFT, POSTED, CANCELLED)
+         */
+        status?: string;
+    };
+    url: '/api/invoices/';
+};
+
+export type InvoicesListResponses = {
+    200: Array<InvoiceOutput>;
+};
+
+export type InvoicesListResponse = InvoicesListResponses[keyof InvoicesListResponses];
+
+export type InvoicesCreateData = {
+    body: GenerateInvoicesInput;
+    path?: never;
+    query?: never;
+    url: '/api/invoices/';
+};
+
+export type InvoicesCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type InvoicesCreateResponses = {
+    201: Array<InvoiceOutput>;
+};
+
+export type InvoicesCreateResponse = InvoicesCreateResponses[keyof InvoicesCreateResponses];
+
+export type InvoicesRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Invoice.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/invoices/{id}/';
+};
+
+export type InvoicesRetrieveErrors = {
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type InvoicesRetrieveResponses = {
+    200: InvoiceOutput;
+};
+
+export type InvoicesRetrieveResponse = InvoicesRetrieveResponses[keyof InvoicesRetrieveResponses];
+
+export type InvoicesCancelCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Invoice.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/invoices/{id}/cancel/';
+};
+
+export type InvoicesCancelCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type InvoicesCancelCreateResponses = {
+    200: InvoiceOutput;
+};
+
+export type InvoicesCancelCreateResponse = InvoicesCancelCreateResponses[keyof InvoicesCancelCreateResponses];
+
+export type InvoicesGeneratePdfCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Invoice.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/invoices/{id}/generate-pdf/';
+};
+
+export type InvoicesGeneratePdfCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type InvoicesGeneratePdfCreateResponses = {
+    200: InvoiceOutput;
+};
+
+export type InvoicesGeneratePdfCreateResponse = InvoicesGeneratePdfCreateResponses[keyof InvoicesGeneratePdfCreateResponses];
+
+export type InvoicesPostCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Invoice.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/invoices/{id}/post/';
+};
+
+export type InvoicesPostCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type InvoicesPostCreateResponses = {
+    200: InvoiceOutput;
+};
+
+export type InvoicesPostCreateResponse = InvoicesPostCreateResponses[keyof InvoicesPostCreateResponses];
+
+export type LotsListData = {
+    body?: never;
+    path?: never;
+    query?: {
         /**
          * Filter by Chamber
          */
@@ -782,9 +1072,13 @@ export type LotsListData = {
          */
         commodity_id?: number;
         /**
-         * Filter by Facility ID
+         * Filter by Facility (cold storage) ID. Omit to view stock across every facility.
          */
-        facility_id: number;
+        facility_id?: number;
+        /**
+         * Filter by Floor
+         */
+        floor?: string;
         /**
          * Only show lots with remaining_qty > 0
          */
@@ -948,3 +1242,191 @@ export type PartiesUpdateResponses = {
 };
 
 export type PartiesUpdateResponse = PartiesUpdateResponses[keyof PartiesUpdateResponses];
+
+export type RateCardsListData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by Commodity ID
+         */
+        commodity_id?: number;
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Filter by active status
+         */
+        is_active?: boolean;
+    };
+    url: '/api/rate-cards/';
+};
+
+export type RateCardsListResponses = {
+    200: Array<RateCardOutput>;
+};
+
+export type RateCardsListResponse = RateCardsListResponses[keyof RateCardsListResponses];
+
+export type RateCardsCreateData = {
+    body: RateCardInput;
+    path?: never;
+    query?: never;
+    url: '/api/rate-cards/';
+};
+
+export type RateCardsCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type RateCardsCreateResponses = {
+    201: RateCardOutput;
+};
+
+export type RateCardsCreateResponse = RateCardsCreateResponses[keyof RateCardsCreateResponses];
+
+export type RateCardsRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this rate card.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/rate-cards/{id}/';
+};
+
+export type RateCardsRetrieveErrors = {
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type RateCardsRetrieveResponses = {
+    200: RateCardOutput;
+};
+
+export type RateCardsRetrieveResponse = RateCardsRetrieveResponses[keyof RateCardsRetrieveResponses];
+
+export type RentRunsListData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Filter by status (DRAFT, POSTED, CANCELLED)
+         */
+        status?: string;
+    };
+    url: '/api/rent-runs/';
+};
+
+export type RentRunsListResponses = {
+    200: Array<RentRunOutput>;
+};
+
+export type RentRunsListResponse = RentRunsListResponses[keyof RentRunsListResponses];
+
+export type RentRunsCreateData = {
+    body: RentRunCreateInput;
+    path?: never;
+    query?: never;
+    url: '/api/rent-runs/';
+};
+
+export type RentRunsCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type RentRunsCreateResponses = {
+    201: RentRunOutput;
+};
+
+export type RentRunsCreateResponse = RentRunsCreateResponses[keyof RentRunsCreateResponses];
+
+export type RentRunsRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Rent Run.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/rent-runs/{id}/';
+};
+
+export type RentRunsRetrieveErrors = {
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type RentRunsRetrieveResponses = {
+    200: RentRunOutput;
+};
+
+export type RentRunsRetrieveResponse = RentRunsRetrieveResponses[keyof RentRunsRetrieveResponses];
+
+export type RentRunsCancelCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Rent Run.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/rent-runs/{id}/cancel/';
+};
+
+export type RentRunsCancelCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type RentRunsCancelCreateResponses = {
+    200: RentRunOutput;
+};
+
+export type RentRunsCancelCreateResponse = RentRunsCancelCreateResponses[keyof RentRunsCancelCreateResponses];
+
+export type RentRunsPostCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Rent Run.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/rent-runs/{id}/post/';
+};
+
+export type RentRunsPostCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type RentRunsPostCreateResponses = {
+    200: RentRunOutput;
+};
+
+export type RentRunsPostCreateResponse = RentRunsPostCreateResponses[keyof RentRunsPostCreateResponses];

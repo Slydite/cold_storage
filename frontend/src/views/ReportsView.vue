@@ -32,6 +32,12 @@ const reportCards = [
 <style scoped>
 .page-container { display: flex; flex-direction: column; gap: 16px; }
 .reports-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (max-width: 900px) {
+  .reports-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+}
+@media (max-width: 600px) {
+  .reports-grid { grid-template-columns: 1fr; gap: 16px; }
+}
 .report-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; gap: 20px; box-shadow: var(--shadow-card); }
 .card-top { display: flex; align-items: flex-start; gap: 16px; }
 .report-icon-box { width: 44px; height: 44px; border-radius: 12px; background: var(--accent-primary-light); color: var(--accent-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }

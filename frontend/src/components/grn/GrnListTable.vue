@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
+import { FilterMatchMode } from '@primevue/core/api'
 import {
   Search,
   Filter,
@@ -17,6 +19,7 @@ import {
 } from 'lucide-vue-next'
 import { chamberOptions } from '../../constants/chambers'
 import { formatQty } from '../../utils/format'
+import { exportToCsv } from '../../utils/csvExport'
 import type { GrnOutput } from '../../api/grn'
 
 interface Props {
@@ -48,6 +51,13 @@ const periodOptions = [
   { label: 'All Time', value: 'all_time' }
 ]
 
+const filters = ref({
+  grn_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  receipt_date: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  status: { value: null, matchMode: FilterMatchMode.EQUALS }
+})
+
 function computeNetWeight(grn: GrnOutput): number {
   if (!grn.lots || grn.lots.length === 0) return 0
   return grn.lots.reduce((sum, lot) => {
@@ -55,6 +65,18 @@ function computeNetWeight(grn: GrnOutput): number {
     const unitW = lot.unit_weight ? parseFloat(lot.unit_weight) : 1
     return sum + qty * unitW
   }, 0)
+}
+
+const handleExport = () => {
+  const headers = ['GRN No.', 'GRN Date', 'Party', 'Net Weight (MT)', 'Status']
+  const rows = props.grns.map((grn) => [
+    grn.grn_number,
+    grn.receipt_date,
+    grn.party_name,
+    formatQty(computeNetWeight(grn)),
+    grn.status || '-'
+  ])
+  exportToCsv('grns.csv', headers, rows)
 }
 </script>
 
@@ -96,7 +118,7 @@ function computeNetWeight(grn: GrnOutput): number {
           <Filter :size="15" />
           <span>Filters</span>
         </button>
-        <button class="btn-outlined" type="button">
+        <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
           <span>Export</span>
         </button>
@@ -139,8 +161,16 @@ function computeNetWeight(grn: GrnOutput): number {
     <div v-else class="table-card">
       <DataTable
         :value="props.grns"
+        v-model:filters="filters"
+        filterDisplay="menu"
         paginator
         :rows="10"
+        :rowsPerPageOptions="[10, 25, 50]"
+        sortMode="multiple"
+        removableSort
+        size="small"
+        stripedRows
+        dataKey="id"
         responsiveLayout="scroll"
         class="custom-datatable"
       >
@@ -164,7 +194,7 @@ function computeNetWeight(grn: GrnOutput): number {
           </template>
         </Column>
 
-        <Column field="status" header="Status">
+        <Column field="status" header="Status" sortable>
           <template #body="{ data }">
             <span
               class="status-pill"

@@ -1,10 +1,26 @@
 <script setup lang="ts">
+import { watch } from 'vue'
+import { useRoute } from 'vue-router'
 import AppSidebar from './AppSidebar.vue'
 import AppHeader from './AppHeader.vue'
+import { useSidebar } from '../../composables/useSidebar'
+
+const route = useRoute()
+const { isOpen, close } = useSidebar()
+
+watch(
+  () => route.fullPath,
+  () => {
+    close()
+  }
+)
 </script>
 
 <template>
   <div class="app-layout">
+    <!-- Semi-transparent backdrop for mobile off-canvas sidebar -->
+    <div v-if="isOpen" class="sidebar-backdrop" @click="close" />
+
     <!-- Sidebar -->
     <AppSidebar />
 
@@ -27,6 +43,13 @@ import AppHeader from './AppHeader.vue'
   min-height: 100vh;
   width: 100%;
   background-color: var(--bg-page);
+}
+
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 95;
 }
 
 .main-wrapper {

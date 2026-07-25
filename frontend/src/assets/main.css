@@ -280,7 +280,39 @@ html, body {
   border-radius: 14px;
   padding: 12px;
   box-shadow: var(--shadow-card);
-  overflow: hidden;
+  overflow-x: auto;
+}
+
+@media (max-width: 640px) {
+  .list-toolbar {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .toolbar-search {
+    flex-wrap: wrap;
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .toolbar-search .search-input-wrapper {
+    min-width: 100%;
+  }
+
+  .toolbar-search .toolbar-select {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .toolbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .table-card {
+    padding: 8px;
+  }
 }
 
 .num-val {

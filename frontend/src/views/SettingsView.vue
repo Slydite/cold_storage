@@ -62,6 +62,10 @@ const saveSettings = () => {
 .card-desc { font-size: 12.5px; color: var(--text-secondary); }
 .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 8px; }
 .span-2 { grid-column: span 2; }
+@media (max-width: 640px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .span-2 { grid-column: span 1; }
+}
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
 .w-full { width: 100%; }

@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
 import { useConfirm } from 'primevue/useconfirm'
+import { FilterMatchMode } from '@primevue/core/api'
 import {
   Search,
   Filter,
@@ -16,6 +18,7 @@ import {
   XCircle
 } from 'lucide-vue-next'
 import { formatQty } from '../../utils/format'
+import { exportToCsv } from '../../utils/csvExport'
 import type { DeliveryNoteOutput } from '../../api/delivery'
 
 interface Props {
@@ -47,9 +50,30 @@ const statusOptions = [
   { label: 'Cancelled', value: 'CANCELLED' }
 ]
 
+const filters = ref({
+  dn_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  dispatch_date: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  vehicle_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  status: { value: null, matchMode: FilterMatchMode.EQUALS }
+})
+
 function computeTotalQty(dn: DeliveryNoteOutput): number {
   if (!dn.lines || dn.lines.length === 0) return 0
   return dn.lines.reduce((sum, line) => sum + (line.qty || 0), 0)
+}
+
+const handleExport = () => {
+  const headers = ['DN No.', 'Dispatch Date', 'Party', 'Vehicle No.', 'Total Qty', 'Status']
+  const rows = props.deliveries.map((dn) => [
+    dn.dn_number,
+    dn.dispatch_date,
+    dn.party_name,
+    dn.vehicle_number || '-',
+    formatQty(computeTotalQty(dn)),
+    dn.status || '-'
+  ])
+  exportToCsv('deliveries.csv', headers, rows)
 }
 
 const confirmPost = (dn: DeliveryNoteOutput) => {
@@ -123,7 +147,7 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
           <Filter :size="15" />
           <span>Filters</span>
         </button>
-        <button class="btn-outlined" type="button">
+        <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
           <span>Export</span>
         </button>
@@ -166,8 +190,16 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
     <div v-else class="table-card">
       <DataTable
         :value="props.deliveries"
+        v-model:filters="filters"
+        filterDisplay="menu"
         paginator
         :rows="10"
+        :rowsPerPageOptions="[10, 25, 50]"
+        sortMode="multiple"
+        removableSort
+        size="small"
+        stripedRows
+        dataKey="id"
         responsiveLayout="scroll"
         class="custom-datatable"
       >
@@ -197,7 +229,7 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
           </template>
         </Column>
 
-        <Column field="status" header="Status">
+        <Column field="status" header="Status" sortable>
           <template #body="{ data }">
             <span
               class="status-pill"

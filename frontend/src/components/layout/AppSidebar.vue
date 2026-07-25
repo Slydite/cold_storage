@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Select from 'primevue/select'
+import { useSidebar } from '../../composables/useSidebar'
+import { useFacility } from '../../composables/useFacility'
+import { useAuthStore } from '../../stores/auth'
 import {
   LayoutDashboard,
   PackagePlus,
@@ -19,6 +22,9 @@ import {
 
 const route = useRoute()
 const router = useRouter()
+const { isOpen, close } = useSidebar()
+const { facilities, selectedFacilityId, setSelectedFacilityId } = useFacility()
+const authStore = useAuthStore()
 
 const navItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -32,12 +38,44 @@ const navItems = [
   { label: 'Settings', icon: Settings, path: '/settings' }
 ]
 
-const selectedFacility = ref('main')
-const facilityOptions = [
-  { label: 'Main Cold Storage', value: 'main' },
-  { label: 'Chamber Annex B', value: 'annex_b' },
-  { label: 'North Hub Facility', value: 'north_hub' }
-]
+const facilityOptions = computed(() =>
+  facilities.value.map((f) => ({ label: f.name, value: f.id }))
+)
+
+const activeFacilityId = computed({
+  get: () => selectedFacilityId.value,
+  set: (val: number | undefined) => {
+    setSelectedFacilityId(val)
+  }
+})
+
+const userInitials = computed(() => {
+  const user = authStore.user
+  if (!user) return 'AU'
+  const firstInitial = user.first_name?.[0]
+  const lastInitial = user.last_name?.[0]
+  if (firstInitial && lastInitial) {
+    return (firstInitial + lastInitial).toUpperCase()
+  }
+  const username = user.username
+  const parts = username.split(/[\s._-]+/).filter(Boolean)
+  const [firstPart, secondPart] = parts
+  if (firstPart && secondPart) {
+    return (firstPart.charAt(0) + secondPart.charAt(0)).toUpperCase()
+  }
+  return username.slice(0, 2).toUpperCase()
+})
+
+const userNameDisplay = computed(() => {
+  const user = authStore.user
+  if (!user) return 'Admin User'
+  if (user.first_name || user.last_name) {
+    return [user.first_name, user.last_name].filter(Boolean).join(' ')
+  }
+  return user.username
+})
+
+const userEmailDisplay = computed(() => authStore.user?.email || 'admin@coldstore.in')
 
 const isActive = (path: string) => {
   if (path === '/' && route.path === '/') return true
@@ -46,12 +84,13 @@ const isActive = (path: string) => {
 }
 
 const navigate = (path: string) => {
+  close()
   router.push(path)
 }
 </script>
 
 <template>
-  <aside class="app-sidebar">
+  <aside class="app-sidebar" :class="{ open: isOpen }">
     <!-- Brand Logo Header -->
     <div class="sidebar-header">
       <div class="logo-icon-wrapper">
@@ -80,9 +119,9 @@ const navigate = (path: string) => {
     <!-- Pinned Bottom Footer Section -->
     <div class="sidebar-footer">
       <div class="facility-switcher">
-        <label class="facility-label">Main Facility</label>
+        <label class="facility-label">Working Facility</label>
         <Select
-          v-model="selectedFacility"
+          v-model="activeFacilityId"
           :options="facilityOptions"
           optionLabel="label"
           optionValue="value"
@@ -95,10 +134,10 @@ const navigate = (path: string) => {
       </div>
 
       <div class="user-card">
-        <div class="user-avatar">AU</div>
+        <div class="user-avatar">{{ userInitials }}</div>
         <div class="user-info">
-          <div class="user-name">Admin User</div>
-          <div class="user-email">admin@coldstore.in</div>
+          <div class="user-name">{{ userNameDisplay }}</div>
+          <div class="user-email">{{ userEmailDisplay }}</div>
         </div>
         <button class="user-menu-btn" title="User Settings">
           <MoreVertical :size="16" />
@@ -139,7 +178,7 @@ const navigate = (path: string) => {
   top: 0;
   left: 0;
   z-index: 100;
-  transition: background-color 0.25s ease, border-color 0.25s ease;
+  transition: transform 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .sidebar-header {
@@ -330,5 +369,16 @@ const navigate = (path: string) => {
 .sidebar-bottom-art svg {
   width: 100%;
   height: 100%;
+}
+
+@media (max-width: 768px) {
+  .app-sidebar {
+    transform: translateX(-100%);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .app-sidebar.open {
+    transform: translateX(0);
+  }
 }
 </style>

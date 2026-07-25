@@ -1,20 +1,30 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
-import { Search, Filter, Download, AlertCircle, RefreshCw, Package } from 'lucide-vue-next'
+import { FilterMatchMode } from '@primevue/core/api'
+import { Search, Download, AlertCircle, RefreshCw, Package } from 'lucide-vue-next'
 import { chamberOptions } from '../../constants/chambers'
 import { formatQty } from '../../utils/format'
+import { exportToCsv } from '../../utils/csvExport'
 import type { LotOutput } from '../../api/lot'
+import type { FacilityOutput } from '../../api/facility'
+import type { PartyOutput } from '../../api/party'
 
 interface Props {
   lots: LotOutput[]
+  facilities?: FacilityOutput[]
+  parties?: PartyOutput[]
   loading: boolean
   error: boolean
   errorDetail?: string
   searchQuery: string
+  selectedFacilityId?: number
+  selectedFloor?: string
   selectedChamber: string
+  selectedPartyId?: number
   selectedStatus: string
 }
 
@@ -22,7 +32,10 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:searchQuery': [query: string]
+  'update:selectedFacilityId': [id: number | undefined]
+  'update:selectedFloor': [floor: string]
   'update:selectedChamber': [chamber: string]
+  'update:selectedPartyId': [id: number | undefined]
   'update:selectedStatus': [status: string]
   retry: []
 }>()
@@ -32,6 +45,63 @@ const statusOptions = [
   { label: 'Depleted Lots', value: 'depleted' },
   { label: 'All Lots', value: 'all' }
 ]
+
+const filters = ref({
+  lot_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  facility_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  floor: { value: null, matchMode: FilterMatchMode.EQUALS },
+  chamber: { value: null, matchMode: FilterMatchMode.EQUALS },
+  party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  commodity_name: { value: null, matchMode: FilterMatchMode.CONTAINS }
+})
+
+const facilityFilterOptions = computed(() => [
+  { label: 'All Cold Storages', value: undefined },
+  ...(props.facilities || []).map((f) => ({ label: f.name, value: f.id }))
+])
+
+const floorOptions = computed(() => {
+  const distinctFloors = [
+    ...new Set(props.lots.map((l) => l.floor).filter((f): f is string => Boolean(f)))
+  ]
+  return [
+    { label: 'All Floors', value: 'all' },
+    ...distinctFloors.map((f) => ({ label: `Floor ${f}`, value: f }))
+  ]
+})
+
+const partyFilterOptions = computed(() => [
+  { label: 'All Parties', value: undefined },
+  ...(props.parties || []).map((p) => ({ label: `${p.name} (${p.code})`, value: p.id }))
+])
+
+const handleExport = () => {
+  const headers = [
+    'Lot No.',
+    'Cold Storage',
+    'Floor',
+    'Chamber',
+    'Party',
+    'Item / Product',
+    'In Date',
+    'In Qty',
+    'Remaining Qty',
+    'Status'
+  ]
+  const rows = props.lots.map((lot) => [
+    lot.lot_number,
+    lot.facility_name || '-',
+    lot.floor || '-',
+    lot.chamber || '-',
+    lot.party_name || '-',
+    lot.commodity_name,
+    lot.inward_date,
+    formatQty(lot.initial_qty),
+    formatQty(lot.remaining_qty),
+    lot.remaining_qty > 0 ? 'Active' : 'Consumed'
+  ])
+  exportToCsv('inventory_lots.csv', headers, rows)
+}
 </script>
 
 <template>
@@ -50,12 +120,39 @@ const statusOptions = [
           />
         </div>
         <Select
+          :modelValue="selectedFacilityId"
+          @update:modelValue="emit('update:selectedFacilityId', $event)"
+          :options="facilityFilterOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="toolbar-select"
+          placeholder="Cold Storage"
+        />
+        <Select
+          :modelValue="selectedFloor"
+          @update:modelValue="emit('update:selectedFloor', $event)"
+          :options="floorOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="toolbar-select"
+        />
+        <Select
           :modelValue="selectedChamber"
           @update:modelValue="emit('update:selectedChamber', $event)"
           :options="chamberOptions"
           optionLabel="label"
           optionValue="value"
           class="toolbar-select"
+        />
+        <Select
+          :modelValue="selectedPartyId"
+          @update:modelValue="emit('update:selectedPartyId', $event)"
+          :options="partyFilterOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="toolbar-select"
+          :disabled="selectedFacilityId === undefined"
+          :placeholder="selectedFacilityId === undefined ? 'Select a cold storage to filter by party' : 'Select Party'"
         />
         <Select
           :modelValue="selectedStatus"
@@ -68,11 +165,7 @@ const statusOptions = [
       </div>
 
       <div class="toolbar-actions">
-        <button class="btn-outlined" type="button">
-          <Filter :size="15" />
-          <span>Filters</span>
-        </button>
-        <button class="btn-outlined" type="button">
+        <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
           <span>Export</span>
         </button>
@@ -107,8 +200,16 @@ const statusOptions = [
     <div v-else class="table-card">
       <DataTable
         :value="props.lots"
+        v-model:filters="filters"
+        filterDisplay="menu"
         paginator
         :rows="10"
+        :rowsPerPageOptions="[10, 25, 50]"
+        sortMode="multiple"
+        removableSort
+        size="small"
+        stripedRows
+        dataKey="id"
         responsiveLayout="scroll"
         class="custom-datatable"
       >
@@ -118,7 +219,26 @@ const statusOptions = [
           </template>
         </Column>
 
+        <Column field="facility_name" header="Cold Storage" sortable>
+          <template #body="{ data }">
+            <span>{{ data.facility_name || '-' }}</span>
+          </template>
+        </Column>
+
+        <Column field="party_name" header="Party" sortable>
+          <template #body="{ data }">
+            <span class="party-name" v-if="data.party_name">{{ data.party_name }}</span>
+            <span v-else>-</span>
+          </template>
+        </Column>
+
         <Column field="commodity_name" header="Item / Product" sortable />
+
+        <Column field="floor" header="Floor" sortable>
+          <template #body="{ data }">
+            <span>{{ data.floor || '-' }}</span>
+          </template>
+        </Column>
 
         <Column field="chamber" header="Chamber" sortable>
           <template #body="{ data }">

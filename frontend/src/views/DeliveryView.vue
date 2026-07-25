@@ -143,6 +143,15 @@ onMounted(() => {
 .shrink-list {
   max-width: 40%;
 }
+
+@media (max-width: 900px) {
+  .delivery-page {
+    flex-direction: column;
+  }
+  .shrink-list {
+    max-width: 100%;
+  }
+}
 .panel-slide-enter-active,
 .panel-slide-leave-active {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);

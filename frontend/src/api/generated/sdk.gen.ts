@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsListData, GrnsListResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses } from './types.gen';
+import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsListData, GrnsListResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesGeneratePdfCreateData, InvoicesGeneratePdfCreateErrors, InvoicesGeneratePdfCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, RateCardsCreateData, RateCardsCreateErrors, RateCardsCreateResponses, RateCardsListData, RateCardsListResponses, RateCardsRetrieveData, RateCardsRetrieveErrors, RateCardsRetrieveResponses, RentRunsCancelCreateData, RentRunsCancelCreateErrors, RentRunsCancelCreateResponses, RentRunsCreateData, RentRunsCreateErrors, RentRunsCreateResponses, RentRunsListData, RentRunsListResponses, RentRunsPostCreateData, RentRunsPostCreateErrors, RentRunsPostCreateResponses, RentRunsRetrieveData, RentRunsRetrieveErrors, RentRunsRetrieveResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -333,9 +333,91 @@ export const grnsPostCreate = <ThrowOnError extends boolean = false>(options: Op
 });
 
 /**
+ * List invoices for a facility
+ */
+export const invoicesList = <ThrowOnError extends boolean = false>(options: Options<InvoicesListData, ThrowOnError>): RequestResult<InvoicesListResponses, unknown, ThrowOnError> => (options.client ?? client).get<InvoicesListResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/invoices/',
+    ...options
+});
+
+/**
+ * Generate one invoice per party for a POSTED rent run
+ */
+export const invoicesCreate = <ThrowOnError extends boolean = false>(options: Options<InvoicesCreateData, ThrowOnError>): RequestResult<InvoicesCreateResponses, InvoicesCreateErrors, ThrowOnError> => (options.client ?? client).post<InvoicesCreateResponses, InvoicesCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/invoices/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieve an invoice by ID
+ */
+export const invoicesRetrieve = <ThrowOnError extends boolean = false>(options: Options<InvoicesRetrieveData, ThrowOnError>): RequestResult<InvoicesRetrieveResponses, InvoicesRetrieveErrors, ThrowOnError> => (options.client ?? client).get<InvoicesRetrieveResponses, InvoicesRetrieveErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/invoices/{id}/',
+    ...options
+});
+
+/**
+ * Cancel a DRAFT invoice
+ */
+export const invoicesCancelCreate = <ThrowOnError extends boolean = false>(options: Options<InvoicesCancelCreateData, ThrowOnError>): RequestResult<InvoicesCancelCreateResponses, InvoicesCancelCreateErrors, ThrowOnError> => (options.client ?? client).post<InvoicesCancelCreateResponses, InvoicesCancelCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/invoices/{id}/cancel/',
+    ...options
+});
+
+/**
+ * Generate PDF for an invoice
+ */
+export const invoicesGeneratePdfCreate = <ThrowOnError extends boolean = false>(options: Options<InvoicesGeneratePdfCreateData, ThrowOnError>): RequestResult<InvoicesGeneratePdfCreateResponses, InvoicesGeneratePdfCreateErrors, ThrowOnError> => (options.client ?? client).post<InvoicesGeneratePdfCreateResponses, InvoicesGeneratePdfCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/invoices/{id}/generate-pdf/',
+    ...options
+});
+
+/**
+ * Post a DRAFT invoice
+ */
+export const invoicesPostCreate = <ThrowOnError extends boolean = false>(options: Options<InvoicesPostCreateData, ThrowOnError>): RequestResult<InvoicesPostCreateResponses, InvoicesPostCreateErrors, ThrowOnError> => (options.client ?? client).post<InvoicesPostCreateResponses, InvoicesPostCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/invoices/{id}/post/',
+    ...options
+});
+
+/**
  * List inventory lots
  */
-export const lotsList = <ThrowOnError extends boolean = false>(options: Options<LotsListData, ThrowOnError>): RequestResult<LotsListResponses, unknown, ThrowOnError> => (options.client ?? client).get<LotsListResponses, unknown, ThrowOnError>({
+export const lotsList = <ThrowOnError extends boolean = false>(options?: Options<LotsListData, ThrowOnError>): RequestResult<LotsListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<LotsListResponses, unknown, ThrowOnError>({
     security: [{
             in: 'cookie',
             name: 'sessionid',
@@ -433,4 +515,116 @@ export const partiesUpdate = <ThrowOnError extends boolean = false>(options: Opt
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * List rate cards for a facility
+ */
+export const rateCardsList = <ThrowOnError extends boolean = false>(options: Options<RateCardsListData, ThrowOnError>): RequestResult<RateCardsListResponses, unknown, ThrowOnError> => (options.client ?? client).get<RateCardsListResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/rate-cards/',
+    ...options
+});
+
+/**
+ * Create a new rate card
+ */
+export const rateCardsCreate = <ThrowOnError extends boolean = false>(options: Options<RateCardsCreateData, ThrowOnError>): RequestResult<RateCardsCreateResponses, RateCardsCreateErrors, ThrowOnError> => (options.client ?? client).post<RateCardsCreateResponses, RateCardsCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/rate-cards/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieve a rate card by ID
+ */
+export const rateCardsRetrieve = <ThrowOnError extends boolean = false>(options: Options<RateCardsRetrieveData, ThrowOnError>): RequestResult<RateCardsRetrieveResponses, RateCardsRetrieveErrors, ThrowOnError> => (options.client ?? client).get<RateCardsRetrieveResponses, RateCardsRetrieveErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/rate-cards/{id}/',
+    ...options
+});
+
+/**
+ * List rent runs for a facility
+ */
+export const rentRunsList = <ThrowOnError extends boolean = false>(options: Options<RentRunsListData, ThrowOnError>): RequestResult<RentRunsListResponses, unknown, ThrowOnError> => (options.client ?? client).get<RentRunsListResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/rent-runs/',
+    ...options
+});
+
+/**
+ * Create a new rent run (DRAFT)
+ */
+export const rentRunsCreate = <ThrowOnError extends boolean = false>(options: Options<RentRunsCreateData, ThrowOnError>): RequestResult<RentRunsCreateResponses, RentRunsCreateErrors, ThrowOnError> => (options.client ?? client).post<RentRunsCreateResponses, RentRunsCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/rent-runs/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieve a rent run by ID
+ */
+export const rentRunsRetrieve = <ThrowOnError extends boolean = false>(options: Options<RentRunsRetrieveData, ThrowOnError>): RequestResult<RentRunsRetrieveResponses, RentRunsRetrieveErrors, ThrowOnError> => (options.client ?? client).get<RentRunsRetrieveResponses, RentRunsRetrieveErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/rent-runs/{id}/',
+    ...options
+});
+
+/**
+ * Cancel a DRAFT rent run
+ */
+export const rentRunsCancelCreate = <ThrowOnError extends boolean = false>(options: Options<RentRunsCancelCreateData, ThrowOnError>): RequestResult<RentRunsCancelCreateResponses, RentRunsCancelCreateErrors, ThrowOnError> => (options.client ?? client).post<RentRunsCancelCreateResponses, RentRunsCancelCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/rent-runs/{id}/cancel/',
+    ...options
+});
+
+/**
+ * Post a DRAFT rent run
+ */
+export const rentRunsPostCreate = <ThrowOnError extends boolean = false>(options: Options<RentRunsPostCreateData, ThrowOnError>): RequestResult<RentRunsPostCreateResponses, RentRunsPostCreateErrors, ThrowOnError> => (options.client ?? client).post<RentRunsPostCreateResponses, RentRunsPostCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/rent-runs/{id}/post/',
+    ...options
 });

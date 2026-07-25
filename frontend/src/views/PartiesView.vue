@@ -47,6 +47,8 @@ const handleCreateParty = async (values: {
   type: TypeEnum
   phone?: string
   email?: string
+  address?: string
+  gstin?: string
 }) => {
   if (!facilityId.value) return
   try {

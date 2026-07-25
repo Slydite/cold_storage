@@ -372,13 +372,14 @@ const {
 .items-table-wrapper {
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .items-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 12.5px;
+  min-width: 600px;
 }
 
 .items-table th {
@@ -457,9 +458,29 @@ const {
   font-size: 20px;
 }
 
+@media (max-width: 900px) {
+  .detail-split-panel {
+    position: static;
+    height: auto;
+    width: 100%;
+  }
+}
+
 @media (max-width: 768px) {
   .form-grid {
     grid-template-columns: 1fr;
+  }
+  .panel-topbar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .panel-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .panel-totals-bar {
+    justify-content: space-between;
+    gap: 16px;
   }
 }
 </style>

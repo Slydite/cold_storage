@@ -16,7 +16,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
-  submit: [values: { name: string; code: string; type: TypeEnum; phone?: string; email?: string }]
+  submit: [values: { name: string; code: string; type: TypeEnum; phone?: string; email?: string; address?: string; gstin?: string }]
 }>()
 
 const partySchema = z.object({
@@ -26,7 +26,9 @@ const partySchema = z.object({
     message: 'Type is required'
   }),
   phone: z.string().optional(),
-  email: z.string().email('Invalid email address').or(z.literal('')).optional()
+  email: z.string().email('Invalid email address').or(z.literal('')).optional(),
+  gstin: z.string().optional(),
+  address: z.string().optional()
 })
 
 const { handleSubmit, errors, defineField, resetForm } = useForm({
@@ -36,7 +38,9 @@ const { handleSubmit, errors, defineField, resetForm } = useForm({
     code: '',
     type: 'DEPOSITOR' as TypeEnum,
     phone: '',
-    email: ''
+    email: '',
+    gstin: '',
+    address: ''
   }
 })
 
@@ -45,6 +49,8 @@ const [code, codeAttrs] = defineField('code')
 const [type] = defineField('type')
 const [phone, phoneAttrs] = defineField('phone')
 const [email, emailAttrs] = defineField('email')
+const [gstin, gstinAttrs] = defineField('gstin')
+const [address, addressAttrs] = defineField('address')
 
 const typeOptions = [
   { label: 'Depositor / Customer', value: 'DEPOSITOR' },
@@ -62,7 +68,9 @@ watch(
           code: '',
           type: 'DEPOSITOR',
           phone: '',
-          email: ''
+          email: '',
+          gstin: '',
+          address: ''
         }
       })
     }
@@ -75,7 +83,9 @@ const onSubmit = handleSubmit((values) => {
     code: values.code,
     type: values.type,
     phone: values.phone || undefined,
-    email: values.email || undefined
+    email: values.email || undefined,
+    gstin: values.gstin || undefined,
+    address: values.address || undefined
   })
 })
 </script>
@@ -156,6 +166,34 @@ const onSubmit = handleSubmit((values) => {
           :class="{ 'has-error': errors.email }"
         />
         <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
+      </div>
+
+      <div class="form-field">
+        <label for="party-gstin">GSTIN</label>
+        <input
+          id="party-gstin"
+          v-model="gstin"
+          v-bind="gstinAttrs"
+          type="text"
+          placeholder="e.g. 24AAAAA0000A1Z5"
+          class="form-input"
+          :class="{ 'has-error': errors.gstin }"
+        />
+        <span v-if="errors.gstin" class="field-error">{{ errors.gstin }}</span>
+      </div>
+
+      <div class="form-field">
+        <label for="party-address">Address</label>
+        <input
+          id="party-address"
+          v-model="address"
+          v-bind="addressAttrs"
+          type="text"
+          placeholder="e.g. Plot 12, GIDC Industrial Estate"
+          class="form-input"
+          :class="{ 'has-error': errors.address }"
+        />
+        <span v-if="errors.address" class="field-error">{{ errors.address }}</span>
       </div>
 
       <div class="dialog-actions">

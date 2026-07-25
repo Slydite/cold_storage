@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
+import { FilterMatchMode } from '@primevue/core/api'
 import { Search, Plus, Download, Phone, Mail, AlertCircle, RefreshCw, Users } from 'lucide-vue-next'
+import { exportToCsv } from '../../utils/csvExport'
 import type { PartyOutput } from '../../api/party'
 
 interface Props {
@@ -30,6 +33,28 @@ const typeOptions = [
   { label: 'Vendors', value: 'VENDOR' },
   { label: 'Transporters', value: 'TRANSPORTER' }
 ]
+
+const filters = ref({
+  code: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  type_display: { value: null, matchMode: FilterMatchMode.EQUALS },
+  phone: { value: null, matchMode: FilterMatchMode.CONTAINS },
+  email: { value: null, matchMode: FilterMatchMode.CONTAINS }
+})
+
+const handleExport = () => {
+  const headers = ['Code', 'Party Name', 'Type', 'Phone', 'Email', 'GSTIN', 'Address']
+  const rows = props.parties.map((p) => [
+    p.code,
+    p.name,
+    p.type_display || p.type,
+    p.phone || '-',
+    p.email || '-',
+    p.gstin || '-',
+    p.address || '-'
+  ])
+  exportToCsv('parties.csv', headers, rows)
+}
 </script>
 
 <template>
@@ -58,7 +83,7 @@ const typeOptions = [
       </div>
 
       <div class="toolbar-actions">
-        <button class="btn-outlined" type="button">
+        <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
           <span>Export</span>
         </button>
@@ -101,8 +126,16 @@ const typeOptions = [
     <div v-else class="table-card">
       <DataTable
         :value="props.parties"
+        v-model:filters="filters"
+        filterDisplay="menu"
         paginator
         :rows="10"
+        :rowsPerPageOptions="[10, 25, 50]"
+        sortMode="multiple"
+        removableSort
+        size="small"
+        stripedRows
+        dataKey="id"
         responsiveLayout="scroll"
         class="custom-datatable"
       >
@@ -141,6 +174,18 @@ const typeOptions = [
               <span>{{ data.email }}</span>
             </div>
             <span v-else>-</span>
+          </template>
+        </Column>
+
+        <Column field="gstin" header="GSTIN">
+          <template #body="{ data }">
+            <span>{{ data.gstin || '-' }}</span>
+          </template>
+        </Column>
+
+        <Column field="address" header="Address">
+          <template #body="{ data }">
+            <span>{{ data.address || '-' }}</span>
           </template>
         </Column>
       </DataTable>
