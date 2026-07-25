@@ -41,13 +41,23 @@ class LotOutputSerializer(serializers.ModelSerializer):
     commodity_name = serializers.CharField(source='commodity.name', read_only=True)
     commodity_code = serializers.CharField(source='commodity.code', read_only=True)
     commodity_unit = serializers.CharField(source='commodity.unit', read_only=True)
+    facility_name = serializers.CharField(source='facility.name', read_only=True)
+    grn_number = serializers.CharField(source='grn.grn_number', read_only=True)
+    party_id = serializers.IntegerField(source='grn.party_id', read_only=True)
+    party_name = serializers.CharField(source='grn.party.name', read_only=True)
+    party_code = serializers.CharField(source='grn.party.code', read_only=True)
 
     class Meta:
         model = Lot
         fields = [
             'id',
             'facility_id',
+            'facility_name',
             'grn_id',
+            'grn_number',
+            'party_id',
+            'party_name',
+            'party_code',
             'commodity_id',
             'commodity_name',
             'commodity_code',
@@ -73,6 +83,7 @@ class GRNCreateInputSerializer(serializers.Serializer):
     vehicle_number = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
     driver_name = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
     remarks = serializers.CharField(max_length=1000, required=False, allow_blank=True, default='')
+    loading_charge = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0.00)
     status = serializers.ChoiceField(choices=GRN.Status.choices, default=GRN.Status.POSTED)
     items = LotItemInputSerializer(many=True, required=False, default=list)
 
@@ -95,6 +106,7 @@ class GRNOutputSerializer(serializers.ModelSerializer):
             'vehicle_number',
             'driver_name',
             'remarks',
+            'loading_charge',
             'status',
             'lots',
             'created_at',

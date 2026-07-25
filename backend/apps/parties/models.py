@@ -1,6 +1,12 @@
+from django.core.validators import RegexValidator
 from django.db import models
 from simple_history.models import HistoricalRecords
 from apps.facilities.models import Facility
+
+gstin_validator = RegexValidator(
+    regex=r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$',
+    message="Enter a valid 15-character GSTIN (e.g. 27ABCDE1234F1Z5)."
+)
 
 class Party(models.Model):
     class PartyType(models.TextChoices):
@@ -16,6 +22,7 @@ class Party(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     email = models.EmailField(blank=True)
     address = models.TextField(blank=True)
+    gstin = models.CharField(max_length=15, blank=True, verbose_name="GSTIN", validators=[gstin_validator])
     is_active = models.BooleanField(default=True)
     
     created_at = models.DateTimeField(auto_now_add=True)

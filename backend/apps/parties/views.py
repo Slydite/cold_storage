@@ -79,6 +79,7 @@ class PartyViewSet(ViewSet):
                 phone=serializer.validated_data.get('phone', ''),
                 email=serializer.validated_data.get('email', ''),
                 address=serializer.validated_data.get('address', ''),
+                gstin=serializer.validated_data.get('gstin', ''),
                 is_active=serializer.validated_data.get('is_active', True)
             )
         except Exception as e:
@@ -105,6 +106,7 @@ class PartyViewSet(ViewSet):
                 phone=serializer.validated_data.get('phone', ''),
                 email=serializer.validated_data.get('email', ''),
                 address=serializer.validated_data.get('address', ''),
+                gstin=serializer.validated_data.get('gstin', ''),
                 is_active=serializer.validated_data.get('is_active', True)
             )
         except Exception as e:

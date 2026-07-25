@@ -1,0 +1,86 @@
+from decimal import Decimal
+from rest_framework import serializers
+from .models import RateCard, RentRun, RentRunLine
+
+
+class RateCardInputSerializer(serializers.Serializer):
+    facility_id = serializers.IntegerField()
+    commodity_id = serializers.IntegerField()
+    weight_category = serializers.ChoiceField(choices=RateCard.WeightCategory.choices)
+    rate_per_bag_per_month = serializers.DecimalField(max_digits=10, decimal_places=2)
+    effective_from = serializers.DateField()
+    is_active = serializers.BooleanField(default=True)
+
+
+class RateCardOutputSerializer(serializers.ModelSerializer):
+    commodity_name = serializers.CharField(source='commodity.name', read_only=True)
+    commodity_code = serializers.CharField(source='commodity.code', read_only=True)
+    weight_category_display = serializers.CharField(source='get_weight_category_display', read_only=True)
+
+    class Meta:
+        model = RateCard
+        fields = [
+            'id',
+            'facility_id',
+            'commodity_id',
+            'commodity_name',
+            'commodity_code',
+            'weight_category',
+            'weight_category_display',
+            'rate_per_bag_per_month',
+            'effective_from',
+            'is_active',
+            'created_at',
+            'updated_at'
+        ]
+
+
+class RentRunCreateInputSerializer(serializers.Serializer):
+    facility_id = serializers.IntegerField()
+    period_start = serializers.DateField()
+    period_end = serializers.DateField()
+
+
+class RentRunLineOutputSerializer(serializers.ModelSerializer):
+    lot_number = serializers.CharField(source='lot.lot_number', read_only=True)
+    commodity_name = serializers.CharField(source='lot.commodity.name', read_only=True)
+    party_name = serializers.CharField(source='party.name', read_only=True)
+
+    class Meta:
+        model = RentRunLine
+        fields = [
+            'id',
+            'lot_id',
+            'lot_number',
+            'commodity_name',
+            'party_id',
+            'party_name',
+            'qty',
+            'weight_category',
+            'rate_per_bag_per_month',
+            'days_stored',
+            'amount'
+        ]
+
+
+class RentRunOutputSerializer(serializers.ModelSerializer):
+    lines = RentRunLineOutputSerializer(many=True, read_only=True)
+    total_amount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RentRun
+        fields = [
+            'id',
+            'facility_id',
+            'period_start',
+            'period_end',
+            'status',
+            'run_date',
+            'lines',
+            'total_amount',
+            'created_at',
+            'updated_at'
+        ]
+
+    def get_total_amount(self, obj) -> Decimal:
+        return sum((l.amount for l in obj.lines.all()), Decimal('0.00'))

@@ -18,6 +18,7 @@ class PartyOutputSerializer(serializers.ModelSerializer):
             'phone',
             'email',
             'address',
+            'gstin',
             'is_active',
             'created_at',
             'updated_at'
@@ -31,4 +32,5 @@ class PartyInputSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
     email = serializers.EmailField(required=False, allow_blank=True, default="")
     address = serializers.CharField(max_length=1000, required=False, allow_blank=True, default="")
+    gstin = serializers.CharField(max_length=15, required=False, allow_blank=True, default="")
     is_active = serializers.BooleanField(required=False, default=True)

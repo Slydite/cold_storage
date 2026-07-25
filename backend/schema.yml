@@ -582,6 +582,172 @@ paths:
           description: ''
         '400':
           description: No response body
+  /api/invoices/:
+    get:
+      operationId: invoices_list
+      summary: List invoices for a facility
+      parameters:
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: party_id
+        schema:
+          type: integer
+        description: Filter by Party ID
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter by status (DRAFT, POSTED, CANCELLED)
+      tags:
+      - invoices
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvoiceOutput'
+          description: ''
+    post:
+      operationId: invoices_create
+      summary: Generate one invoice per party for a POSTED rent run
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateInvoicesInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GenerateInvoicesInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GenerateInvoicesInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvoiceOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/invoices/{id}/:
+    get:
+      operationId: invoices_retrieve
+      summary: Retrieve an invoice by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Invoice.
+        required: true
+      tags:
+      - invoices
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceOutput'
+          description: ''
+        '404':
+          description: No response body
+  /api/invoices/{id}/cancel/:
+    post:
+      operationId: invoices_cancel_create
+      summary: Cancel a DRAFT invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Invoice.
+        required: true
+      tags:
+      - invoices
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/invoices/{id}/generate-pdf/:
+    post:
+      operationId: invoices_generate_pdf_create
+      summary: Generate PDF for an invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Invoice.
+        required: true
+      tags:
+      - invoices
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/invoices/{id}/post/:
+    post:
+      operationId: invoices_post_create
+      summary: Post a DRAFT invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Invoice.
+        required: true
+      tags:
+      - invoices
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceOutput'
+          description: ''
+        '400':
+          description: No response body
   /api/lots/:
     get:
       operationId: lots_list
@@ -601,8 +767,13 @@ paths:
         name: facility_id
         schema:
           type: integer
-        description: Filter by Facility ID
-        required: true
+        description: Filter by Facility (cold storage) ID. Omit to view stock across
+          every facility.
+      - in: query
+        name: floor
+        schema:
+          type: string
+        description: Filter by Floor
       - in: query
         name: in_stock_only
         schema:
@@ -811,6 +982,229 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartyOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/rate-cards/:
+    get:
+      operationId: rate_cards_list
+      summary: List rate cards for a facility
+      parameters:
+      - in: query
+        name: commodity_id
+        schema:
+          type: integer
+        description: Filter by Commodity ID
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Filter by active status
+      tags:
+      - rate-cards
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RateCardOutput'
+          description: ''
+    post:
+      operationId: rate_cards_create
+      summary: Create a new rate card
+      tags:
+      - rate-cards
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RateCardInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RateCardInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RateCardInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateCardOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/rate-cards/{id}/:
+    get:
+      operationId: rate_cards_retrieve
+      summary: Retrieve a rate card by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this rate card.
+        required: true
+      tags:
+      - rate-cards
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateCardOutput'
+          description: ''
+        '404':
+          description: No response body
+  /api/rent-runs/:
+    get:
+      operationId: rent_runs_list
+      summary: List rent runs for a facility
+      parameters:
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Filter by status (DRAFT, POSTED, CANCELLED)
+      tags:
+      - rent-runs
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RentRunOutput'
+          description: ''
+    post:
+      operationId: rent_runs_create
+      summary: Create a new rent run (DRAFT)
+      tags:
+      - rent-runs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RentRunCreateInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RentRunCreateInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RentRunCreateInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentRunOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/rent-runs/{id}/:
+    get:
+      operationId: rent_runs_retrieve
+      summary: Retrieve a rent run by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Rent Run.
+        required: true
+      tags:
+      - rent-runs
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentRunOutput'
+          description: ''
+        '404':
+          description: No response body
+  /api/rent-runs/{id}/cancel/:
+    post:
+      operationId: rent_runs_cancel_create
+      summary: Cancel a DRAFT rent run
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Rent Run.
+        required: true
+      tags:
+      - rent-runs
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentRunOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/rent-runs/{id}/post/:
+    post:
+      operationId: rent_runs_post_create
+      summary: Post a DRAFT rent run
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Rent Run.
+        required: true
+      tags:
+      - rent-runs
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RentRunOutput'
           description: ''
         '400':
           description: No response body
@@ -1129,6 +1523,11 @@ components:
           type: string
           default: ''
           maxLength: 1000
+        loading_charge:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          default: '0.00'
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
@@ -1173,6 +1572,10 @@ components:
           maxLength: 100
         remarks:
           type: string
+        loading_charge:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
         status:
           $ref: '#/components/schemas/StatusEnum'
         lots:
@@ -1198,6 +1601,113 @@ components:
       - party_id
       - party_name
       - receipt_date
+      - updated_at
+    GenerateInvoicesInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        rent_run_id:
+          type: integer
+      required:
+      - facility_id
+      - rent_run_id
+    InvoiceLineOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        description:
+          type: string
+          maxLength: 500
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        rent_run_line_id:
+          type: integer
+          nullable: true
+          readOnly: true
+      required:
+      - amount
+      - description
+      - id
+      - rent_run_line_id
+    InvoiceOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility_id:
+          type: integer
+          readOnly: true
+        invoice_number:
+          type: string
+          maxLength: 100
+        party_id:
+          type: integer
+          readOnly: true
+        party_name:
+          type: string
+          readOnly: true
+        party_gstin_snapshot:
+          type: string
+          maxLength: 15
+        rent_run_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        invoice_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+        gst_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        pdf_url:
+          type: string
+          nullable: true
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceLineOutput'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - facility_id
+      - id
+      - invoice_date
+      - invoice_number
+      - lines
+      - party_id
+      - party_name
+      - pdf_url
+      - rent_run_id
       - updated_at
     LoginInput:
       type: object
@@ -1256,8 +1766,23 @@ components:
         facility_id:
           type: integer
           readOnly: true
+        facility_name:
+          type: string
+          readOnly: true
         grn_id:
           type: integer
+          readOnly: true
+        grn_number:
+          type: string
+          readOnly: true
+        party_id:
+          type: integer
+          readOnly: true
+        party_name:
+          type: string
+          readOnly: true
+        party_code:
+          type: string
           readOnly: true
         commodity_id:
           type: integer
@@ -1319,11 +1844,16 @@ components:
       - commodity_unit
       - created_at
       - facility_id
+      - facility_name
       - grn_id
+      - grn_number
       - id
       - initial_qty
       - inward_date
       - lot_number
+      - party_code
+      - party_id
+      - party_name
       - remaining_qty
       - updated_at
     LotWithdrawalInput:
@@ -1362,6 +1892,10 @@ components:
           type: string
           default: ''
           maxLength: 1000
+        gstin:
+          type: string
+          default: ''
+          maxLength: 15
         is_active:
           type: boolean
           default: true
@@ -1404,6 +1938,13 @@ components:
             maxLength: 0
         address:
           type: string
+        gstin:
+          oneOf:
+          - type: string
+            pattern: ^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$
+            maxLength: 15
+          - type: string
+            maxLength: 0
         is_active:
           type: boolean
         created_at:
@@ -1423,6 +1964,199 @@ components:
       - name
       - type
       - type_display
+      - updated_at
+    RateCardInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        commodity_id:
+          type: integer
+        weight_category:
+          $ref: '#/components/schemas/WeightCategoryEnum'
+        rate_per_bag_per_month:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        effective_from:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - commodity_id
+      - effective_from
+      - facility_id
+      - rate_per_bag_per_month
+      - weight_category
+    RateCardOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility_id:
+          type: integer
+          readOnly: true
+        commodity_id:
+          type: integer
+          readOnly: true
+        commodity_name:
+          type: string
+          readOnly: true
+        commodity_code:
+          type: string
+          readOnly: true
+        weight_category:
+          $ref: '#/components/schemas/WeightCategoryEnum'
+        weight_category_display:
+          type: string
+          readOnly: true
+        rate_per_bag_per_month:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        effective_from:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - commodity_code
+      - commodity_id
+      - commodity_name
+      - created_at
+      - effective_from
+      - facility_id
+      - id
+      - rate_per_bag_per_month
+      - updated_at
+      - weight_category
+      - weight_category_display
+    RentRunCreateInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+      required:
+      - facility_id
+      - period_end
+      - period_start
+    RentRunLineOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        lot_id:
+          type: integer
+          readOnly: true
+        lot_number:
+          type: string
+          readOnly: true
+        commodity_name:
+          type: string
+          readOnly: true
+        party_id:
+          type: integer
+          readOnly: true
+        party_name:
+          type: string
+          readOnly: true
+        qty:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        weight_category:
+          $ref: '#/components/schemas/WeightCategoryEnum'
+        rate_per_bag_per_month:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        days_stored:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - amount
+      - commodity_name
+      - days_stored
+      - id
+      - lot_id
+      - lot_number
+      - party_id
+      - party_name
+      - qty
+      - rate_per_bag_per_month
+      - weight_category
+    RentRunOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility_id:
+          type: integer
+          readOnly: true
+        period_start:
+          type: string
+          format: date
+        period_end:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        run_date:
+          type: string
+          format: date-time
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/RentRunLineOutput'
+          readOnly: true
+        total_amount:
+          type: number
+          format: double
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - facility_id
+      - id
+      - lines
+      - period_end
+      - period_start
+      - run_date
+      - total_amount
       - updated_at
     StatusEnum:
       enum:
@@ -1444,6 +2178,16 @@ components:
         * `DEPOSITOR` - Depositor/Customer
         * `VENDOR` - Vendor
         * `TRANSPORTER` - Transporter
+    WeightCategoryEnum:
+      enum:
+      - KG_20
+      - KG_50
+      - OTHER
+      type: string
+      description: |-
+        * `KG_20` - 20 kg bag
+        * `KG_50` - 50 kg bag
+        * `OTHER` - Other
   securitySchemes:
     basicAuth:
       type: http

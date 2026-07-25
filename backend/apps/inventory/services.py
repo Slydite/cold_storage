@@ -1,5 +1,6 @@
 from typing import List, Dict, Any
 from datetime import date
+from decimal import Decimal
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from libs.sequences import get_next_sequence_number
@@ -63,6 +64,7 @@ def create_grn(
     vehicle_number: str = '',
     driver_name: str = '',
     remarks: str = '',
+    loading_charge: Decimal = Decimal('0.00'),
     status: str = GRN.Status.POSTED,
     items: List[Dict[str, Any]] = None
 ) -> GRN:
@@ -86,6 +88,7 @@ def create_grn(
         vehicle_number=vehicle_number,
         driver_name=driver_name,
         remarks=remarks,
+        loading_charge=loading_charge,
         status=status
     )
     grn.full_clean()

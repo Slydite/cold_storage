@@ -187,6 +187,7 @@ class GRNViewSet(ViewSet):
                 vehicle_number=serializer.validated_data.get('vehicle_number', ''),
                 driver_name=serializer.validated_data.get('driver_name', ''),
                 remarks=serializer.validated_data.get('remarks', ''),
+                loading_charge=serializer.validated_data.get('loading_charge', 0),
                 status=serializer.validated_data.get('status', GRN.Status.POSTED),
                 items=serializer.validated_data.get('items', [])
             )
@@ -227,10 +228,11 @@ class LotViewSet(ViewSet):
 
     @extend_schema(
         parameters=[
-            OpenApiParameter('facility_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="Filter by Facility ID"),
+            OpenApiParameter('facility_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Facility (cold storage) ID. Omit to view stock across every facility."),
             OpenApiParameter('party_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Party ID"),
             OpenApiParameter('commodity_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Commodity ID"),
             OpenApiParameter('chamber', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Chamber"),
+            OpenApiParameter('floor', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Floor"),
             OpenApiParameter('in_stock_only', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description="Only show lots with remaining_qty > 0"),
         ],
         responses={200: LotOutputSerializer(many=True)},
@@ -238,12 +240,10 @@ class LotViewSet(ViewSet):
     )
     def list(self, request):
         facility_id = request.query_params.get('facility_id')
-        if not facility_id:
-            raise ValidationError({"facility_id": "This query parameter is required."})
-
         party_id = request.query_params.get('party_id')
         commodity_id = request.query_params.get('commodity_id')
         chamber = request.query_params.get('chamber')
+        floor = request.query_params.get('floor')
         in_stock_param = request.query_params.get('in_stock_only')
 
         in_stock_only = False
@@ -252,10 +252,11 @@ class LotViewSet(ViewSet):
 
         try:
             lots = get_lots_list(
-                facility_id=int(facility_id),
+                facility_id=int(facility_id) if facility_id else None,
                 party_id=int(party_id) if party_id else None,
                 commodity_id=int(commodity_id) if commodity_id else None,
                 chamber=chamber,
+                floor=floor,
                 in_stock_only=in_stock_only
             )
         except ValueError:

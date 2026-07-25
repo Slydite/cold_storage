@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
@@ -19,6 +21,9 @@ urlpatterns = [
     # API endpoints
     path('api/', include('apps.accounts.urls')),
     path('api/', include('apps.delivery.urls')),
+    path('api/', include('apps.billing.urls')),
+    path('api/', include('apps.invoicing.urls')),
+    path('api/', include('apps.reports.urls')),
     path('api/', include(router.urls)),
 
     # OpenAPI Schema and documentation
@@ -26,3 +31,6 @@ urlpatterns = [
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

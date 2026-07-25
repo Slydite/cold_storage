@@ -39,17 +39,24 @@ def get_grn_by_id(grn_id: int) -> GRN:
 
 
 def get_lots_list(
-    facility_id: int,
+    facility_id: int = None,
     party_id: int = None,
     commodity_id: int = None,
     chamber: str = None,
+    floor: str = None,
     in_stock_only: bool = False
 ) -> QuerySet[Lot]:
     """
-    Fetch lots for a facility with optional filters. Only includes lots from POSTED GRNs.
+    Fetch lots with optional filters. Only includes lots from POSTED GRNs.
+    facility_id is optional: omit it to view stock across every facility
+    (cold storage), e.g. for the "all cold storages" inventory view.
     """
-    qs = Lot.objects.filter(facility_id=facility_id, grn__status=GRN.Status.POSTED).select_related('grn', 'grn__party', 'commodity')
-    
+    qs = Lot.objects.filter(grn__status=GRN.Status.POSTED).select_related('facility', 'grn', 'grn__party', 'commodity')
+    if facility_id:
+        qs = qs.filter(facility_id=facility_id)
+
+    if floor:
+        qs = qs.filter(floor__iexact=floor)
     if party_id:
         qs = qs.filter(grn__party_id=party_id)
     if commodity_id:

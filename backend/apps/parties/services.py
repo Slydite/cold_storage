@@ -13,6 +13,7 @@ def create_party(
     phone: str = "",
     email: str = "",
     address: str = "",
+    gstin: str = "",
     is_active: bool = True
 ) -> Party:
     """
@@ -33,6 +34,7 @@ def create_party(
         phone=phone,
         email=email,
         address=address,
+        gstin=gstin,
         is_active=is_active
     )
     party.full_clean()
@@ -50,7 +52,7 @@ def update_party(*, party_id: int, **fields) -> Party:
         raise ValidationError(f"Party with ID {party_id} does not exist.")
 
     # Update allowed fields
-    allowed_fields = ['name', 'code', 'type', 'phone', 'email', 'address', 'is_active']
+    allowed_fields = ['name', 'code', 'type', 'phone', 'email', 'address', 'gstin', 'is_active']
     for field, value in fields.items():
         if field in allowed_fields:
             if field == 'type' and value not in Party.PartyType.values:
