@@ -1,19 +1,7 @@
 import { partiesList, partiesCreate } from './generated/sdk.gen'
-import type {
-  PartyOutput as GeneratedPartyOutput,
-  PartyInput as GeneratedPartyInput,
-  TypeEnum
-} from './generated/types.gen'
+import type { PartyOutput, PartyInput, TypeEnum } from './generated/types.gen'
 
-export interface PartyOutput extends Omit<GeneratedPartyOutput, 'gstin'> {
-  gstin?: string
-}
-
-export interface PartyInput extends Omit<GeneratedPartyInput, 'gstin'> {
-  gstin?: string
-}
-
-export type { TypeEnum }
+export type { PartyOutput, PartyInput, TypeEnum }
 
 function extractErrorMessage(error: unknown, fallback: string): string {
   if (typeof error === 'object' && error !== null) {

@@ -1,67 +1,160 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-import { Plus, Download, Search } from 'lucide-vue-next'
+import { ref, computed } from 'vue'
+import { useToast } from 'primevue/usetoast'
+import { useFacility } from '../composables/useFacility'
+import {
+  useInvoiceList,
+  usePostInvoice,
+  useCancelInvoice,
+  useGenerateInvoicePdf
+} from '../composables/useInvoices'
+import InvoiceTable from '../components/invoicing/InvoiceTable.vue'
+import GenerateInvoiceDialog from '../components/invoicing/GenerateInvoiceDialog.vue'
 
-const invoices = ref([
-  { id: '1', invNo: 'INV-000256', date: '20 May 2024', party: 'Shree Traders', amount: '₹ 1,45,200', tax: '₹ 26,136', status: 'Posted' },
-  { id: '2', invNo: 'INV-000255', date: '19 May 2024', party: 'Kisan Exports', amount: '₹ 84,500', tax: '₹ 15,210', status: 'Posted' },
-  { id: '3', invNo: 'INV-000254', date: '15 May 2024', party: 'Arctic Foods', amount: '₹ 45,000', tax: '₹ 8,100', status: 'Draft' }
-])
+const toast = useToast()
+const { facilityId } = useFacility()
+
+const searchQuery = ref('')
+const selectedStatus = ref('')
+const showGenerateDialog = ref(false)
+const generatingPdfId = ref<number | null>(null)
+
+const filters = computed(() => ({
+  status: selectedStatus.value || undefined
+}))
+
+const {
+  data: rawInvoices,
+  isLoading,
+  isError,
+  error,
+  refetch
+} = useInvoiceList(facilityId, filters)
+
+const postMutation = usePostInvoice()
+const cancelMutation = useCancelInvoice()
+const generatePdfMutation = useGenerateInvoicePdf()
+
+const filteredInvoices = computed(() => {
+  const list = rawInvoices.value ?? []
+  if (!searchQuery.value.trim()) return list
+  const q = searchQuery.value.toLowerCase().trim()
+  return list.filter(
+    (inv) =>
+      inv.invoice_number.toLowerCase().includes(q) ||
+      inv.party_name.toLowerCase().includes(q)
+  )
+})
+
+async function handlePost(id: number) {
+  try {
+    const updated = await postMutation.mutateAsync(id)
+    toast.add({
+      severity: 'success',
+      summary: 'Invoice Posted',
+      detail: `Invoice ${updated.invoice_number} is now POSTED.`,
+      life: 4000
+    })
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'Failed to Post',
+      detail: err instanceof Error ? err.message : 'Could not post invoice',
+      life: 5000
+    })
+  }
+}
+
+async function handleCancel(id: number) {
+  try {
+    const updated = await cancelMutation.mutateAsync(id)
+    toast.add({
+      severity: 'info',
+      summary: 'Invoice Cancelled',
+      detail: `Invoice ${updated.invoice_number} was cancelled.`,
+      life: 4000
+    })
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'Failed to Cancel',
+      detail: err instanceof Error ? err.message : 'Could not cancel invoice',
+      life: 5000
+    })
+  }
+}
+
+async function handleGeneratePdf(id: number) {
+  generatingPdfId.value = id
+  try {
+    const updated = await generatePdfMutation.mutateAsync(id)
+    toast.add({
+      severity: 'success',
+      summary: 'PDF Generated',
+      detail: `PDF ready for ${updated.invoice_number}`,
+      life: 4000
+    })
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'PDF Error',
+      detail: err instanceof Error ? err.message : 'Failed to generate PDF',
+      life: 5000
+    })
+  } finally {
+    generatingPdfId.value = null
+  }
+}
+
+function handleGenerateSuccess(count: number, partyNames: string[]) {
+  toast.add({
+    severity: 'success',
+    summary: 'Invoices Generated',
+    detail: `Created ${count} invoice(s) for ${partyNames.join(', ')}.`,
+    life: 5000
+  })
+}
+
+function handleGenerateError(message: string) {
+  toast.add({
+    severity: 'error',
+    summary: 'Generation Error',
+    detail: message,
+    life: 6000
+  })
+}
 </script>
 
 <template>
   <div class="page-container">
-    <div class="list-toolbar">
-      <div class="toolbar-search">
-        <div class="search-input-wrapper">
-          <Search :size="16" class="search-icon" />
-          <input type="text" placeholder="Search invoice no., party..." class="custom-search-input" />
-        </div>
-      </div>
-      <div class="toolbar-actions">
-        <button class="btn-outlined"><Download :size="15" /><span>Export</span></button>
-        <button class="btn-primary"><Plus :size="16" /><span>Generate GST Invoice</span></button>
-      </div>
-    </div>
+    <InvoiceTable
+      :invoices="filteredInvoices"
+      :loading="isLoading"
+      :error="isError"
+      :errorDetail="error ? (error as Error).message : undefined"
+      v-model:searchQuery="searchQuery"
+      v-model:selectedStatus="selectedStatus"
+      :generatingPdfId="generatingPdfId"
+      @openGenerate="showGenerateDialog = true"
+      @retry="refetch"
+      @post="handlePost"
+      @cancel="handleCancel"
+      @generatePdf="handleGeneratePdf"
+    />
 
-    <div class="table-card">
-      <DataTable :value="invoices" responsiveLayout="scroll">
-        <Column field="invNo" header="Invoice No.">
-          <template #body="{ data }">
-            <span class="code-link">{{ data.invNo }}</span>
-          </template>
-        </Column>
-        <Column field="date" header="Invoice Date" />
-        <Column field="party" header="Party Name" />
-        <Column field="amount" header="Subtotal (₹)">
-          <template #body="{ data }"><span class="num-val">{{ data.amount }}</span></template>
-        </Column>
-        <Column field="tax" header="GST Tax (18%)">
-          <template #body="{ data }"><span class="num-val">{{ data.tax }}</span></template>
-        </Column>
-        <Column field="status" header="Status">
-          <template #body="{ data }">
-            <span class="status-pill" :class="data.status === 'Posted' ? 'success' : 'warning'">{{ data.status }}</span>
-          </template>
-        </Column>
-      </DataTable>
-    </div>
+    <GenerateInvoiceDialog
+      v-model:visible="showGenerateDialog"
+      :facilityId="facilityId"
+      @success="handleGenerateSuccess"
+      @error="handleGenerateError"
+    />
   </div>
 </template>
 
 <style scoped>
-.page-container { display: flex; flex-direction: column; gap: 16px; }
-.list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 14px 18px; box-shadow: var(--shadow-card); }
-.toolbar-search { display: flex; align-items: center; gap: 10px; flex: 1; }
-.search-input-wrapper { position: relative; flex: 1; display: flex; align-items: center; }
-.search-icon { position: absolute; left: 12px; color: var(--text-secondary); }
-.custom-search-input { width: 100%; padding: 9px 12px 9px 36px; border-radius: 8px; border: 1px solid var(--border-subtle); background: var(--bg-page); color: var(--text-primary); font-size: 13px; }
-.toolbar-actions { display: flex; gap: 10px; }
-.btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 10px; background-color: var(--accent-primary); color: #ffffff; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
-.btn-outlined { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 10px; background-color: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-subtle); font-size: 13px; cursor: pointer; }
-.table-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 14px; padding: 12px; box-shadow: var(--shadow-card); }
-.code-link { font-weight: 700; color: var(--accent-primary); }
-.num-val { font-feature-settings: "tnum"; }
+.page-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 </style>
