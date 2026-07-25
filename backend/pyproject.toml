@@ -10,8 +10,11 @@ dependencies = [
     "django-simple-history>=3.13.0",
     "djangorestframework>=3.17.1",
     "drf-spectacular>=0.30.0",
+    "gunicorn>=26.0.0",
+    "psycopg[binary]>=3.3.4",
     "python-decouple>=3.8",
     "weasyprint>=69.0",
+    "whitenoise>=6.12.0",
 ]
 
 [dependency-groups]
