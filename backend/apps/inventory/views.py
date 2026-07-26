@@ -259,8 +259,9 @@ class LotViewSet(ViewSet):
             OpenApiParameter('commodity_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Commodity ID"),
             OpenApiParameter('chamber', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Chamber text"),
             OpenApiParameter('floor', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by Floor text"),
-            OpenApiParameter('floor_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Floor ID"),
             OpenApiParameter('chamber_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Chamber ID"),
+            OpenApiParameter('floor_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Floor ID"),
+            OpenApiParameter('block_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Block ID"),
             OpenApiParameter('in_stock_only', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description="Only show lots with remaining_qty > 0"),
         ],
         responses={200: LotOutputSerializer(many=True)},
@@ -272,8 +273,9 @@ class LotViewSet(ViewSet):
         commodity_id = request.query_params.get('commodity_id')
         chamber = request.query_params.get('chamber')
         floor = request.query_params.get('floor')
-        floor_id = request.query_params.get('floor_id')
         chamber_id = request.query_params.get('chamber_id')
+        floor_id = request.query_params.get('floor_id')
+        block_id = request.query_params.get('block_id')
         in_stock_param = request.query_params.get('in_stock_only')
 
         in_stock_only = False
@@ -287,8 +289,9 @@ class LotViewSet(ViewSet):
                 commodity_id=int(commodity_id) if commodity_id else None,
                 chamber=chamber,
                 floor=floor,
-                floor_id=int(floor_id) if floor_id else None,
                 chamber_id=int(chamber_id) if chamber_id else None,
+                floor_id=int(floor_id) if floor_id else None,
+                block_id=int(block_id) if block_id else None,
                 in_stock_only=in_stock_only
             )
         except ValueError:

@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from libs.sequences import get_next_sequence_number
 from libs.lookups import get_facility_or_raise, get_party_or_raise
 from libs.pdf import render_pdf
-from apps.locations.models import Floor, Chamber
+from apps.locations.models import Chamber, Floor, Block
 from .models import Commodity, GRN, Lot
 
 
@@ -133,36 +133,59 @@ def create_grn(
 
         chamber_id = item_data.get('chamber_id')
         floor_id = item_data.get('floor_id')
+        block_id = item_data.get('block_id')
 
-        floor_ref = None
         chamber_ref = None
+        floor_ref = None
+        block_ref = None
+
         chamber_text = item_data.get('chamber', '')
         floor_text = item_data.get('floor', '')
 
-        if chamber_id is not None:
+        if block_id is not None:
             try:
-                chamber_ref = Chamber.objects.select_related('floor').get(pk=chamber_id)
-            except Chamber.DoesNotExist:
-                raise ValidationError(f"Chamber with ID {chamber_id} does not exist.")
+                block_ref = Block.objects.select_related('floor', 'floor__chamber', 'floor__chamber__facility').get(pk=block_id)
+            except Block.DoesNotExist:
+                raise ValidationError(f"Block with ID {block_id} does not exist.")
 
-            if chamber_ref.floor.facility_id != facility.id:
-                raise ValidationError(f"Chamber with ID {chamber_id} does not belong to facility {facility.id}.")
+            if floor_id is not None and block_ref.floor_id != floor_id:
+                raise ValidationError(f"Block with ID {block_id} does not belong to floor {floor_id}.")
 
-            if floor_id is not None and chamber_ref.floor_id != floor_id:
-                raise ValidationError(f"Chamber with ID {chamber_id} does not belong to floor {floor_id}.")
+            if chamber_id is not None and block_ref.floor.chamber_id != chamber_id:
+                raise ValidationError(f"Block with ID {block_id} does not belong to chamber {chamber_id}.")
 
-            floor_ref = chamber_ref.floor
-            chamber_text = chamber_ref.name
-            floor_text = floor_ref.name
+            if block_ref.floor.chamber.facility_id != facility.id:
+                raise ValidationError(f"Block with ID {block_id} does not belong to facility {facility.id}.")
+
+            floor_ref = block_ref.floor
+            chamber_ref = floor_ref.chamber
+
         elif floor_id is not None:
             try:
-                floor_ref = Floor.objects.get(pk=floor_id)
+                floor_ref = Floor.objects.select_related('chamber', 'chamber__facility').get(pk=floor_id)
             except Floor.DoesNotExist:
                 raise ValidationError(f"Floor with ID {floor_id} does not exist.")
 
-            if floor_ref.facility_id != facility.id:
+            if chamber_id is not None and floor_ref.chamber_id != chamber_id:
+                raise ValidationError(f"Floor with ID {floor_id} does not belong to chamber {chamber_id}.")
+
+            if floor_ref.chamber.facility_id != facility.id:
                 raise ValidationError(f"Floor with ID {floor_id} does not belong to facility {facility.id}.")
 
+            chamber_ref = floor_ref.chamber
+
+        elif chamber_id is not None:
+            try:
+                chamber_ref = Chamber.objects.select_related('facility').get(pk=chamber_id)
+            except Chamber.DoesNotExist:
+                raise ValidationError(f"Chamber with ID {chamber_id} does not exist.")
+
+            if chamber_ref.facility_id != facility.id:
+                raise ValidationError(f"Chamber with ID {chamber_id} does not belong to facility {facility.id}.")
+
+        if chamber_ref is not None:
+            chamber_text = chamber_ref.name
+        if floor_ref is not None:
             floor_text = floor_ref.name
 
         lot = Lot(
@@ -173,8 +196,9 @@ def create_grn(
             chamber=chamber_text,
             floor=floor_text,
             rack=item_data.get('rack', ''),
-            floor_ref=floor_ref,
             chamber_ref=chamber_ref,
+            floor_ref=floor_ref,
+            block_ref=block_ref,
             special_remarks=item_data.get('special_remarks', ''),
             initial_qty=initial_qty,
             remaining_qty=initial_qty,  # Rule #2: Derived server-side

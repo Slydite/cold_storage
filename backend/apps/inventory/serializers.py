@@ -32,8 +32,9 @@ class LotItemInputSerializer(serializers.Serializer):
     chamber = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
     floor = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
     rack = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
-    floor_id = serializers.IntegerField(required=False, allow_null=True, default=None)
     chamber_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    floor_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    block_id = serializers.IntegerField(required=False, allow_null=True, default=None)
     special_remarks = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     initial_qty = serializers.IntegerField(min_value=1)
     unit_weight = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0.00)
@@ -49,10 +50,12 @@ class LotOutputSerializer(serializers.ModelSerializer):
     party_id = serializers.IntegerField(source='grn.party_id', read_only=True)
     party_name = serializers.CharField(source='grn.party.name', read_only=True)
     party_code = serializers.CharField(source='grn.party.code', read_only=True)
-    floor_ref_id = serializers.IntegerField(source='floor_ref.id', read_only=True, allow_null=True)
     chamber_ref_id = serializers.IntegerField(source='chamber_ref.id', read_only=True, allow_null=True)
-    floor_name = serializers.CharField(source='floor_ref.name', read_only=True, allow_null=True)
     chamber_name = serializers.CharField(source='chamber_ref.name', read_only=True, allow_null=True)
+    floor_ref_id = serializers.IntegerField(source='floor_ref.id', read_only=True, allow_null=True)
+    floor_name = serializers.CharField(source='floor_ref.name', read_only=True, allow_null=True)
+    block_ref_id = serializers.IntegerField(source='block_ref.id', read_only=True, allow_null=True)
+    block_name = serializers.CharField(source='block_ref.name', read_only=True, allow_null=True)
 
     class Meta:
         model = Lot
@@ -73,10 +76,12 @@ class LotOutputSerializer(serializers.ModelSerializer):
             'chamber',
             'floor',
             'rack',
-            'floor_ref_id',
             'chamber_ref_id',
-            'floor_name',
             'chamber_name',
+            'floor_ref_id',
+            'floor_name',
+            'block_ref_id',
+            'block_name',
             'special_remarks',
             'initial_qty',
             'remaining_qty',

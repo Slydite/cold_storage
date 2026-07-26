@@ -98,8 +98,9 @@ class Lot(models.Model):
     floor = models.CharField(max_length=50, blank=True)
     rack = models.CharField(max_length=50, blank=True)
 
-    floor_ref = models.ForeignKey('locations.Floor', null=True, blank=True, on_delete=models.PROTECT, related_name='lots')
     chamber_ref = models.ForeignKey('locations.Chamber', null=True, blank=True, on_delete=models.PROTECT, related_name='lots')
+    floor_ref = models.ForeignKey('locations.Floor', null=True, blank=True, on_delete=models.PROTECT, related_name='lots')
+    block_ref = models.ForeignKey('locations.Block', null=True, blank=True, on_delete=models.PROTECT, related_name='lots')
 
     special_remarks = models.CharField(max_length=255, blank=True)  # Paper form's "विशेष विवरण" column
 
