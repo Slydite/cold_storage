@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
@@ -7,6 +7,7 @@ import InputText from 'primevue/inputtext'
 import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
 import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
 import { FilterMatchMode } from '@primevue/core/api'
 import {
   Search,
@@ -25,6 +26,7 @@ import {
 import { formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
+import { downloadPdf } from '../../utils/downloadPdf'
 import type { DeliveryNoteOutput } from '../../api/delivery'
 
 interface Props {
@@ -49,6 +51,24 @@ const emit = defineEmits<{
 }>()
 
 const confirm = useConfirm()
+const toast = useToast()
+const downloadingId = ref<number | null>(null)
+
+async function handleDownloadPdf(id: number, docNumber: string) {
+  downloadingId.value = id
+  try {
+    await downloadPdf(`/api/delivery-notes/${id}/pdf/`, `${docNumber}.pdf`)
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'PDF Failed',
+      detail: err instanceof Error ? err.message : 'Could not generate PDF',
+      life: 5000
+    })
+  } finally {
+    downloadingId.value = null
+  }
+}
 
 const statusOptions = [
   { label: 'All Statuses', value: 'all' },
@@ -378,16 +398,16 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
               >
                 <XCircle :size="16" />
               </button>
-              <a
-                :href="`/api/delivery-notes/${data.id}/pdf/`"
-                target="_blank"
-                rel="noopener"
+              <button
                 class="icon-btn"
                 title="PDF"
                 aria-label="PDF"
+                type="button"
+                :disabled="downloadingId === data.id"
+                @click="handleDownloadPdf(data.id, data.dn_number)"
               >
                 <Printer :size="16" />
-              </a>
+              </button>
             </div>
           </template>
         </Column>

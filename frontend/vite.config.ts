@@ -43,7 +43,13 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}']
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        // The SPA navigation fallback answers navigation requests with
+        // index.html. Without this denylist it also swallowed server routes:
+        // opening /api/<x>/pdf/ in a tab returned the dashboard instead of the
+        // PDF, which looked exactly like "PDF generation is broken" even though
+        // the request never reached Django.
+        navigateFallbackDenylist: [/^\/api\//, /^\/media\//, /^\/admin\//, /^\/static\//]
       }
     })
   ],

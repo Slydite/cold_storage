@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import { useToast } from 'primevue/usetoast'
 import { Download, Printer } from 'lucide-vue-next'
 import { formatCurrency, formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
+import { downloadPdf } from '../../utils/downloadPdf'
 import type { RentRunOutput } from '../../api/billing'
 
 interface Props {
@@ -20,6 +23,25 @@ const emit = defineEmits<{
 
 const handleClose = () => {
   emit('update:visible', false)
+}
+
+const toast = useToast()
+const downloadingId = ref<number | null>(null)
+
+async function handleDownloadPdf(id: number) {
+  downloadingId.value = id
+  try {
+    await downloadPdf(`/api/rent-runs/${id}/pdf/`, `RentRun-${id}.pdf`)
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'PDF Failed',
+      detail: err instanceof Error ? err.message : 'Could not generate PDF',
+      life: 5000
+    })
+  } finally {
+    downloadingId.value = null
+  }
 }
 
 const handleExportLines = () => {
@@ -121,18 +143,18 @@ const handleExportLines = () => {
       <div class="lines-header">
         <h4 class="lines-title">Line Items Billed ({{ props.rentRun.lines ? props.rentRun.lines.length : 0 }})</h4>
         <div class="header-action-group">
-          <a
+          <button
             v-if="props.rentRun"
-            :href="`/api/rent-runs/${props.rentRun.id}/pdf/`"
-            target="_blank"
-            rel="noopener"
             class="btn-outlined btn-sm"
+            type="button"
             title="PDF"
             aria-label="PDF"
+            :disabled="downloadingId === props.rentRun.id"
+            @click="handleDownloadPdf(props.rentRun.id)"
           >
             <Printer :size="14" />
             <span>PDF</span>
-          </a>
+          </button>
 
           <button class="btn-outlined btn-sm" type="button" @click="handleExportLines">
             <Download :size="14" />

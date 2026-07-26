@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import { useToast } from 'primevue/usetoast'
 import { Download, Printer } from 'lucide-vue-next'
 import { formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
+import { downloadPdf } from '../../utils/downloadPdf'
 import type { DeliveryNoteOutput } from '../../api/delivery'
 
 interface Props {
@@ -21,6 +23,25 @@ const emit = defineEmits<{
 
 const handleClose = () => {
   emit('update:visible', false)
+}
+
+const toast = useToast()
+const downloadingId = ref<number | null>(null)
+
+async function handleDownloadPdf(id: number, docNumber: string) {
+  downloadingId.value = id
+  try {
+    await downloadPdf(`/api/delivery-notes/${id}/pdf/`, `${docNumber}.pdf`)
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'PDF Failed',
+      detail: err instanceof Error ? err.message : 'Could not generate PDF',
+      life: 5000
+    })
+  } finally {
+    downloadingId.value = null
+  }
 }
 
 const totalQty = computed(() => {
@@ -157,18 +178,18 @@ const handleExportLines = () => {
     <template #footer>
       <div class="dialog-footer">
         <div class="pdf-action-group">
-          <a
+          <button
             v-if="props.deliveryNote"
-            :href="`/api/delivery-notes/${props.deliveryNote.id}/pdf/`"
-            target="_blank"
-            rel="noopener"
             class="btn-primary"
+            type="button"
             title="PDF"
             aria-label="PDF"
+            :disabled="downloadingId === props.deliveryNote.id"
+            @click="handleDownloadPdf(props.deliveryNote.id, props.deliveryNote.dn_number)"
           >
             <Printer :size="15" />
             <span>PDF</span>
-          </a>
+          </button>
         </div>
         <button class="btn-outlined" type="button" @click="handleClose">Close</button>
       </div>

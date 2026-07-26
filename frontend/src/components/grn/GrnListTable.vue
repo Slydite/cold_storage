@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
+import { useToast } from 'primevue/usetoast'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
@@ -25,6 +26,7 @@ import { chamberOptions } from '../../constants/chambers'
 import { formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
+import { downloadPdf } from '../../utils/downloadPdf'
 import type { GrnOutput } from '../../api/grn'
 
 interface Props {
@@ -49,6 +51,25 @@ const emit = defineEmits<{
   post: [id: number]
   cancel: [id: number]
 }>()
+
+const toast = useToast()
+const downloadingId = ref<number | null>(null)
+
+async function handleDownloadPdf(id: number, docNumber: string) {
+  downloadingId.value = id
+  try {
+    await downloadPdf(`/api/grns/${id}/pdf/`, `${docNumber}.pdf`)
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'PDF Failed',
+      detail: err instanceof Error ? err.message : 'Could not generate PDF',
+      life: 5000
+    })
+  } finally {
+    downloadingId.value = null
+  }
+}
 
 const periodOptions = [
   { label: 'This Month', value: 'this_month' },
@@ -333,16 +354,16 @@ const handleExport = () => {
               >
                 <XCircle :size="16" />
               </button>
-              <a
-                :href="`/api/grns/${data.id}/pdf/`"
-                target="_blank"
-                rel="noopener"
+              <button
                 class="icon-btn"
                 title="PDF"
                 aria-label="PDF"
+                type="button"
+                :disabled="downloadingId === data.id"
+                @click="handleDownloadPdf(data.id, data.grn_number)"
               >
                 <Printer :size="16" />
-              </a>
+              </button>
             </div>
           </template>
         </Column>

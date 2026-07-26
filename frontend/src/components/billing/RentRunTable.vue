@@ -6,6 +6,7 @@ import Select from 'primevue/select'
 import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
 import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
 import { FilterMatchMode } from '@primevue/core/api'
 import {
   Search,
@@ -24,6 +25,7 @@ import {
 import { formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
+import { downloadPdf } from '../../utils/downloadPdf'
 import type { RentRunOutput } from '../../api/billing'
 
 interface Props {
@@ -44,6 +46,24 @@ const emit = defineEmits<{
 }>()
 
 const confirm = useConfirm()
+const toast = useToast()
+const downloadingId = ref<number | null>(null)
+
+async function handleDownloadPdf(id: number) {
+  downloadingId.value = id
+  try {
+    await downloadPdf(`/api/rent-runs/${id}/pdf/`, `RentRun-${id}.pdf`)
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'PDF Failed',
+      detail: err instanceof Error ? err.message : 'Could not generate PDF',
+      life: 5000
+    })
+  } finally {
+    downloadingId.value = null
+  }
+}
 
 const searchQuery = ref('')
 const statusFilter = ref<string>('all')
@@ -357,16 +377,16 @@ const handleCancelConfirm = (id: number) => {
               >
                 <Eye :size="16" />
               </button>
-              <a
-                :href="`/api/rent-runs/${data.id}/pdf/`"
-                target="_blank"
-                rel="noopener"
+              <button
                 class="icon-btn"
                 title="PDF"
                 aria-label="PDF"
+                type="button"
+                :disabled="downloadingId === data.id"
+                @click="handleDownloadPdf(data.id)"
               >
                 <Printer :size="16" />
-              </a>
+              </button>
 
               <button
                 v-if="data.status === 'DRAFT'"

@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import { useToast } from 'primevue/usetoast'
 import { Download, Printer } from 'lucide-vue-next'
 import { formatCurrency, formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
+import { downloadPdf } from '../../utils/downloadPdf'
 import type { GrnOutput } from '../../api/grn'
 
 interface Props {
@@ -20,6 +23,25 @@ const emit = defineEmits<{
 
 const handleClose = () => {
   emit('update:visible', false)
+}
+
+const toast = useToast()
+const downloadingId = ref<number | null>(null)
+
+async function handleDownloadPdf(id: number, docNumber: string) {
+  downloadingId.value = id
+  try {
+    await downloadPdf(`/api/grns/${id}/pdf/`, `${docNumber}.pdf`)
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'PDF Failed',
+      detail: err instanceof Error ? err.message : 'Could not generate PDF',
+      life: 5000
+    })
+  } finally {
+    downloadingId.value = null
+  }
 }
 
 const handleExportLots = () => {
@@ -219,18 +241,18 @@ const handleExportLots = () => {
     <template #footer>
       <div class="dialog-footer">
         <div class="pdf-action-group">
-          <a
+          <button
             v-if="props.grn"
-            :href="`/api/grns/${props.grn.id}/pdf/`"
-            target="_blank"
-            rel="noopener"
             class="btn-primary"
+            type="button"
             title="PDF"
             aria-label="PDF"
+            :disabled="downloadingId === props.grn.id"
+            @click="handleDownloadPdf(props.grn.id, props.grn.grn_number)"
           >
             <Printer :size="15" />
             <span>PDF</span>
-          </a>
+          </button>
         </div>
         <button class="btn-outlined" type="button" @click="handleClose">Close</button>
       </div>

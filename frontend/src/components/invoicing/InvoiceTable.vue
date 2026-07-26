@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
+import { useToast } from 'primevue/usetoast'
 import { FilterMatchMode } from '@primevue/core/api'
 import {
   Search,
@@ -23,6 +24,7 @@ import {
 import { formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
+import { downloadPdf } from '../../utils/downloadPdf'
 import type { InvoiceOutput } from '../../api/invoicing'
 
 interface Props {
@@ -44,6 +46,25 @@ const emit = defineEmits<{
   post: [id: number]
   cancel: [id: number]
 }>()
+
+const toast = useToast()
+const downloadingId = ref<number | null>(null)
+
+async function handleDownloadPdf(id: number, docNumber: string) {
+  downloadingId.value = id
+  try {
+    await downloadPdf(`/api/invoices/${id}/pdf/`, `${docNumber}.pdf`)
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'PDF Failed',
+      detail: err instanceof Error ? err.message : 'Could not generate PDF',
+      life: 5000
+    })
+  } finally {
+    downloadingId.value = null
+  }
+}
 
 const statusOptions = [
   { label: 'All Statuses', value: '' },
@@ -330,16 +351,16 @@ const handleExport = () => {
                 <XCircle :size="16" />
               </button>
 
-              <a
-                :href="`/api/invoices/${data.id}/pdf/`"
-                target="_blank"
-                rel="noopener"
+              <button
                 class="icon-btn"
                 title="PDF"
                 aria-label="PDF"
+                type="button"
+                :disabled="downloadingId === data.id"
+                @click="handleDownloadPdf(data.id, data.invoice_number)"
               >
                 <Printer :size="16" />
-              </a>
+              </button>
             </div>
           </template>
         </Column>
