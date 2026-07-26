@@ -1,0 +1,19 @@
+[Unit]
+Description=Cold Storage WMS - Postgres backup to Google Drive
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=frappeuser
+Group=frappeuser
+ExecStart=/home/frappeuser/cold_storage/scripts/backup_db.sh
+
+# Overridable without editing this unit:
+#   sudo systemctl edit cold-storage-backup.service
+# Environment=REMOTE_RETENTION_DAYS=90
+
+# Output goes to the journal (journalctl -u cold-storage-backup), not a log file
+# that would grow unbounded and never get rotated.
+StandardOutput=journal
+StandardError=journal

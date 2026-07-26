@@ -1,0 +1,17 @@
+[Unit]
+Description=Daily Cold Storage WMS Postgres backup
+
+[Timer]
+# 02:30 daily. Offset from the ERPNext bench backup (which runs on the 6-hourly
+# 00/06/12/18 boundaries) so the two do not compete for disk and CPU.
+OnCalendar=*-*-* 02:30:00
+
+# If the VM was off/asleep at 02:30, run once on next boot rather than silently
+# skipping a day.
+Persistent=true
+
+# Avoid every timer on the host firing at the same instant.
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target
