@@ -459,10 +459,24 @@ const {
 }
 
 @media (max-width: 900px) {
+  /*
+   * On narrow screens the panel used to stack BELOW the list, so tapping
+   * "New GRN" appeared to do nothing until you scrolled to the bottom of the
+   * page. Promote it to a full-screen overlay instead: it covers the list, is
+   * visible the instant it opens, and matches how a mobile app presents a
+   * create flow. z-index sits above the sidebar (100) and header (90) but
+   * below PrimeVue's dialogs/toasts (~1100) so the "Save & Post" confirm and
+   * any error toast still layer on top of it.
+   */
   .detail-split-panel {
-    position: static;
-    height: auto;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
     width: 100%;
+    max-width: none;
+    height: 100dvh;
+    border: none;
+    border-radius: 0;
   }
 }
 

@@ -50,4 +50,13 @@ app.use(PrimeVue, {
 app.use(ToastService)
 app.use(ConfirmationService)
 
-app.mount('#app')
+// Wait for the router's FIRST navigation to resolve before mounting.
+// The global beforeEach guard awaits /api/auth/me/ to decide whether to
+// redirect to /login. Mounting immediately painted App.vue while that request
+// was still in flight, and since an unresolved route has no `meta.public`,
+// App.vue fell through to the authenticated branch and rendered the full app
+// chrome (sidebar, header) for a beat before bouncing to the login screen.
+// isReady() resolves after the guard, so the first paint is already correct.
+router.isReady().then(() => {
+  app.mount('#app')
+})

@@ -480,10 +480,21 @@ const handleSaveAndPost = () => {
 }
 
 @media (max-width: 900px) {
+  /*
+   * See GrnCreatePanel: on narrow screens the panel stacked below the list, so
+   * tapping "New Delivery" looked like a no-op until you scrolled down. Render
+   * it as a full-screen overlay instead. z-index stays below PrimeVue dialogs
+   * (~1100) so the stock-withdrawal confirmation still appears above it.
+   */
   .detail-split-panel {
-    position: static;
-    height: auto;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
     width: 100%;
+    max-width: none;
+    height: 100dvh;
+    border: none;
+    border-radius: 0;
   }
 }
 

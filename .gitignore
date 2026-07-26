@@ -20,6 +20,13 @@ db/*.sqlite3-journal
 # User-uploaded / generated media (invoice PDFs, etc.)
 media/
 
+# Secrets — never commit. .env.example is the tracked template.
+.env
+.env.*
+!.env.example
+temp_env
+*.env
+
 # Node / Frontend
 frontend/node_modules/
 frontend/dist/
@@ -39,3 +46,4 @@ frontend/pnpm-debug.log*
 *.sw?
 Thumbs.db
 .DS_Store
+.secret_report
