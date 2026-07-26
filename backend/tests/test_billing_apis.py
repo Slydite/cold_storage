@@ -43,6 +43,7 @@ def test_unauthenticated_billing_apis_denied(api_client):
     assert api_client.get('/api/rent-runs/').status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
     assert api_client.post('/api/rent-runs/', {}).status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
     assert api_client.post('/api/rent-runs/preview/', {}).status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+    assert api_client.get('/api/rent-runs/1/pdf/').status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
 
 
 @pytest.mark.django_db
@@ -169,10 +170,12 @@ def test_rent_run_api_create_list_retrieve_post_and_pdf(auth_client, default_fac
     assert res_get.status_code == status.HTTP_200_OK
     assert res_get.data['id'] == run_id
 
-    # Generate PDF
-    res_pdf = auth_client.post(f'/api/rent-runs/{run_id}/generate-pdf/')
+    # Stream PDF
+    res_pdf = auth_client.get(f'/api/rent-runs/{run_id}/pdf/')
     assert res_pdf.status_code == status.HTTP_200_OK
-    assert res_pdf.data['pdf_url'] is not None
+    assert res_pdf['Content-Type'] == 'application/pdf'
+    assert f'RentRun-{run_id}.pdf' in res_pdf['Content-Disposition']
+    assert res_pdf.content.startswith(b'%PDF')
 
     # Post RentRun
     res_post = auth_client.post(f'/api/rent-runs/{run_id}/post/')

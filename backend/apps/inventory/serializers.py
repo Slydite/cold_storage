@@ -110,7 +110,6 @@ class GRNCreateInputSerializer(serializers.Serializer):
 class GRNOutputSerializer(serializers.ModelSerializer):
     party_name = serializers.CharField(source='party.name', read_only=True)
     party_code = serializers.CharField(source='party.code', read_only=True)
-    pdf_url = serializers.SerializerMethodField()
     lots = LotOutputSerializer(many=True, read_only=True)
 
     class Meta:
@@ -134,14 +133,10 @@ class GRNOutputSerializer(serializers.ModelSerializer):
             'loading_unloading_rate_per_bag',
             'inward_time',
             'status',
-            'pdf_url',
             'lots',
             'created_at',
             'updated_at'
         ]
-
-    def get_pdf_url(self, obj) -> str | None:
-        return obj.pdf_file.url if obj.pdf_file else None
 
 
 class LotWithdrawalInputSerializer(serializers.Serializer):

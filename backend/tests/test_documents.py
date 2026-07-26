@@ -4,13 +4,15 @@ from decimal import Decimal
 from rest_framework.test import APIClient
 
 from apps.parties.services import create_party
-from apps.inventory.services import create_commodity, create_grn, generate_grn_pdf
+from apps.inventory.services import create_commodity, create_grn, build_grn_pdf
 from apps.inventory.models import GRN, Lot
 from apps.inventory.serializers import GRNOutputSerializer
-from apps.delivery.services import create_delivery_note, post_delivery_note, generate_delivery_note_pdf
+from apps.delivery.services import create_delivery_note, post_delivery_note, build_delivery_note_pdf
 from apps.delivery.models import DeliveryNote, DeliveryLine
 from apps.delivery.serializers import DeliveryNoteOutputSerializer
-from apps.invoicing.services import _amount_in_words
+from apps.invoicing.services import build_invoice_pdf, generate_invoices_for_rent_run, _amount_in_words
+from apps.billing.services import create_rate_card, create_rent_run, post_rent_run, build_rent_run_pdf
+from apps.billing.models import RateCard
 
 
 @pytest.fixture
@@ -35,9 +37,7 @@ def test_commodity(default_facility):
 
 
 @pytest.mark.django_db
-def test_generate_grn_pdf_service_and_serializer(default_facility, test_party, test_commodity, tmp_path, settings):
-    settings.MEDIA_ROOT = tmp_path / "media"
-
+def test_generate_grn_pdf_service_and_serializer(default_facility, test_party, test_commodity):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -55,18 +55,12 @@ def test_generate_grn_pdf_service_and_serializer(default_facility, test_party, t
         }]
     )
 
-    assert not grn.pdf_file
-
-    pdf_url = generate_grn_pdf(grn_id=grn.id)
-    assert pdf_url is not None
-    assert pdf_url != ""
-
-    grn.refresh_from_db()
-    assert grn.pdf_file is not None
-    assert grn.pdf_file.read().startswith(b'%PDF')
+    pdf_bytes = build_grn_pdf(grn_id=grn.id)
+    assert isinstance(pdf_bytes, bytes)
+    assert pdf_bytes.startswith(b'%PDF')
 
     serializer = GRNOutputSerializer(grn)
-    assert serializer.data['pdf_url'] == pdf_url
+    assert 'pdf_url' not in serializer.data
     assert serializer.data['bill_no'] == "BILL-101"
     assert serializer.data['bilty_no'] == "LR-505"
     assert serializer.data['transporter'] == "Jaipur Freight"
@@ -74,9 +68,7 @@ def test_generate_grn_pdf_service_and_serializer(default_facility, test_party, t
 
 
 @pytest.mark.django_db
-def test_generate_delivery_note_pdf_and_balance_after(default_facility, test_party, test_commodity, tmp_path, settings):
-    settings.MEDIA_ROOT = tmp_path / "media"
-
+def test_generate_delivery_note_pdf_and_balance_after(default_facility, test_party, test_commodity):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -115,19 +107,84 @@ def test_generate_delivery_note_pdf_and_balance_after(default_facility, test_par
     assert lot.remaining_qty == 70
     assert line.balance_after == 70
 
-    # Generate PDF
-    pdf_url = generate_delivery_note_pdf(delivery_note_id=posted_dn.id)
-    assert pdf_url is not None
-    assert pdf_url != ""
-
-    posted_dn.refresh_from_db()
-    assert posted_dn.pdf_file is not None
-    assert posted_dn.pdf_file.read().startswith(b'%PDF')
+    # Build PDF
+    pdf_bytes = build_delivery_note_pdf(delivery_note_id=posted_dn.id)
+    assert isinstance(pdf_bytes, bytes)
+    assert pdf_bytes.startswith(b'%PDF')
 
     serializer = DeliveryNoteOutputSerializer(posted_dn)
-    assert serializer.data['pdf_url'] == pdf_url
+    assert 'pdf_url' not in serializer.data
     assert serializer.data['transporter'] == "National Express"
     assert serializer.data['lines'][0]['balance_after'] == 70
+
+
+@pytest.mark.django_db
+def test_pdf_determinism(default_facility, test_party, test_commodity):
+    """
+    Assert that rendering the same record twice produces byte-identical output (same SHA256 / bytes).
+    This is the core property on-the-fly streaming rests on.
+    """
+    create_rate_card(
+        facility_id=default_facility.id,
+        commodity_id=test_commodity.id,
+        weight_category=RateCard.WeightCategory.KG_50,
+        rate_per_bag_per_month=Decimal('50.00'),
+        effective_from=date(2026, 1, 1)
+    )
+
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 1),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+            "unit_weight": Decimal('50.00')
+        }]
+    )
+    lot = grn.lots.first()
+
+    dn = create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        dispatch_date=date(2026, 7, 10),
+        status=DeliveryNote.Status.DRAFT,
+        lines=[{"lot_id": lot.id, "qty": 10}]
+    )
+
+    rent_run = create_rent_run(
+        facility_id=default_facility.id,
+        period_start=date(2026, 7, 1),
+        period_end=date(2026, 7, 31)
+    )
+    post_rent_run(rent_run_id=rent_run.id)
+
+    invoices = generate_invoices_for_rent_run(
+        facility_id=default_facility.id,
+        rent_run_id=rent_run.id
+    )
+    invoice = invoices[0]
+
+    # Test GRN PDF determinism
+    grn_pdf1 = build_grn_pdf(grn_id=grn.id)
+    grn_pdf2 = build_grn_pdf(grn_id=grn.id)
+    assert grn_pdf1 == grn_pdf2
+
+    # Test Delivery Note PDF determinism
+    dn_pdf1 = build_delivery_note_pdf(delivery_note_id=dn.id)
+    dn_pdf2 = build_delivery_note_pdf(delivery_note_id=dn.id)
+    assert dn_pdf1 == dn_pdf2
+
+    # Test RentRun PDF determinism
+    rr_pdf1 = build_rent_run_pdf(rent_run_id=rent_run.id)
+    rr_pdf2 = build_rent_run_pdf(rent_run_id=rent_run.id)
+    assert rr_pdf1 == rr_pdf2
+
+    # Test Invoice PDF determinism
+    inv_pdf1 = build_invoice_pdf(invoice_id=invoice.id)
+    inv_pdf2 = build_invoice_pdf(invoice_id=invoice.id)
+    assert inv_pdf1 == inv_pdf2
 
 
 def test_amount_in_words():

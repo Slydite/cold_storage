@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
@@ -16,7 +17,7 @@ from .services import (
     generate_invoices_for_rent_run,
     post_invoice,
     cancel_invoice,
-    generate_invoice_pdf,
+    build_invoice_pdf,
 )
 from .serializers import (
     GenerateInvoicesInputSerializer,
@@ -119,16 +120,20 @@ class InvoiceViewSet(ViewSet):
         return Response(InvoiceOutputSerializer(invoice).data)
 
     @extend_schema(
-        responses={200: InvoiceOutputSerializer, 400: None},
-        summary="Generate PDF for an invoice"
+        responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 400: None, 404: None},
+        summary="Stream PDF for an invoice"
     )
-    @action(detail=True, methods=['post'], url_path='generate-pdf')
-    def generate_pdf(self, request, pk=None):
+    @action(detail=True, methods=['get'], url_path='pdf')
+    def pdf(self, request, pk=None):
         try:
-            generate_invoice_pdf(invoice_id=pk)
             invoice = get_invoice_by_id(pk)
+            pdf_bytes = build_invoice_pdf(invoice_id=invoice.id)
         except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except (Invoice.DoesNotExist, ValueError):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(InvoiceOutputSerializer(invoice).data, status=status.HTTP_200_OK)
+
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{invoice.invoice_number}.pdf"'
+        return response
+

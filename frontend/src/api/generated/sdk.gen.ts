@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, ChambersCreateData, ChambersCreateErrors, ChambersCreateResponses, ChambersListData, ChambersListResponses, ChambersRetrieveData, ChambersRetrieveErrors, ChambersRetrieveResponses, ChambersUpdateData, ChambersUpdateErrors, ChambersUpdateResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesGeneratePdfCreateData, DeliveryNotesGeneratePdfCreateErrors, DeliveryNotesGeneratePdfCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, FloorsCreateData, FloorsCreateErrors, FloorsCreateResponses, FloorsListData, FloorsListResponses, FloorsRetrieveData, FloorsRetrieveErrors, FloorsRetrieveResponses, FloorsUpdateData, FloorsUpdateErrors, FloorsUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsGeneratePdfCreateData, GrnsGeneratePdfCreateErrors, GrnsGeneratePdfCreateResponses, GrnsListData, GrnsListResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesGeneratePdfCreateData, InvoicesGeneratePdfCreateErrors, InvoicesGeneratePdfCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, RateCardsCreateData, RateCardsCreateErrors, RateCardsCreateResponses, RateCardsListData, RateCardsListResponses, RateCardsRetrieveData, RateCardsRetrieveErrors, RateCardsRetrieveResponses, RentRunsCancelCreateData, RentRunsCancelCreateErrors, RentRunsCancelCreateResponses, RentRunsCreateData, RentRunsCreateErrors, RentRunsCreateResponses, RentRunsGeneratePdfCreateData, RentRunsGeneratePdfCreateErrors, RentRunsGeneratePdfCreateResponses, RentRunsListData, RentRunsListResponses, RentRunsPostCreateData, RentRunsPostCreateErrors, RentRunsPostCreateResponses, RentRunsPreviewCreateData, RentRunsPreviewCreateErrors, RentRunsPreviewCreateResponses, RentRunsRetrieveData, RentRunsRetrieveErrors, RentRunsRetrieveResponses, ReportsDnRegisterRetrieveData, ReportsDnRegisterRetrieveResponses, ReportsGrnRegisterRetrieveData, ReportsGrnRegisterRetrieveResponses, ReportsInvoicesRetrieveData, ReportsInvoicesRetrieveResponses, ReportsRentRunsRetrieveData, ReportsRentRunsRetrieveResponses, ReportsStockSummaryRetrieveData, ReportsStockSummaryRetrieveResponses, UsersActivateCreateData, UsersActivateCreateErrors, UsersActivateCreateResponses, UsersCreateData, UsersCreateErrors, UsersCreateResponses, UsersDeactivateCreateData, UsersDeactivateCreateErrors, UsersDeactivateCreateResponses, UsersListData, UsersListResponses, UsersRetrieveData, UsersRetrieveErrors, UsersRetrieveResponses, UsersUpdateData, UsersUpdateErrors, UsersUpdateResponses } from './types.gen';
+import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, ChambersCreateData, ChambersCreateErrors, ChambersCreateResponses, ChambersListData, ChambersListResponses, ChambersRetrieveData, ChambersRetrieveErrors, ChambersRetrieveResponses, ChambersUpdateData, ChambersUpdateErrors, ChambersUpdateResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPdfRetrieveData, DeliveryNotesPdfRetrieveErrors, DeliveryNotesPdfRetrieveResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, FloorsCreateData, FloorsCreateErrors, FloorsCreateResponses, FloorsListData, FloorsListResponses, FloorsRetrieveData, FloorsRetrieveErrors, FloorsRetrieveResponses, FloorsUpdateData, FloorsUpdateErrors, FloorsUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsListData, GrnsListResponses, GrnsPdfRetrieveData, GrnsPdfRetrieveErrors, GrnsPdfRetrieveResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPdfRetrieveData, InvoicesPdfRetrieveErrors, InvoicesPdfRetrieveResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, RateCardsCreateData, RateCardsCreateErrors, RateCardsCreateResponses, RateCardsListData, RateCardsListResponses, RateCardsRetrieveData, RateCardsRetrieveErrors, RateCardsRetrieveResponses, RentRunsCancelCreateData, RentRunsCancelCreateErrors, RentRunsCancelCreateResponses, RentRunsCreateData, RentRunsCreateErrors, RentRunsCreateResponses, RentRunsListData, RentRunsListResponses, RentRunsPdfRetrieveData, RentRunsPdfRetrieveErrors, RentRunsPdfRetrieveResponses, RentRunsPostCreateData, RentRunsPostCreateErrors, RentRunsPostCreateResponses, RentRunsPreviewCreateData, RentRunsPreviewCreateErrors, RentRunsPreviewCreateResponses, RentRunsRetrieveData, RentRunsRetrieveErrors, RentRunsRetrieveResponses, ReportsDnRegisterRetrieveData, ReportsDnRegisterRetrieveResponses, ReportsGrnRegisterRetrieveData, ReportsGrnRegisterRetrieveResponses, ReportsInvoicesRetrieveData, ReportsInvoicesRetrieveResponses, ReportsRentRunsRetrieveData, ReportsRentRunsRetrieveResponses, ReportsStockSummaryRetrieveData, ReportsStockSummaryRetrieveResponses, UsersActivateCreateData, UsersActivateCreateErrors, UsersActivateCreateResponses, UsersCreateData, UsersCreateErrors, UsersCreateResponses, UsersDeactivateCreateData, UsersDeactivateCreateErrors, UsersDeactivateCreateResponses, UsersListData, UsersListResponses, UsersRetrieveData, UsersRetrieveErrors, UsersRetrieveResponses, UsersUpdateData, UsersUpdateErrors, UsersUpdateResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -251,15 +251,15 @@ export const deliveryNotesCancelCreate = <ThrowOnError extends boolean = false>(
 });
 
 /**
- * Generate PDF for a Delivery Note
+ * Stream PDF for a Delivery Note
  */
-export const deliveryNotesGeneratePdfCreate = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesGeneratePdfCreateData, ThrowOnError>): RequestResult<DeliveryNotesGeneratePdfCreateResponses, DeliveryNotesGeneratePdfCreateErrors, ThrowOnError> => (options.client ?? client).post<DeliveryNotesGeneratePdfCreateResponses, DeliveryNotesGeneratePdfCreateErrors, ThrowOnError>({
+export const deliveryNotesPdfRetrieve = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesPdfRetrieveData, ThrowOnError>): RequestResult<DeliveryNotesPdfRetrieveResponses, DeliveryNotesPdfRetrieveErrors, ThrowOnError> => (options.client ?? client).get<DeliveryNotesPdfRetrieveResponses, DeliveryNotesPdfRetrieveErrors, ThrowOnError>({
     security: [{
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
         }, { scheme: 'basic', type: 'http' }],
-    url: '/api/delivery-notes/{id}/generate-pdf/',
+    url: '/api/delivery-notes/{id}/pdf/',
     ...options
 });
 
@@ -453,15 +453,15 @@ export const grnsCancelCreate = <ThrowOnError extends boolean = false>(options: 
 });
 
 /**
- * Generate PDF for a GRN
+ * Stream PDF for a GRN
  */
-export const grnsGeneratePdfCreate = <ThrowOnError extends boolean = false>(options: Options<GrnsGeneratePdfCreateData, ThrowOnError>): RequestResult<GrnsGeneratePdfCreateResponses, GrnsGeneratePdfCreateErrors, ThrowOnError> => (options.client ?? client).post<GrnsGeneratePdfCreateResponses, GrnsGeneratePdfCreateErrors, ThrowOnError>({
+export const grnsPdfRetrieve = <ThrowOnError extends boolean = false>(options: Options<GrnsPdfRetrieveData, ThrowOnError>): RequestResult<GrnsPdfRetrieveResponses, GrnsPdfRetrieveErrors, ThrowOnError> => (options.client ?? client).get<GrnsPdfRetrieveResponses, GrnsPdfRetrieveErrors, ThrowOnError>({
     security: [{
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
         }, { scheme: 'basic', type: 'http' }],
-    url: '/api/grns/{id}/generate-pdf/',
+    url: '/api/grns/{id}/pdf/',
     ...options
 });
 
@@ -535,15 +535,15 @@ export const invoicesCancelCreate = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
- * Generate PDF for an invoice
+ * Stream PDF for an invoice
  */
-export const invoicesGeneratePdfCreate = <ThrowOnError extends boolean = false>(options: Options<InvoicesGeneratePdfCreateData, ThrowOnError>): RequestResult<InvoicesGeneratePdfCreateResponses, InvoicesGeneratePdfCreateErrors, ThrowOnError> => (options.client ?? client).post<InvoicesGeneratePdfCreateResponses, InvoicesGeneratePdfCreateErrors, ThrowOnError>({
+export const invoicesPdfRetrieve = <ThrowOnError extends boolean = false>(options: Options<InvoicesPdfRetrieveData, ThrowOnError>): RequestResult<InvoicesPdfRetrieveResponses, InvoicesPdfRetrieveErrors, ThrowOnError> => (options.client ?? client).get<InvoicesPdfRetrieveResponses, InvoicesPdfRetrieveErrors, ThrowOnError>({
     security: [{
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
         }, { scheme: 'basic', type: 'http' }],
-    url: '/api/invoices/{id}/generate-pdf/',
+    url: '/api/invoices/{id}/pdf/',
     ...options
 });
 
@@ -763,15 +763,15 @@ export const rentRunsCancelCreate = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
- * Generate PDF for a rent run
+ * Stream PDF for a rent run
  */
-export const rentRunsGeneratePdfCreate = <ThrowOnError extends boolean = false>(options: Options<RentRunsGeneratePdfCreateData, ThrowOnError>): RequestResult<RentRunsGeneratePdfCreateResponses, RentRunsGeneratePdfCreateErrors, ThrowOnError> => (options.client ?? client).post<RentRunsGeneratePdfCreateResponses, RentRunsGeneratePdfCreateErrors, ThrowOnError>({
+export const rentRunsPdfRetrieve = <ThrowOnError extends boolean = false>(options: Options<RentRunsPdfRetrieveData, ThrowOnError>): RequestResult<RentRunsPdfRetrieveResponses, RentRunsPdfRetrieveErrors, ThrowOnError> => (options.client ?? client).get<RentRunsPdfRetrieveResponses, RentRunsPdfRetrieveErrors, ThrowOnError>({
     security: [{
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
         }, { scheme: 'basic', type: 'http' }],
-    url: '/api/rent-runs/{id}/generate-pdf/',
+    url: '/api/rent-runs/{id}/pdf/',
     ...options
 });
 

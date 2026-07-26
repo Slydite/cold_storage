@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import { useToast } from 'primevue/usetoast'
 import { Download, Printer } from 'lucide-vue-next'
 import { formatCurrency, formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
-import { useGenerateGrnPdf } from '../../composables/useGrns'
 import type { GrnOutput } from '../../api/grn'
 
 interface Props {
@@ -21,28 +18,8 @@ const emit = defineEmits<{
   'update:visible': [visible: boolean]
 }>()
 
-const toast = useToast()
-const generatePdfMutation = useGenerateGrnPdf()
-const localPdfUrl = ref<string | null>(null)
-
-watch(
-  () => props.grn,
-  (newGrn) => {
-    localPdfUrl.value = newGrn?.pdf_url ?? null
-  },
-  { immediate: true }
-)
-
-const currentPdfUrl = computed(() => localPdfUrl.value || props.grn?.pdf_url || null)
-
 const handleClose = () => {
   emit('update:visible', false)
-}
-
-function resolvePdfUrl(url: string | null): string {
-  if (!url) return '#'
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
-  return url.startsWith('/') ? url : `/${url}`
 }
 
 const handleExportLots = () => {
@@ -68,27 +45,6 @@ const handleExportLots = () => {
     lot.special_remarks || '—'
   ])
   exportToCsv(`grn_${props.grn.grn_number}_lots.csv`, headers, rows)
-}
-
-const handleGeneratePdf = async () => {
-  if (!props.grn) return
-  try {
-    const updated = await generatePdfMutation.mutateAsync(props.grn.id)
-    localPdfUrl.value = updated.pdf_url
-    toast.add({
-      severity: 'success',
-      summary: 'PDF Generated',
-      detail: `PDF generated for GRN ${updated.grn_number}.`,
-      life: 3000
-    })
-  } catch (err: unknown) {
-    toast.add({
-      severity: 'error',
-      summary: 'PDF Generation Failed',
-      detail: err instanceof Error ? err.message : 'Failed to generate PDF',
-      life: 5000
-    })
-  }
 }
 </script>
 
@@ -264,25 +220,17 @@ const handleGeneratePdf = async () => {
       <div class="dialog-footer">
         <div class="pdf-action-group">
           <a
-            v-if="currentPdfUrl"
-            :href="resolvePdfUrl(currentPdfUrl)"
+            v-if="props.grn"
+            :href="`/api/grns/${props.grn.id}/pdf/`"
             target="_blank"
-            download
+            rel="noopener"
             class="btn-primary"
-          >
-            <Download :size="15" />
-            <span>Download PDF</span>
-          </a>
-          <button
-            v-else
-            class="btn-primary"
-            type="button"
-            :disabled="generatePdfMutation.isPending.value"
-            @click="handleGeneratePdf"
+            title="PDF"
+            aria-label="PDF"
           >
             <Printer :size="15" />
-            <span>{{ generatePdfMutation.isPending.value ? 'Generating...' : 'Generate PDF' }}</span>
-          </button>
+            <span>PDF</span>
+          </a>
         </div>
         <button class="btn-outlined" type="button" @click="handleClose">Close</button>
       </div>

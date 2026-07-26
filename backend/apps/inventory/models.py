@@ -74,7 +74,6 @@ class GRN(models.Model):
     preservation_rate_per_bag_per_month = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     loading_unloading_rate_per_bag = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     inward_time = models.TimeField(null=True, blank=True)
-    pdf_file = models.FileField(upload_to='grns/', null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

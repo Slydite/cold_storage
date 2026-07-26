@@ -3,8 +3,7 @@ import {
   invoicesRetrieve,
   invoicesCreate,
   invoicesPostCreate,
-  invoicesCancelCreate,
-  invoicesGeneratePdfCreate
+  invoicesCancelCreate
 } from './generated/sdk.gen'
 import type {
   InvoiceOutput,
@@ -100,19 +99,6 @@ export async function cancelInvoice(id: number): Promise<InvoiceOutput> {
   }
   if (!res.data) {
     throw new Error('No data returned from cancelling invoice')
-  }
-  return res.data
-}
-
-export async function generateInvoicePdf(id: number): Promise<InvoiceOutput> {
-  const res = await invoicesGeneratePdfCreate({
-    path: { id }
-  })
-  if (res.error) {
-    throw new Error(extractErrorMessage(res.error, 'Failed to generate PDF for invoice'))
-  }
-  if (!res.data) {
-    throw new Error('No data returned from PDF generation')
   }
   return res.data
 }

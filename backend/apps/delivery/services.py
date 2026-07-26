@@ -2,7 +2,6 @@ from typing import List, Dict, Any
 from datetime import date
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from django.core.files.base import ContentFile
 
 from libs.sequences import get_next_sequence_number
 from libs.lookups import get_facility_or_raise, get_party_or_raise
@@ -141,9 +140,10 @@ def cancel_delivery_note(*, delivery_note_id: int) -> DeliveryNote:
     return dn
 
 
-def generate_delivery_note_pdf(*, delivery_note_id: int) -> str:
+def build_delivery_note_pdf(*, delivery_note_id: int) -> bytes:
     """
-    Generate a PDF for a Delivery Note (Delivery Challan) matching real form layout via WeasyPrint.
+    Generate PDF bytes for a Delivery Note (Delivery Challan) matching real form layout via WeasyPrint.
+    Performs no file I/O and no model save.
     """
     try:
         dn = DeliveryNote.objects.select_related('facility', 'party').prefetch_related('lines__lot__commodity').get(pk=delivery_note_id)
@@ -160,11 +160,5 @@ def generate_delivery_note_pdf(*, delivery_note_id: int) -> str:
         'party': party,
         'total_qty': total_qty,
     }
-    pdf_bytes = render_pdf('pdf/delivery_note.html', context)
-
-    filename = f"{dn.dn_number}.pdf"
-    with transaction.atomic():
-        dn.pdf_file.save(filename, ContentFile(pdf_bytes), save=True)
-
-    return dn.pdf_file.url
+    return render_pdf('pdf/delivery_note.html', context)
 

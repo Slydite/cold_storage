@@ -32,7 +32,6 @@ interface Props {
   errorDetail?: string
   searchQuery: string
   selectedStatus: string
-  generatingPdfId?: number | null
 }
 
 const props = defineProps<Props>()
@@ -44,7 +43,6 @@ const emit = defineEmits<{
   retry: []
   post: [id: number]
   cancel: [id: number]
-  generatePdf: [id: number]
 }>()
 
 const statusOptions = [
@@ -89,12 +87,6 @@ function handleClearAll() {
   clearFilters()
   emit('update:searchQuery', '')
   emit('update:selectedStatus', '')
-}
-
-function resolvePdfUrl(url: string | null): string {
-  if (!url) return '#'
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
-  return url.startsWith('/') ? url : `/${url}`
 }
 
 const handleExport = () => {
@@ -339,26 +331,15 @@ const handleExport = () => {
               </button>
 
               <a
-                v-if="data.pdf_url"
-                :href="resolvePdfUrl(data.pdf_url)"
+                :href="`/api/invoices/${data.id}/pdf/`"
                 target="_blank"
-                download
+                rel="noopener"
                 class="icon-btn"
-                title="Download PDF"
-              >
-                <Download :size="16" />
-              </a>
-
-              <button
-                v-else
-                class="icon-btn"
-                title="Generate PDF"
-                type="button"
-                :disabled="props.generatingPdfId === data.id"
-                @click="emit('generatePdf', data.id)"
+                title="PDF"
+                aria-label="PDF"
               >
                 <Printer :size="16" />
-              </button>
+              </a>
             </div>
           </template>
         </Column>

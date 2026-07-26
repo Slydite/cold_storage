@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { computed } from 'vue'
 import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import { useToast } from 'primevue/usetoast'
 import { Download, Printer } from 'lucide-vue-next'
 import { formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
-import { useGenerateDeliveryNotePdf } from '../../composables/useDeliveryNotes'
 import type { DeliveryNoteOutput } from '../../api/delivery'
 
 interface Props {
@@ -21,28 +19,8 @@ const emit = defineEmits<{
   'update:visible': [visible: boolean]
 }>()
 
-const toast = useToast()
-const generatePdfMutation = useGenerateDeliveryNotePdf()
-const localPdfUrl = ref<string | null>(null)
-
-watch(
-  () => props.deliveryNote,
-  (newDn) => {
-    localPdfUrl.value = newDn?.pdf_url ?? null
-  },
-  { immediate: true }
-)
-
-const currentPdfUrl = computed(() => localPdfUrl.value || props.deliveryNote?.pdf_url || null)
-
 const handleClose = () => {
   emit('update:visible', false)
-}
-
-function resolvePdfUrl(url: string | null): string {
-  if (!url) return '#'
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
-  return url.startsWith('/') ? url : `/${url}`
 }
 
 const totalQty = computed(() => {
@@ -60,27 +38,6 @@ const handleExportLines = () => {
     line.balance_after !== null && line.balance_after !== undefined ? line.balance_after : '—'
   ])
   exportToCsv(`delivery_${props.deliveryNote.dn_number}_lines.csv`, headers, rows)
-}
-
-const handleGeneratePdf = async () => {
-  if (!props.deliveryNote) return
-  try {
-    const updated = await generatePdfMutation.mutateAsync(props.deliveryNote.id)
-    localPdfUrl.value = updated.pdf_url
-    toast.add({
-      severity: 'success',
-      summary: 'PDF Generated',
-      detail: `PDF generated for Delivery Note ${updated.dn_number}.`,
-      life: 3000
-    })
-  } catch (err: unknown) {
-    toast.add({
-      severity: 'error',
-      summary: 'PDF Generation Failed',
-      detail: err instanceof Error ? err.message : 'Failed to generate PDF',
-      life: 5000
-    })
-  }
 }
 </script>
 
@@ -201,25 +158,17 @@ const handleGeneratePdf = async () => {
       <div class="dialog-footer">
         <div class="pdf-action-group">
           <a
-            v-if="currentPdfUrl"
-            :href="resolvePdfUrl(currentPdfUrl)"
+            v-if="props.deliveryNote"
+            :href="`/api/delivery-notes/${props.deliveryNote.id}/pdf/`"
             target="_blank"
-            download
+            rel="noopener"
             class="btn-primary"
-          >
-            <Download :size="15" />
-            <span>Download PDF</span>
-          </a>
-          <button
-            v-else
-            class="btn-primary"
-            type="button"
-            :disabled="generatePdfMutation.isPending.value"
-            @click="handleGeneratePdf"
+            title="PDF"
+            aria-label="PDF"
           >
             <Printer :size="15" />
-            <span>{{ generatePdfMutation.isPending.value ? 'Generating...' : 'Generate PDF' }}</span>
-          </button>
+            <span>PDF</span>
+          </a>
         </div>
         <button class="btn-outlined" type="button" @click="handleClose">Close</button>
       </div>

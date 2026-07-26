@@ -4,7 +4,6 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from django.core.files.base import ContentFile
 
 from libs.lookups import get_facility_or_raise, get_party_or_raise
 from libs.pdf import render_pdf
@@ -424,10 +423,10 @@ def cancel_rent_run(*, rent_run_id: int) -> RentRun:
     return get_rent_run_by_id(rent_run.id)
 
 
-def generate_rent_run_pdf(*, rent_run_id: int) -> str:
+def build_rent_run_pdf(*, rent_run_id: int) -> bytes:
     """
-    Generate a PDF summary report for a RentRun using WeasyPrint and store it in rent_run.pdf_file.
-    Returns rent_run.pdf_file.url as a string.
+    Generate PDF bytes for a RentRun summary report using WeasyPrint.
+    Performs no file I/O and no model save.
     """
     try:
         rent_run = get_rent_run_by_id(rent_run_id)
@@ -444,12 +443,6 @@ def generate_rent_run_pdf(*, rent_run_id: int) -> str:
         'lines': lines,
         'total_amount': total_amount,
     }
-    pdf_bytes = render_pdf('pdf/rent_run.html', context)
-
-    filename = f"RentRun_{rent_run.id}.pdf"
-    with transaction.atomic():
-        rent_run.pdf_file.save(filename, ContentFile(pdf_bytes), save=True)
-
-    return rent_run.pdf_file.url
+    return render_pdf('pdf/rent_run.html', context)
 
 

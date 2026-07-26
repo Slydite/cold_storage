@@ -6,8 +6,7 @@ import {
   previewRentRun,
   createRentRun,
   postRentRun,
-  cancelRentRun,
-  generateRentRunPdf
+  cancelRentRun
 } from '../api/billing'
 import type { RentRunCreateInput, RentRunPreviewInput } from '../api/billing'
 
@@ -68,16 +67,6 @@ export function useCancelRentRun() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => cancelRentRun(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rent-runs'] })
-    }
-  })
-}
-
-export function useGenerateRentRunPdf() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (id: number) => generateRentRunPdf(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rent-runs'] })
     }

@@ -41,12 +41,11 @@ def test_commodity(default_facility):
 def test_unauthenticated_invoicing_apis_denied(api_client):
     assert api_client.get('/api/invoices/').status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
     assert api_client.post('/api/invoices/', {}).status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+    assert api_client.get('/api/invoices/1/pdf/').status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
 
 
 @pytest.mark.django_db
-def test_invoice_api_generate_list_retrieve_post_cancel_pdf(auth_client, default_facility, test_party, test_commodity, tmp_path, settings):
-    settings.MEDIA_ROOT = tmp_path / "media"
-
+def test_invoice_api_generate_list_retrieve_post_cancel_pdf(auth_client, default_facility, test_party, test_commodity):
     create_rate_card(
         facility_id=default_facility.id,
         commodity_id=test_commodity.id,
@@ -88,7 +87,7 @@ def test_invoice_api_generate_list_retrieve_post_cancel_pdf(auth_client, default
     assert inv_data['subtotal'] == "5000.00"
     assert inv_data['gst_amount'] == "900.00"
     assert inv_data['total_amount'] == "5900.00"
-    assert inv_data['pdf_url'] is None
+    assert 'pdf_url' not in inv_data
 
     # List Invoices
     res_list = auth_client.get(f'/api/invoices/?facility_id={default_facility.id}')
@@ -100,10 +99,12 @@ def test_invoice_api_generate_list_retrieve_post_cancel_pdf(auth_client, default
     assert res_get.status_code == status.HTTP_200_OK
     assert res_get.data['id'] == inv_id
 
-    # Generate PDF via API
-    res_pdf = auth_client.post(f'/api/invoices/{inv_id}/generate-pdf/')
+    # Stream PDF via GET API
+    res_pdf = auth_client.get(f'/api/invoices/{inv_id}/pdf/')
     assert res_pdf.status_code == status.HTTP_200_OK
-    assert res_pdf.data['pdf_url'] is not None
+    assert res_pdf['Content-Type'] == 'application/pdf'
+    assert inv_data['invoice_number'] in res_pdf['Content-Disposition']
+    assert res_pdf.content.startswith(b'%PDF')
 
     # Post Invoice via API
     res_post = auth_client.post(f'/api/invoices/{inv_id}/post/')

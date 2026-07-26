@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
 import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { Download, Printer } from 'lucide-vue-next'
-import { useToast } from 'primevue/usetoast'
 import { formatCurrency, formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
-import { useGenerateRentRunPdf } from '../../composables/useRentRuns'
 import type { RentRunOutput } from '../../api/billing'
 
 interface Props {
@@ -19,46 +16,10 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
-  pdfGenerated: [updatedRun: RentRunOutput]
 }>()
 
-const toast = useToast()
-const generatePdfMutation = useGenerateRentRunPdf()
-const activePdfUrl = ref<string | null>(null)
-
 const handleClose = () => {
-  activePdfUrl.value = null
   emit('update:visible', false)
-}
-
-function resolvePdfUrl(url: string | null): string {
-  if (!url) return '#'
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
-  return url.startsWith('/') ? url : `/${url}`
-}
-
-const currentPdfUrl = computed(() => activePdfUrl.value || props.rentRun?.pdf_url || null)
-
-const handleGeneratePdf = async () => {
-  if (!props.rentRun) return
-  try {
-    const updated = await generatePdfMutation.mutateAsync(props.rentRun.id)
-    activePdfUrl.value = updated.pdf_url
-    toast.add({
-      severity: 'success',
-      summary: 'PDF Generated',
-      detail: `PDF ready for Rent Run #${updated.id}`,
-      life: 4000
-    })
-    emit('pdfGenerated', updated)
-  } catch (err) {
-    toast.add({
-      severity: 'error',
-      summary: 'PDF Generation Failed',
-      detail: err instanceof Error ? err.message : 'Failed to generate PDF',
-      life: 5000
-    })
-  }
 }
 
 const handleExportLines = () => {
@@ -161,26 +122,17 @@ const handleExportLines = () => {
         <h4 class="lines-title">Line Items Billed ({{ props.rentRun.lines ? props.rentRun.lines.length : 0 }})</h4>
         <div class="header-action-group">
           <a
-            v-if="currentPdfUrl"
-            :href="resolvePdfUrl(currentPdfUrl)"
+            v-if="props.rentRun"
+            :href="`/api/rent-runs/${props.rentRun.id}/pdf/`"
             target="_blank"
-            download
+            rel="noopener"
             class="btn-outlined btn-sm"
-            title="Download PDF statement"
-          >
-            <Download :size="14" />
-            <span>Download PDF</span>
-          </a>
-          <button
-            v-else
-            class="btn-outlined btn-sm"
-            type="button"
-            :disabled="generatePdfMutation.isPending.value"
-            @click="handleGeneratePdf"
+            title="PDF"
+            aria-label="PDF"
           >
             <Printer :size="14" />
-            <span>{{ generatePdfMutation.isPending.value ? 'Generating...' : 'Generate PDF' }}</span>
-          </button>
+            <span>PDF</span>
+          </a>
 
           <button class="btn-outlined btn-sm" type="button" @click="handleExportLines">
             <Download :size="14" />

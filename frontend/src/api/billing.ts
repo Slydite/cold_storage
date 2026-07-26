@@ -6,8 +6,7 @@ import {
   rentRunsCreate,
   rentRunsPostCreate,
   rentRunsCancelCreate,
-  rentRunsPreviewCreate,
-  rentRunsGeneratePdfCreate
+  rentRunsPreviewCreate
 } from './generated/sdk.gen'
 import type {
   RateCardOutput,
@@ -163,19 +162,6 @@ export async function cancelRentRun(id: number): Promise<RentRunOutput> {
   }
   if (!res.data) {
     throw new Error('No data returned from cancelling rent run')
-  }
-  return res.data
-}
-
-export async function generateRentRunPdf(id: number): Promise<RentRunOutput> {
-  const res = await rentRunsGeneratePdfCreate({
-    path: { id }
-  })
-  if (res.error) {
-    throw new Error(extractErrorMessage(res.error, 'Failed to generate PDF for rent run'))
-  }
-  if (!res.data) {
-    throw new Error('No data returned from PDF generation')
   }
   return res.data
 }

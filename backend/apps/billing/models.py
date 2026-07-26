@@ -60,7 +60,6 @@ class RentRun(models.Model):
     notes = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     run_date = models.DateTimeField(auto_now_add=True)
-    pdf_file = models.FileField(upload_to='rent_runs/', null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

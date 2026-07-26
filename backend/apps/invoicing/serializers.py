@@ -15,7 +15,6 @@ class InvoiceLineOutputSerializer(serializers.ModelSerializer):
 
 class InvoiceOutputSerializer(serializers.ModelSerializer):
     party_name = serializers.CharField(source='party.name', read_only=True)
-    pdf_url = serializers.SerializerMethodField()
     lines = InvoiceLineOutputSerializer(many=True, read_only=True)
 
     class Meta:
@@ -27,6 +26,11 @@ class InvoiceOutputSerializer(serializers.ModelSerializer):
             'party_id',
             'party_name',
             'party_gstin_snapshot',
+            'party_name_snapshot',
+            'party_address_snapshot',
+            'facility_name_snapshot',
+            'facility_address_snapshot',
+            'facility_gstin_snapshot',
             'rent_run_id',
             'invoice_date',
             'status',
@@ -34,14 +38,10 @@ class InvoiceOutputSerializer(serializers.ModelSerializer):
             'gst_rate',
             'gst_amount',
             'total_amount',
-            'pdf_url',
             'lines',
             'created_at',
             'updated_at',
         ]
-
-    def get_pdf_url(self, obj) -> str | None:
-        return obj.pdf_file.url if obj.pdf_file else None
 
 
 class GenerateInvoicesInputSerializer(serializers.Serializer):

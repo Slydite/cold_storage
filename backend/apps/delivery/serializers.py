@@ -44,7 +44,6 @@ class DeliveryLineOutputSerializer(serializers.ModelSerializer):
 class DeliveryNoteOutputSerializer(serializers.ModelSerializer):
     party_name = serializers.CharField(source='party.name', read_only=True)
     party_code = serializers.CharField(source='party.code', read_only=True)
-    pdf_url = serializers.SerializerMethodField()
     lines = DeliveryLineOutputSerializer(many=True, read_only=True)
 
     class Meta:
@@ -62,11 +61,7 @@ class DeliveryNoteOutputSerializer(serializers.ModelSerializer):
             'transporter',
             'remarks',
             'status',
-            'pdf_url',
             'lines',
             'created_at',
             'updated_at'
         ]
-
-    def get_pdf_url(self, obj) -> str | None:
-        return obj.pdf_file.url if obj.pdf_file else None

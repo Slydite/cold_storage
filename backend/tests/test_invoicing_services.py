@@ -15,7 +15,7 @@ from apps.invoicing.services import (
     generate_invoices_for_rent_run,
     post_invoice,
     cancel_invoice,
-    generate_invoice_pdf,
+    build_invoice_pdf,
 )
 from apps.invoicing.serializers import InvoiceOutputSerializer
 from apps.invoicing.selectors import get_invoices_list, get_invoice_by_id
@@ -333,8 +333,7 @@ def test_cancel_draft_invoice(default_facility, test_party, test_commodity):
 
 
 @pytest.mark.django_db
-def test_generate_invoice_pdf(default_facility, test_party, test_commodity, tmp_path, settings):
-    settings.MEDIA_ROOT = tmp_path / "media"
+def test_generate_invoice_pdf(default_facility, test_party, test_commodity):
     create_rate_card(
         facility_id=default_facility.id,
         commodity_id=test_commodity.id,
@@ -366,14 +365,65 @@ def test_generate_invoice_pdf(default_facility, test_party, test_commodity, tmp_
         rent_run_id=rent_run.id
     )
     inv = invoices[0]
-    assert not inv.pdf_file
 
-    pdf_url = generate_invoice_pdf(invoice_id=inv.id)
-    assert pdf_url is not None
-    assert pdf_url != ""
+    pdf_bytes = build_invoice_pdf(invoice_id=inv.id)
+    assert isinstance(pdf_bytes, bytes)
+    assert pdf_bytes.startswith(b'%PDF')
 
     inv_fetched = get_invoice_by_id(inv.id)
-    assert inv_fetched.pdf_file is not None
-    assert inv_fetched.pdf_file.read().startswith(b'%PDF')
     serializer = InvoiceOutputSerializer(inv_fetched)
-    assert serializer.data['pdf_url'] == pdf_url
+    assert 'pdf_url' not in serializer.data
+
+
+@pytest.mark.django_db
+def test_invoice_party_and_facility_snapshots_and_rename_resilience(default_facility, test_party, test_commodity):
+    """
+    Generate invoices from a posted rent run, assert party/facility snapshot fields are populated.
+    Then rename the party and assert the invoice snapshot field still reflects the issue-time values.
+    """
+    create_rate_card(
+        facility_id=default_facility.id,
+        commodity_id=test_commodity.id,
+        weight_category=RateCard.WeightCategory.KG_50,
+        rate_per_bag_per_month=Decimal('50.00'),
+        effective_from=date(2026, 1, 1)
+    )
+
+    create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 1),
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+            "unit_weight": Decimal('50.00')
+        }]
+    )
+
+    rent_run = create_rent_run(
+        facility_id=default_facility.id,
+        period_start=date(2026, 7, 1),
+        period_end=date(2026, 7, 31)
+    )
+    post_rent_run(rent_run_id=rent_run.id)
+
+    invoices = generate_invoices_for_rent_run(
+        facility_id=default_facility.id,
+        rent_run_id=rent_run.id
+    )
+    inv = invoices[0]
+
+    original_party_name = test_party.name
+    assert inv.party_name_snapshot == original_party_name
+    assert inv.party_gstin_snapshot == test_party.gstin
+    assert inv.facility_name_snapshot == default_facility.name
+
+    # Rename party in live database
+    test_party.name = "Renamed Corporate Entity Ltd"
+    test_party.save()
+
+    # Assert invoice snapshot field remains unchanged
+    inv.refresh_from_db()
+    assert inv.party_name_snapshot == original_party_name
+    assert inv.party.name == "Renamed Corporate Entity Ltd"
+

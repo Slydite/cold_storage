@@ -3,7 +3,6 @@ from datetime import date
 from decimal import Decimal
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from django.core.files.base import ContentFile
 
 from libs.sequences import get_next_sequence_number
 from libs.lookups import get_facility_or_raise, get_party_or_raise
@@ -258,9 +257,10 @@ def withdraw_stock_from_lot(*, lot_id: int, qty_to_withdraw: int) -> Lot:
     return lot
 
 
-def generate_grn_pdf(*, grn_id: int) -> str:
+def build_grn_pdf(*, grn_id: int) -> bytes:
     """
-    Generate a PDF for a Goods Receipt Note (GRN) matching paper receipt layout via WeasyPrint.
+    Generate PDF bytes for a Goods Receipt Note (GRN) matching paper receipt layout via WeasyPrint.
+    Performs no file I/O and no model save.
     """
     try:
         grn = GRN.objects.select_related('facility', 'party').prefetch_related('lots__commodity').get(pk=grn_id)
@@ -275,11 +275,5 @@ def generate_grn_pdf(*, grn_id: int) -> str:
         'facility': facility,
         'party': party,
     }
-    pdf_bytes = render_pdf('pdf/grn.html', context)
-
-    filename = f"{grn.grn_number}.pdf"
-    with transaction.atomic():
-        grn.pdf_file.save(filename, ContentFile(pdf_bytes), save=True)
-
-    return grn.pdf_file.url
+    return render_pdf('pdf/grn.html', context)
 

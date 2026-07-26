@@ -22,10 +22,10 @@
 
 <div class="party-box">
     <strong>Billed To:</strong><br>
-    <strong>{{ party.name }}</strong><br>
-    {% if party.address %}{{ party.address }}<br>{% endif %}
-    <!-- NOTE: party_gstin_snapshot is the legally-correct snapshot of party GSTIN at issue time; do NOT read live party.gstin directly for the tax invoice line. -->
-    <strong>GSTIN:</strong> {{ invoice.party_gstin_snapshot|default:"Not provided" }}
+    <!-- Precedence: Snapshot values (party_name_snapshot, party_address_snapshot, party_gstin_snapshot) take precedence for historical legal accuracy on reprints; fallback to live party relation occurs only if snapshot is blank. -->
+    <strong>{{ party_name }}</strong><br>
+    {% if party_address %}{{ party_address }}<br>{% endif %}
+    <strong>GSTIN:</strong> {{ party_gstin|default:"Not provided" }}
     {% if invoice.rent_run %}
     <br><strong>Billed Period:</strong> {{ invoice.rent_run.period_start|date:"Y-m-d" }} to {{ invoice.rent_run.period_end|date:"Y-m-d" }}
     {% endif %}

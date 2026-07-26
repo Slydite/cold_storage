@@ -117,7 +117,6 @@ export type DeliveryNoteOutput = {
     transporter?: string;
     remarks?: string;
     status?: StatusEnum;
-    readonly pdf_url: string | null;
     readonly lines: Array<DeliveryLineOutput>;
     readonly created_at: string;
     readonly updated_at: string;
@@ -210,7 +209,6 @@ export type GrnOutput = {
     loading_unloading_rate_per_bag?: string;
     inward_time?: string | null;
     status?: StatusEnum;
-    readonly pdf_url: string | null;
     readonly lots: Array<LotOutput>;
     readonly created_at: string;
     readonly updated_at: string;
@@ -235,6 +233,11 @@ export type InvoiceOutput = {
     readonly party_id: number;
     readonly party_name: string;
     party_gstin_snapshot?: string;
+    party_name_snapshot?: string;
+    party_address_snapshot?: string;
+    facility_name_snapshot?: string;
+    facility_address_snapshot?: string;
+    facility_gstin_snapshot?: string;
     readonly rent_run_id: number | null;
     invoice_date: string;
     status?: StatusEnum;
@@ -242,7 +245,6 @@ export type InvoiceOutput = {
     gst_rate?: string;
     gst_amount?: string;
     total_amount?: string;
-    readonly pdf_url: string | null;
     readonly lines: Array<InvoiceLineOutput>;
     readonly created_at: string;
     readonly updated_at: string;
@@ -406,7 +408,6 @@ export type RentRunOutput = {
     readonly run_date: string;
     readonly lines: Array<RentRunLineOutput>;
     readonly total_amount: number;
-    readonly pdf_url: string | null;
     readonly created_at: string;
     readonly updated_at: string;
 };
@@ -595,6 +596,11 @@ export type InvoiceLineOutputWritable = {
 export type InvoiceOutputWritable = {
     invoice_number: string;
     party_gstin_snapshot?: string;
+    party_name_snapshot?: string;
+    party_address_snapshot?: string;
+    facility_name_snapshot?: string;
+    facility_address_snapshot?: string;
+    facility_gstin_snapshot?: string;
     invoice_date: string;
     status?: StatusEnum;
     subtotal?: string;
@@ -1045,7 +1051,7 @@ export type DeliveryNotesCancelCreateResponses = {
 
 export type DeliveryNotesCancelCreateResponse = DeliveryNotesCancelCreateResponses[keyof DeliveryNotesCancelCreateResponses];
 
-export type DeliveryNotesGeneratePdfCreateData = {
+export type DeliveryNotesPdfRetrieveData = {
     body?: never;
     path: {
         /**
@@ -1054,21 +1060,25 @@ export type DeliveryNotesGeneratePdfCreateData = {
         id: number;
     };
     query?: never;
-    url: '/api/delivery-notes/{id}/generate-pdf/';
+    url: '/api/delivery-notes/{id}/pdf/';
 };
 
-export type DeliveryNotesGeneratePdfCreateErrors = {
+export type DeliveryNotesPdfRetrieveErrors = {
     /**
      * No response body
      */
     400: unknown;
+    /**
+     * No response body
+     */
+    404: unknown;
 };
 
-export type DeliveryNotesGeneratePdfCreateResponses = {
-    200: DeliveryNoteOutput;
+export type DeliveryNotesPdfRetrieveResponses = {
+    200: Blob | File;
 };
 
-export type DeliveryNotesGeneratePdfCreateResponse = DeliveryNotesGeneratePdfCreateResponses[keyof DeliveryNotesGeneratePdfCreateResponses];
+export type DeliveryNotesPdfRetrieveResponse = DeliveryNotesPdfRetrieveResponses[keyof DeliveryNotesPdfRetrieveResponses];
 
 export type DeliveryNotesPostCreateData = {
     body?: never;
@@ -1366,7 +1376,7 @@ export type GrnsCancelCreateResponses = {
 
 export type GrnsCancelCreateResponse = GrnsCancelCreateResponses[keyof GrnsCancelCreateResponses];
 
-export type GrnsGeneratePdfCreateData = {
+export type GrnsPdfRetrieveData = {
     body?: never;
     path: {
         /**
@@ -1375,21 +1385,25 @@ export type GrnsGeneratePdfCreateData = {
         id: number;
     };
     query?: never;
-    url: '/api/grns/{id}/generate-pdf/';
+    url: '/api/grns/{id}/pdf/';
 };
 
-export type GrnsGeneratePdfCreateErrors = {
+export type GrnsPdfRetrieveErrors = {
     /**
      * No response body
      */
     400: unknown;
+    /**
+     * No response body
+     */
+    404: unknown;
 };
 
-export type GrnsGeneratePdfCreateResponses = {
-    200: GrnOutput;
+export type GrnsPdfRetrieveResponses = {
+    200: Blob | File;
 };
 
-export type GrnsGeneratePdfCreateResponse = GrnsGeneratePdfCreateResponses[keyof GrnsGeneratePdfCreateResponses];
+export type GrnsPdfRetrieveResponse = GrnsPdfRetrieveResponses[keyof GrnsPdfRetrieveResponses];
 
 export type GrnsPostCreateData = {
     body?: never;
@@ -1512,7 +1526,7 @@ export type InvoicesCancelCreateResponses = {
 
 export type InvoicesCancelCreateResponse = InvoicesCancelCreateResponses[keyof InvoicesCancelCreateResponses];
 
-export type InvoicesGeneratePdfCreateData = {
+export type InvoicesPdfRetrieveData = {
     body?: never;
     path: {
         /**
@@ -1521,21 +1535,25 @@ export type InvoicesGeneratePdfCreateData = {
         id: number;
     };
     query?: never;
-    url: '/api/invoices/{id}/generate-pdf/';
+    url: '/api/invoices/{id}/pdf/';
 };
 
-export type InvoicesGeneratePdfCreateErrors = {
+export type InvoicesPdfRetrieveErrors = {
     /**
      * No response body
      */
     400: unknown;
+    /**
+     * No response body
+     */
+    404: unknown;
 };
 
-export type InvoicesGeneratePdfCreateResponses = {
-    200: InvoiceOutput;
+export type InvoicesPdfRetrieveResponses = {
+    200: Blob | File;
 };
 
-export type InvoicesGeneratePdfCreateResponse = InvoicesGeneratePdfCreateResponses[keyof InvoicesGeneratePdfCreateResponses];
+export type InvoicesPdfRetrieveResponse = InvoicesPdfRetrieveResponses[keyof InvoicesPdfRetrieveResponses];
 
 export type InvoicesPostCreateData = {
     body?: never;
@@ -1925,7 +1943,7 @@ export type RentRunsCancelCreateResponses = {
 
 export type RentRunsCancelCreateResponse = RentRunsCancelCreateResponses[keyof RentRunsCancelCreateResponses];
 
-export type RentRunsGeneratePdfCreateData = {
+export type RentRunsPdfRetrieveData = {
     body?: never;
     path: {
         /**
@@ -1934,21 +1952,25 @@ export type RentRunsGeneratePdfCreateData = {
         id: number;
     };
     query?: never;
-    url: '/api/rent-runs/{id}/generate-pdf/';
+    url: '/api/rent-runs/{id}/pdf/';
 };
 
-export type RentRunsGeneratePdfCreateErrors = {
+export type RentRunsPdfRetrieveErrors = {
     /**
      * No response body
      */
     400: unknown;
+    /**
+     * No response body
+     */
+    404: unknown;
 };
 
-export type RentRunsGeneratePdfCreateResponses = {
-    200: RentRunOutput;
+export type RentRunsPdfRetrieveResponses = {
+    200: Blob | File;
 };
 
-export type RentRunsGeneratePdfCreateResponse = RentRunsGeneratePdfCreateResponses[keyof RentRunsGeneratePdfCreateResponses];
+export type RentRunsPdfRetrieveResponse = RentRunsPdfRetrieveResponses[keyof RentRunsPdfRetrieveResponses];
 
 export type RentRunsPostCreateData = {
     body?: never;

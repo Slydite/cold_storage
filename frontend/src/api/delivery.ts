@@ -2,8 +2,7 @@ import {
   deliveryNotesList,
   deliveryNotesCreate,
   deliveryNotesPostCreate,
-  deliveryNotesCancelCreate,
-  deliveryNotesGeneratePdfCreate
+  deliveryNotesCancelCreate
 } from './generated/sdk.gen'
 import type {
   DeliveryNoteOutput,
@@ -92,19 +91,6 @@ export async function cancelDeliveryNote(id: number): Promise<DeliveryNoteOutput
   }
   if (!res.data) {
     throw new Error('No data returned from cancelling Delivery Note')
-  }
-  return res.data
-}
-
-export async function generateDeliveryNotePdf(id: number): Promise<DeliveryNoteOutput> {
-  const res = await deliveryNotesGeneratePdfCreate({
-    path: { id }
-  })
-  if (res.error) {
-    throw new Error(extractErrorMessage(res.error, 'Failed to generate PDF for Delivery Note'))
-  }
-  if (!res.data) {
-    throw new Error('No data returned from Delivery Note PDF generation')
   }
   return res.data
 }

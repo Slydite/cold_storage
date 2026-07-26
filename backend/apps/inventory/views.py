@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
@@ -23,7 +24,7 @@ from .services import (
     post_grn,
     cancel_grn,
     withdraw_stock_from_lot,
-    generate_grn_pdf
+    build_grn_pdf
 )
 from .serializers import (
     CommodityInputSerializer,
@@ -229,19 +230,22 @@ class GRNViewSet(ViewSet):
         return Response(GRNOutputSerializer(grn).data)
 
     @extend_schema(
-        responses={200: GRNOutputSerializer, 400: None},
-        summary="Generate PDF for a GRN"
+        responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 400: None, 404: None},
+        summary="Stream PDF for a GRN"
     )
-    @action(detail=True, methods=['post'], url_path='generate-pdf')
-    def generate_pdf(self, request, pk=None):
+    @action(detail=True, methods=['get'], url_path='pdf')
+    def pdf(self, request, pk=None):
         try:
-            generate_grn_pdf(grn_id=pk)
             grn = get_grn_by_id(pk)
+            pdf_bytes = build_grn_pdf(grn_id=grn.id)
         except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except (GRN.DoesNotExist, ValueError):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(GRNOutputSerializer(grn).data, status=status.HTTP_200_OK)
+
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{grn.grn_number}.pdf"'
+        return response
 
 
 class LotViewSet(ViewSet):

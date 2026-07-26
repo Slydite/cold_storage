@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
@@ -20,7 +21,7 @@ from .services import (
     preview_rent_run,
     post_rent_run,
     cancel_rent_run,
-    generate_rent_run_pdf
+    build_rent_run_pdf
 )
 from .serializers import (
     RateCardInputSerializer,
@@ -236,15 +237,20 @@ class RentRunViewSet(ViewSet):
         return Response(RentRunOutputSerializer(rent_run).data)
 
     @extend_schema(
-        responses={200: RentRunOutputSerializer, 400: None},
-        summary="Generate PDF for a rent run"
+        responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 400: None, 404: None},
+        summary="Stream PDF for a rent run"
     )
-    @action(detail=True, methods=['post'], url_path='generate-pdf')
-    def generate_pdf(self, request, pk=None):
+    @action(detail=True, methods=['get'], url_path='pdf')
+    def pdf(self, request, pk=None):
         try:
-            generate_rent_run_pdf(rent_run_id=pk)
             rent_run = get_rent_run_by_id(pk)
-        except (RentRun.DoesNotExist, DjangoValidationError) as e:
+            pdf_bytes = build_rent_run_pdf(rent_run_id=rent_run.id)
+        except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(RentRunOutputSerializer(rent_run).data)
+        except (RentRun.DoesNotExist, ValueError):
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="RentRun-{rent_run.id}.pdf"'
+        return response
 

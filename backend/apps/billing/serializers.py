@@ -120,7 +120,6 @@ class RentRunOutputSerializer(serializers.ModelSerializer):
     total_amount = serializers.SerializerMethodField()
     party_name = serializers.CharField(source='party.name', read_only=True, allow_null=True, default=None)
     commodity_name = serializers.CharField(source='commodity.name', read_only=True, allow_null=True, default=None)
-    pdf_url = serializers.SerializerMethodField()
 
     class Meta:
         model = RentRun
@@ -140,14 +139,10 @@ class RentRunOutputSerializer(serializers.ModelSerializer):
             'run_date',
             'lines',
             'total_amount',
-            'pdf_url',
             'created_at',
             'updated_at'
         ]
 
     def get_total_amount(self, obj) -> Decimal:
         return sum((l.amount for l in obj.lines.all()), Decimal('0.00'))
-
-    def get_pdf_url(self, obj) -> str | None:
-        return obj.pdf_file.url if obj.pdf_file else None
 

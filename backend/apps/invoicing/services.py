@@ -3,7 +3,6 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from django.core.files.base import ContentFile
 
 from libs.lookups import get_facility_or_raise
 from libs.pdf import render_pdf
@@ -45,7 +44,13 @@ def generate_invoices_for_rent_run(*, facility_id: int, rent_run_id: int) -> lis
         gst_rate = Decimal('18.00')
         gst_amount = (subtotal * gst_rate / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         total_amount = subtotal + gst_amount
+
         party_gstin_snapshot = party.gstin if party.gstin else ''
+        party_name_snapshot = party.name if party.name else ''
+        party_address_snapshot = party.address if party.address else ''
+        facility_name_snapshot = facility.name if facility.name else ''
+        facility_address_snapshot = facility.address if facility.address else ''
+        facility_gstin_snapshot = facility.gstin if facility.gstin else ''
 
         invoice = Invoice(
             facility=facility,
@@ -55,6 +60,11 @@ def generate_invoices_for_rent_run(*, facility_id: int, rent_run_id: int) -> lis
             invoice_date=date.today(),
             status=Invoice.Status.DRAFT,
             party_gstin_snapshot=party_gstin_snapshot,
+            party_name_snapshot=party_name_snapshot,
+            party_address_snapshot=party_address_snapshot,
+            facility_name_snapshot=facility_name_snapshot,
+            facility_address_snapshot=facility_address_snapshot,
+            facility_gstin_snapshot=facility_gstin_snapshot,
             subtotal=subtotal,
             gst_rate=gst_rate,
             gst_amount=gst_amount,
@@ -178,10 +188,15 @@ def _amount_in_words(amount: Decimal) -> str:
     return " and ".join(parts) + " only"
 
 
-def generate_invoice_pdf(*, invoice_id: int) -> str:
+def build_invoice_pdf(*, invoice_id: int) -> bytes:
     """
-    Generate a PDF for an invoice using WeasyPrint and store it in invoice.pdf_file.
-    Returns invoice.pdf_file.url as a string.
+    Generate PDF bytes for an invoice on the fly using WeasyPrint.
+    Performs no file I/O and no model save.
+
+    Precedence: Snapshot values (party_name_snapshot, party_address_snapshot, party_gstin_snapshot,
+    facility_name_snapshot, facility_address_snapshot, facility_gstin_snapshot) take precedence
+    over live relations to ensure reprinted legal documents accurately reflect historical issue state.
+    If a snapshot field is blank (e.g. for older invoices), it falls back to the live relation.
     """
     try:
         invoice = get_invoice_by_id(invoice_id)
@@ -192,17 +207,30 @@ def generate_invoice_pdf(*, invoice_id: int) -> str:
     party = invoice.party
     amount_in_words_str = _amount_in_words(invoice.total_amount)
 
+    party_name = invoice.party_name_snapshot or (party.name if party else '')
+    party_address = invoice.party_address_snapshot or (party.address if party else '')
+    party_gstin = invoice.party_gstin_snapshot or (party.gstin if party else '')
+
+    facility_display = {
+        'name': invoice.facility_name_snapshot or (facility.name if facility else ''),
+        'address': invoice.facility_address_snapshot or (facility.address if facility else ''),
+        'gstin': invoice.facility_gstin_snapshot or (facility.gstin if facility else ''),
+        'code': facility.code if facility else '',
+        'phone': facility.phone if facility else '',
+        'factory_phone': facility.factory_phone if facility else '',
+        'bank_account_no': facility.bank_account_no if facility else '',
+        'bank_ifsc': facility.bank_ifsc if facility else '',
+    }
+
     context = {
         'invoice': invoice,
-        'facility': facility,
+        'facility': facility_display,
         'party': party,
+        'party_name': party_name,
+        'party_address': party_address,
+        'party_gstin': party_gstin,
         'amount_in_words': amount_in_words_str,
     }
-    pdf_bytes = render_pdf('pdf/invoice.html', context)
+    return render_pdf('pdf/invoice.html', context)
 
-    filename = f"{invoice.invoice_number}.pdf"
-    with transaction.atomic():
-        invoice.pdf_file.save(filename, ContentFile(pdf_bytes), save=True)
-
-    return invoice.pdf_file.url
 

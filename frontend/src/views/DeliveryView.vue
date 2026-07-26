@@ -6,8 +6,7 @@ import { useFacility } from '../composables/useFacility'
 import {
   useDeliveryNoteList,
   usePostDeliveryNote,
-  useCancelDeliveryNote,
-  useGenerateDeliveryNotePdf
+  useCancelDeliveryNote
 } from '../composables/useDeliveryNotes'
 import { usePartyList } from '../composables/useParties'
 import { useSearchFilter } from '../composables/useSearchFilter'
@@ -24,7 +23,6 @@ const selectedStatus = ref('all')
 const isPanelOpen = ref(false)
 const selectedDelivery = ref<DeliveryNoteOutput | null>(null)
 const isDetailOpen = ref(false)
-const generatingPdfId = ref<number | null>(null)
 
 const deliveryFilters = computed(() => ({
   status: selectedStatus.value
@@ -34,7 +32,6 @@ const deliveriesQuery = useDeliveryNoteList(facilityId, deliveryFilters)
 const partiesQuery = usePartyList(facilityId)
 const postMutation = usePostDeliveryNote()
 const cancelMutation = useCancelDeliveryNote()
-const generatePdfMutation = useGenerateDeliveryNotePdf()
 
 const deliveryList = computed<DeliveryNoteOutput[]>(() => deliveriesQuery.data.value || [])
 
@@ -92,28 +89,6 @@ const handleView = (dn: DeliveryNoteOutput) => {
   isDetailOpen.value = true
 }
 
-const handleGeneratePdf = async (id: number) => {
-  generatingPdfId.value = id
-  try {
-    const updated = await generatePdfMutation.mutateAsync(id)
-    toast.add({
-      severity: 'success',
-      summary: 'PDF Generated',
-      detail: `PDF generated for Delivery Note ${updated.dn_number}.`,
-      life: 3000
-    })
-  } catch (err: unknown) {
-    toast.add({
-      severity: 'error',
-      summary: 'Action Failed',
-      detail: err instanceof Error ? err.message : 'Failed to generate PDF',
-      life: 5000
-    })
-  } finally {
-    generatingPdfId.value = null
-  }
-}
-
 const handleCreated = (dnNumber: string, status: string) => {
   isPanelOpen.value = false
   const isDraft = status === 'DRAFT'
@@ -144,7 +119,6 @@ onMounted(() => {
       :loading="isLoading"
       :error="isError"
       :errorDetail="errorMessage"
-      :generatingPdfId="generatingPdfId"
       v-model:searchQuery="searchQuery"
       v-model:selectedStatus="selectedStatus"
       @newDelivery="isPanelOpen = true"
@@ -152,7 +126,6 @@ onMounted(() => {
       @view="handleView"
       @post="handlePost"
       @cancel="handleCancel"
-      @generatePdf="handleGeneratePdf"
       :class="{ 'shrink-list': isPanelOpen }"
     />
 

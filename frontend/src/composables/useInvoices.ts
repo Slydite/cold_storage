@@ -4,8 +4,7 @@ import {
   fetchInvoices,
   generateInvoices,
   postInvoice,
-  cancelInvoice,
-  generateInvoicePdf
+  cancelInvoice
 } from '../api/invoicing'
 
 export function useInvoiceList(
@@ -53,16 +52,6 @@ export function useCancelInvoice() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => cancelInvoice(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] })
-    }
-  })
-}
-
-export function useGenerateInvoicePdf() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (id: number) => generateInvoicePdf(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
     }

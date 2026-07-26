@@ -4,7 +4,7 @@ import { useToast } from 'primevue/usetoast'
 import ConfirmDialog from 'primevue/confirmdialog'
 import { useFacility } from '../composables/useFacility'
 import { useRateCardList } from '../composables/useRateCards'
-import { useRentRunList, usePostRentRun, useCancelRentRun, useGenerateRentRunPdf } from '../composables/useRentRuns'
+import { useRentRunList, usePostRentRun, useCancelRentRun } from '../composables/useRentRuns'
 import RateCardTable from '../components/billing/RateCardTable.vue'
 import RateCardCreateDialog from '../components/billing/RateCardCreateDialog.vue'
 import RentRunTable from '../components/billing/RentRunTable.vue'
@@ -21,13 +21,11 @@ const rentRunsQuery = useRentRunList(facilityId)
 
 const postRentRunMutation = usePostRentRun()
 const cancelRentRunMutation = useCancelRentRun()
-const generatePdfMutation = useGenerateRentRunPdf()
 
 const isCreateRateCardOpen = ref(false)
 const isCreateRentRunOpen = ref(false)
 const isRentRunDetailOpen = ref(false)
 const selectedRentRun = ref<RentRunOutput | null>(null)
-const generatingPdfId = ref<number | null>(null)
 
 const rateCards = computed(() => rateCardsQuery.data.value || [])
 const rentRuns = computed(() => rentRunsQuery.data.value || [])
@@ -79,28 +77,6 @@ const handleCancelRentRun = async (id: number) => {
       detail: err instanceof Error ? err.message : 'Failed to cancel rent run',
       life: 5000
     })
-  }
-}
-
-const handleGenerateRentRunPdf = async (id: number) => {
-  generatingPdfId.value = id
-  try {
-    const updated = await generatePdfMutation.mutateAsync(id)
-    toast.add({
-      severity: 'success',
-      summary: 'PDF Generated',
-      detail: `PDF ready for Rent Run #${updated.id}`,
-      life: 4000
-    })
-  } catch (err: unknown) {
-    toast.add({
-      severity: 'error',
-      summary: 'PDF Generation Failed',
-      detail: err instanceof Error ? err.message : 'Failed to generate PDF',
-      life: 5000
-    })
-  } finally {
-    generatingPdfId.value = null
   }
 }
 
@@ -158,13 +134,11 @@ const handleRetryRentRuns = () => {
         :loading="isRentRunsLoading"
         :error="isRentRunsError"
         :errorDetail="rentRunsErrorMsg"
-        :generatingPdfId="generatingPdfId"
         @openCreate="isCreateRentRunOpen = true"
         @retry="handleRetryRentRuns"
         @view="handleViewRentRun"
         @post="handlePostRentRun"
         @cancel="handleCancelRentRun"
-        @generatePdf="handleGenerateRentRunPdf"
       />
     </div>
 
@@ -184,7 +158,6 @@ const handleRetryRentRuns = () => {
     <RentRunDetailDialog
       v-model:visible="isRentRunDetailOpen"
       :rentRun="selectedRentRun"
-      @pdfGenerated="rentRunsQuery.refetch()"
     />
   </div>
 </template>

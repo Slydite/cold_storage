@@ -35,7 +35,6 @@ interface Props {
   searchQuery: string
   selectedChamber: string
   selectedPeriod: string
-  generatingPdfId?: number | null
 }
 
 const props = defineProps<Props>()
@@ -49,14 +48,7 @@ const emit = defineEmits<{
   view: [grn: GrnOutput]
   post: [id: number]
   cancel: [id: number]
-  generatePdf: [id: number]
 }>()
-
-function resolvePdfUrl(url: string | null): string {
-  if (!url) return '#'
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
-  return url.startsWith('/') ? url : `/${url}`
-}
 
 const periodOptions = [
   { label: 'This Month', value: 'this_month' },
@@ -342,25 +334,15 @@ const handleExport = () => {
                 <XCircle :size="16" />
               </button>
               <a
-                v-if="data.pdf_url"
-                :href="resolvePdfUrl(data.pdf_url)"
+                :href="`/api/grns/${data.id}/pdf/`"
                 target="_blank"
-                download
+                rel="noopener"
                 class="icon-btn"
-                title="Download PDF"
-              >
-                <Download :size="16" />
-              </a>
-              <button
-                v-else
-                class="icon-btn"
-                title="Generate PDF"
-                type="button"
-                :disabled="props.generatingPdfId === data.id"
-                @click="emit('generatePdf', data.id)"
+                title="PDF"
+                aria-label="PDF"
               >
                 <Printer :size="16" />
-              </button>
+              </a>
             </div>
           </template>
         </Column>

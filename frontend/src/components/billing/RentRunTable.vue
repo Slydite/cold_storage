@@ -31,7 +31,6 @@ interface Props {
   loading: boolean
   error: boolean
   errorDetail?: string
-  generatingPdfId?: number | null
 }
 
 const props = defineProps<Props>()
@@ -42,7 +41,6 @@ const emit = defineEmits<{
   view: [rentRun: RentRunOutput]
   post: [id: number]
   cancel: [id: number]
-  generatePdf: [id: number]
 }>()
 
 const confirm = useConfirm()
@@ -90,12 +88,6 @@ function handleClearAll() {
   clearFilters()
   searchQuery.value = ''
   statusFilter.value = 'all'
-}
-
-function resolvePdfUrl(url: string | null): string {
-  if (!url) return '#'
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
-  return url.startsWith('/') ? url : `/${url}`
 }
 
 const filteredRentRuns = computed(() => {
@@ -366,25 +358,15 @@ const handleCancelConfirm = (id: number) => {
                 <Eye :size="16" />
               </button>
               <a
-                v-if="data.pdf_url"
-                :href="resolvePdfUrl(data.pdf_url)"
+                :href="`/api/rent-runs/${data.id}/pdf/`"
                 target="_blank"
-                download
+                rel="noopener"
                 class="icon-btn"
-                title="Download PDF"
-              >
-                <Download :size="16" />
-              </a>
-              <button
-                v-else
-                class="icon-btn"
-                title="Generate PDF"
-                type="button"
-                :disabled="props.generatingPdfId === data.id"
-                @click="emit('generatePdf', data.id)"
+                title="PDF"
+                aria-label="PDF"
               >
                 <Printer :size="16" />
-              </button>
+              </a>
 
               <button
                 v-if="data.status === 'DRAFT'"

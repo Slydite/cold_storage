@@ -11,7 +11,7 @@ from apps.billing.services import (
     preview_rent_run,
     post_rent_run,
     cancel_rent_run,
-    generate_rent_run_pdf
+    build_rent_run_pdf
 )
 
 
@@ -361,11 +361,9 @@ def test_generate_rent_run_pdf(default_facility, test_party, test_commodity):
         period_end=date(2026, 7, 31)
     )
 
-    pdf_url = generate_rent_run_pdf(rent_run_id=rent_run.id)
-    assert pdf_url is not None
-    rent_run.refresh_from_db()
-    assert bool(rent_run.pdf_file) is True
-    assert rent_run.pdf_file.read().startswith(b'%PDF')
+    pdf_bytes = build_rent_run_pdf(rent_run_id=rent_run.id)
+    assert isinstance(pdf_bytes, bytes)
+    assert pdf_bytes.startswith(b'%PDF')
 
 
 @pytest.mark.django_db

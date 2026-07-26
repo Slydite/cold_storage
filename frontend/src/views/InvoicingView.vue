@@ -5,8 +5,7 @@ import { useFacility } from '../composables/useFacility'
 import {
   useInvoiceList,
   usePostInvoice,
-  useCancelInvoice,
-  useGenerateInvoicePdf
+  useCancelInvoice
 } from '../composables/useInvoices'
 import InvoiceTable from '../components/invoicing/InvoiceTable.vue'
 import GenerateInvoiceDialog from '../components/invoicing/GenerateInvoiceDialog.vue'
@@ -19,7 +18,6 @@ const { facilityId } = useFacility()
 const searchQuery = ref('')
 const selectedStatus = ref('')
 const showGenerateDialog = ref(false)
-const generatingPdfId = ref<number | null>(null)
 
 const filters = computed(() => ({
   status: selectedStatus.value || undefined
@@ -35,7 +33,6 @@ const {
 
 const postMutation = usePostInvoice()
 const cancelMutation = useCancelInvoice()
-const generatePdfMutation = useGenerateInvoicePdf()
 
 const filteredInvoices = computed(() => {
   const list = rawInvoices.value ?? []
@@ -86,28 +83,6 @@ async function handleCancel(id: number) {
   }
 }
 
-async function handleGeneratePdf(id: number) {
-  generatingPdfId.value = id
-  try {
-    const updated = await generatePdfMutation.mutateAsync(id)
-    toast.add({
-      severity: 'success',
-      summary: 'PDF Generated',
-      detail: `PDF ready for ${updated.invoice_number}`,
-      life: 4000
-    })
-  } catch (err) {
-    toast.add({
-      severity: 'error',
-      summary: 'PDF Error',
-      detail: err instanceof Error ? err.message : 'Failed to generate PDF',
-      life: 5000
-    })
-  } finally {
-    generatingPdfId.value = null
-  }
-}
-
 function handleGenerateSuccess(createdInvoices: InvoiceOutput[]) {
   const count = createdInvoices.length
   const numbers = createdInvoices.map((inv) => inv.invoice_number).join(', ')
@@ -139,12 +114,10 @@ function handleGenerateError(message: string) {
       :errorDetail="error ? (error as Error).message : undefined"
       v-model:searchQuery="searchQuery"
       v-model:selectedStatus="selectedStatus"
-      :generatingPdfId="generatingPdfId"
       @openGenerate="showGenerateDialog = true"
       @retry="refetch"
       @post="handlePost"
       @cancel="handleCancel"
-      @generatePdf="handleGeneratePdf"
     />
 
     <GenerateInvoiceDialog

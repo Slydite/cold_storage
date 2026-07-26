@@ -433,10 +433,10 @@ paths:
           description: ''
         '400':
           description: No response body
-  /api/delivery-notes/{id}/generate-pdf/:
-    post:
-      operationId: delivery_notes_generate_pdf_create
-      summary: Generate PDF for a Delivery Note
+  /api/delivery-notes/{id}/pdf/:
+    get:
+      operationId: delivery_notes_pdf_retrieve
+      summary: Stream PDF for a Delivery Note
       parameters:
       - in: path
         name: id
@@ -452,11 +452,14 @@ paths:
       responses:
         '200':
           content:
-            application/json:
+            application/pdf:
               schema:
-                $ref: '#/components/schemas/DeliveryNoteOutput'
+                type: string
+                format: binary
           description: ''
         '400':
+          description: No response body
+        '404':
           description: No response body
   /api/delivery-notes/{id}/post/:
     post:
@@ -824,10 +827,10 @@ paths:
           description: ''
         '400':
           description: No response body
-  /api/grns/{id}/generate-pdf/:
-    post:
-      operationId: grns_generate_pdf_create
-      summary: Generate PDF for a GRN
+  /api/grns/{id}/pdf/:
+    get:
+      operationId: grns_pdf_retrieve
+      summary: Stream PDF for a GRN
       parameters:
       - in: path
         name: id
@@ -843,11 +846,14 @@ paths:
       responses:
         '200':
           content:
-            application/json:
+            application/pdf:
               schema:
-                $ref: '#/components/schemas/GRNOutput'
+                type: string
+                format: binary
           description: ''
         '400':
+          description: No response body
+        '404':
           description: No response body
   /api/grns/{id}/post/:
     post:
@@ -990,10 +996,10 @@ paths:
           description: ''
         '400':
           description: No response body
-  /api/invoices/{id}/generate-pdf/:
-    post:
-      operationId: invoices_generate_pdf_create
-      summary: Generate PDF for an invoice
+  /api/invoices/{id}/pdf/:
+    get:
+      operationId: invoices_pdf_retrieve
+      summary: Stream PDF for an invoice
       parameters:
       - in: path
         name: id
@@ -1009,11 +1015,14 @@ paths:
       responses:
         '200':
           content:
-            application/json:
+            application/pdf:
               schema:
-                $ref: '#/components/schemas/InvoiceOutput'
+                type: string
+                format: binary
           description: ''
         '400':
+          description: No response body
+        '404':
           description: No response body
   /api/invoices/{id}/post/:
     post:
@@ -1495,10 +1504,10 @@ paths:
           description: ''
         '400':
           description: No response body
-  /api/rent-runs/{id}/generate-pdf/:
-    post:
-      operationId: rent_runs_generate_pdf_create
-      summary: Generate PDF for a rent run
+  /api/rent-runs/{id}/pdf/:
+    get:
+      operationId: rent_runs_pdf_retrieve
+      summary: Stream PDF for a rent run
       parameters:
       - in: path
         name: id
@@ -1514,11 +1523,14 @@ paths:
       responses:
         '200':
           content:
-            application/json:
+            application/pdf:
               schema:
-                $ref: '#/components/schemas/RentRunOutput'
+                type: string
+                format: binary
           description: ''
         '400':
+          description: No response body
+        '404':
           description: No response body
   /api/rent-runs/{id}/post/:
     post:
@@ -2272,10 +2284,6 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/StatusEnum'
-        pdf_url:
-          type: string
-          nullable: true
-          readOnly: true
         lines:
           type: array
           items:
@@ -2299,7 +2307,6 @@ components:
       - party_code
       - party_id
       - party_name
-      - pdf_url
       - updated_at
     FacilityInput:
       type: object
@@ -2573,10 +2580,6 @@ components:
           nullable: true
         status:
           $ref: '#/components/schemas/StatusEnum'
-        pdf_url:
-          type: string
-          nullable: true
-          readOnly: true
         lots:
           type: array
           items:
@@ -2599,7 +2602,6 @@ components:
       - party_code
       - party_id
       - party_name
-      - pdf_url
       - receipt_date
       - updated_at
     GenerateInvoicesInput:
@@ -2655,6 +2657,19 @@ components:
         party_gstin_snapshot:
           type: string
           maxLength: 15
+        party_name_snapshot:
+          type: string
+          maxLength: 255
+        party_address_snapshot:
+          type: string
+        facility_name_snapshot:
+          type: string
+          maxLength: 255
+        facility_address_snapshot:
+          type: string
+        facility_gstin_snapshot:
+          type: string
+          maxLength: 15
         rent_run_id:
           type: integer
           nullable: true
@@ -2680,10 +2695,6 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
-        pdf_url:
-          type: string
-          nullable: true
-          readOnly: true
         lines:
           type: array
           items:
@@ -2706,7 +2717,6 @@ components:
       - lines
       - party_id
       - party_name
-      - pdf_url
       - rent_run_id
       - updated_at
     LoginInput:
@@ -3248,10 +3258,6 @@ components:
           type: number
           format: double
           readOnly: true
-        pdf_url:
-          type: string
-          nullable: true
-          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -3269,7 +3275,6 @@ components:
       - lines
       - party_id
       - party_name
-      - pdf_url
       - period_end
       - period_start
       - run_date

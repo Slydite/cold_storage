@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { useToast } from 'primevue/usetoast'
 import { useFacility } from '../composables/useFacility'
-import { useGrnList, usePostGrn, useCancelGrn, useGenerateGrnPdf } from '../composables/useGrns'
+import { useGrnList, usePostGrn, useCancelGrn } from '../composables/useGrns'
 import { useSearchFilter } from '../composables/useSearchFilter'
 import { fetchParties } from '../api/party'
 import { fetchCommodities } from '../api/commodity'
@@ -23,12 +23,10 @@ const selectedPeriod = ref('this_month')
 const isPanelOpen = ref(false)
 const selectedGrn = ref<GrnOutput | null>(null)
 const isDetailOpen = ref(false)
-const generatingPdfId = ref<number | null>(null)
 
 const grnsQuery = useGrnList(facilityId)
 const postMutation = usePostGrn()
 const cancelMutation = useCancelGrn()
-const generatePdfMutation = useGenerateGrnPdf()
 
 const partiesQuery = useQuery({
   queryKey: computed(() => ['parties', facilityId.value]),
@@ -81,18 +79,6 @@ const handleView = (grn: GrnOutput) => {
   isDetailOpen.value = true
 }
 
-const handleGeneratePdf = async (id: number) => {
-  generatingPdfId.value = id
-  try {
-    const updated = await generatePdfMutation.mutateAsync(id)
-    toast.add({ severity: 'success', summary: 'PDF Generated', detail: `PDF generated for GRN ${updated.grn_number}.`, life: 3000 })
-  } catch (err: unknown) {
-    toast.add({ severity: 'error', summary: 'Action Failed', detail: err instanceof Error ? err.message : 'Failed to generate PDF', life: 5000 })
-  } finally {
-    generatingPdfId.value = null
-  }
-}
-
 const handleRetry = () => {
   refetchFacility()
   grnsQuery.refetch()
@@ -110,7 +96,6 @@ onMounted(() => {
       :loading="isListLoading"
       :error="isListError"
       :errorDetail="errorMessage"
-      :generatingPdfId="generatingPdfId"
       v-model:searchQuery="searchQuery"
       v-model:selectedChamber="selectedChamber"
       v-model:selectedPeriod="selectedPeriod"
@@ -119,7 +104,6 @@ onMounted(() => {
       @view="handleView"
       @post="handlePost"
       @cancel="handleCancel"
-      @generatePdf="handleGeneratePdf"
       :class="{ 'shrink-list': isPanelOpen }"
     />
 

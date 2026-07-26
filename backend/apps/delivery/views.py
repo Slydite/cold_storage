@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
@@ -16,7 +17,7 @@ from .services import (
     create_delivery_note,
     post_delivery_note,
     cancel_delivery_note,
-    generate_delivery_note_pdf
+    build_delivery_note_pdf
 )
 from .serializers import (
     DeliveryNoteCreateInputSerializer,
@@ -122,16 +123,20 @@ class DeliveryNoteViewSet(ViewSet):
         return Response(DeliveryNoteOutputSerializer(dn).data)
 
     @extend_schema(
-        responses={200: DeliveryNoteOutputSerializer, 400: None},
-        summary="Generate PDF for a Delivery Note"
+        responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 400: None, 404: None},
+        summary="Stream PDF for a Delivery Note"
     )
-    @action(detail=True, methods=['post'], url_path='generate-pdf')
-    def generate_pdf(self, request, pk=None):
+    @action(detail=True, methods=['get'], url_path='pdf')
+    def pdf(self, request, pk=None):
         try:
-            generate_delivery_note_pdf(delivery_note_id=pk)
             dn = get_delivery_note_by_id(pk)
+            pdf_bytes = build_delivery_note_pdf(delivery_note_id=dn.id)
         except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except (DeliveryNote.DoesNotExist, ValueError):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-        return Response(DeliveryNoteOutputSerializer(dn).data, status=status.HTTP_200_OK)
+
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{dn.dn_number}.pdf"'
+        return response
+
