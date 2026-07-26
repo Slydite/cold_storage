@@ -5,8 +5,9 @@ from decimal import Decimal
 from django.urls import path, include
 from apps.parties.services import create_party
 from apps.inventory.services import create_commodity, create_grn
-from apps.billing.services import create_rate_card, create_rent_run, post_rent_run
-from apps.billing.models import RateCard
+from apps.inventory.models import GRN
+from apps.delivery.services import create_delivery_note
+from apps.delivery.models import DeliveryNote
 from apps.invoicing.models import Invoice
 
 urlpatterns = [
@@ -46,35 +47,31 @@ def test_unauthenticated_invoicing_apis_denied(api_client):
 
 @pytest.mark.django_db
 def test_invoice_api_generate_list_retrieve_post_cancel_pdf(auth_client, default_facility, test_party, test_commodity):
-    create_rate_card(
-        facility_id=default_facility.id,
-        commodity_id=test_commodity.id,
-        weight_category=RateCard.WeightCategory.KG_50,
-        rate_per_bag_per_month=Decimal('50.00'),
-        effective_from=date(2026, 1, 1)
-    )
-
-    create_grn(
+    grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
         receipt_date=date(2026, 7, 1),
+        status=GRN.Status.POSTED,
         items=[{
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
-            "unit_weight": Decimal('50.00')
+            "unit_weight": Decimal('50.00'),
+            "rent_rate_per_unit": Decimal('50.00')
         }]
     )
+    lot = grn.lots.first()
 
-    rent_run = create_rent_run(
+    create_delivery_note(
         facility_id=default_facility.id,
-        period_start=date(2026, 7, 1),
-        period_end=date(2026, 7, 31)
+        party_id=test_party.id,
+        dispatch_date=date(2026, 7, 31),
+        status=DeliveryNote.Status.POSTED,
+        lines=[{"lot_id": lot.id, "qty": 100}]
     )
-    post_rent_run(rent_run_id=rent_run.id)
 
     payload = {
         "facility_id": default_facility.id,
-        "rent_run_id": rent_run.id
+        "party_id": test_party.id
     }
 
     # Generate invoices
@@ -84,9 +81,9 @@ def test_invoice_api_generate_list_retrieve_post_cancel_pdf(auth_client, default
     inv_data = res.data[0]
     inv_id = inv_data['id']
     assert inv_data['status'] == Invoice.Status.DRAFT
-    assert inv_data['subtotal'] == "5000.00"
-    assert inv_data['gst_amount'] == "900.00"
-    assert inv_data['total_amount'] == "5900.00"
+    assert inv_data['subtotal'] == "7500.00"
+    assert inv_data['gst_amount'] == "1350.00"
+    assert inv_data['total_amount'] == "8850.00"
     assert 'pdf_url' not in inv_data
 
     # List Invoices

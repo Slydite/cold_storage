@@ -34,18 +34,24 @@
 <table class="data-table">
     <thead>
         <tr>
-            <th class="center" style="width: 15%;">Qty / मात्रा</th>
-            <th style="width: 35%;">Description / विवरण</th>
-            <th style="width: 25%;">Lot No. / लॉट नं.</th>
-            <th style="width: 25%;">Special Remarks / विशेष विवरण</th>
+            <th class="center" style="width: 10%;">Qty / मात्रा</th>
+            <th style="width: 10%;">Unit / इकाई</th>
+            <th style="width: 18%;">Description / विवरण</th>
+            <th style="width: 15%;">Lot No. / लॉट नं.</th>
+            <th style="width: 20%;">Location / स्थान</th>
+            <th style="width: 12%;">Rate/Mo / दर</th>
+            <th style="width: 15%;">Special Remarks / विशेष विवरण</th>
         </tr>
     </thead>
     <tbody>
         {% for lot in grn.lots.all %}
         <tr>
             <td class="center">{{ lot.initial_qty }}</td>
+            <td>{{ lot.unit }}</td>
             <td>{{ lot.commodity.name }}</td>
             <td>{{ lot.lot_number }}</td>
+            <td>{{ lot.location_display }}</td>
+            <td>₹{{ lot.rent_rate_per_unit|floatformat:2 }}</td>
             <td>{{ lot.special_remarks|default:"—" }}</td>
         </tr>
         {% endfor %}
@@ -59,15 +65,20 @@
 <table class="info-grid">
     <tr>
         <td>
-            <strong>Preservation Charges (प्रीजर्वेशन चार्जेज 20/50 किलो प्रति नग/माह):</strong> ₹{{ grn.preservation_rate_per_bag_per_month|floatformat:2 }}<br>
-            <strong>Loading & Unloading Labour (लोडिंग व अनलोडिंग लेबर मजदूरी प्रति नग):</strong> ₹{{ grn.loading_unloading_rate_per_bag|floatformat:2 }} (Total: ₹{{ grn.loading_charge|floatformat:2 }})
+            <strong>Preservation Charges (प्रीजर्वेशन चार्जेज प्रति नग/माह):</strong> ₹{{ grn.preservation_rate_per_bag_per_month|floatformat:2 }}<br>
+            <strong>Loading & Unloading Labour (लोडिंग व अनलोडिंग लेबर मजदूरी):</strong>
+            {% if grn.loading_charge_mode == 'PER_UNIT' %}
+                ₹{{ grn.loading_unloading_rate_per_bag|floatformat:2 }} / unit (Total: ₹{{ grn.computed_loading_charge|floatformat:2 }})
+            {% else %}
+                ₹{{ grn.computed_loading_charge|floatformat:2 }} (Flat)
+            {% endif %}
         </td>
         <td>
             <strong>Bill No. (बिल नं.):</strong> {{ grn.bill_no|default:"—" }}<br>
             <strong>Bilty / LR No. (बिल्टी नं.):</strong> {{ grn.bilty_no|default:"—" }}<br>
             <strong>Transporter (ट्रांसपोर्टर):</strong> {{ grn.transporter|default:"—" }}<br>
             <strong>Vehicle No. (गाड़ी नं.):</strong> {{ grn.vehicle_number|default:"—" }}{% if grn.driver_name %} | <strong>Driver:</strong> {{ grn.driver_name }}{% endif %}<br>
-            <strong>Chamber / Remarks (रिमार्क - मंजिल/कक्ष):</strong> {{ grn.remarks|default:"—" }}
+            <strong>Remarks (रिमार्क):</strong> {{ grn.remarks|default:"—" }}
         </td>
     </tr>
 </table>

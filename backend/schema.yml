@@ -76,11 +76,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/CurrentUserOutput'
           description: ''
-  /api/chambers/:
+  /api/blocks/:
     get:
-      operationId: chambers_list
-      summary: List chambers
+      operationId: blocks_list
+      summary: List blocks
       parameters:
+      - in: query
+        name: chamber_id
+        schema:
+          type: integer
+        description: Filter by Chamber ID
       - in: query
         name: facility_id
         schema:
@@ -91,6 +96,124 @@ paths:
         schema:
           type: integer
         description: Filter by Floor ID
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+        description: Filter by active status
+      tags:
+      - blocks
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BlockOutput'
+          description: ''
+    post:
+      operationId: blocks_create
+      summary: Create a new block
+      tags:
+      - blocks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BlockInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BlockInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/blocks/{id}/:
+    get:
+      operationId: blocks_retrieve
+      summary: Retrieve a block by ID
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this block.
+        required: true
+      tags:
+      - blocks
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockOutput'
+          description: ''
+        '404':
+          description: No response body
+    put:
+      operationId: blocks_update
+      summary: Update an existing block
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this block.
+        required: true
+      tags:
+      - blocks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockUpdateInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BlockUpdateInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BlockUpdateInput'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/chambers/:
+    get:
+      operationId: chambers_list
+      summary: List chambers
+      parameters:
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
       - in: query
         name: is_active
         schema:
@@ -597,14 +720,18 @@ paths:
   /api/floors/:
     get:
       operationId: floors_list
-      summary: List all floors for a facility
+      summary: List all floors
       parameters:
+      - in: query
+        name: chamber_id
+        schema:
+          type: integer
+        description: Filter by Chamber ID
       - in: query
         name: facility_id
         schema:
           type: integer
         description: Filter by Facility ID
-        required: true
       - in: query
         name: is_active
         schema:
@@ -917,7 +1044,7 @@ paths:
           description: ''
     post:
       operationId: invoices_create
-      summary: Generate one invoice per party for a POSTED rent run
+      summary: Generate invoices for uninvoiced stock withdrawals
       tags:
       - invoices
       requestBody:
@@ -1054,6 +1181,11 @@ paths:
       operationId: lots_list
       summary: List inventory lots
       parameters:
+      - in: query
+        name: block_id
+        schema:
+          type: integer
+        description: Filter by Block ID
       - in: query
         name: chamber
         schema:
@@ -1296,297 +1428,6 @@ paths:
           description: ''
         '400':
           description: No response body
-  /api/rate-cards/:
-    get:
-      operationId: rate_cards_list
-      summary: List rate cards for a facility
-      parameters:
-      - in: query
-        name: commodity_id
-        schema:
-          type: integer
-        description: Filter by Commodity ID
-      - in: query
-        name: facility_id
-        schema:
-          type: integer
-        description: Filter by Facility ID
-        required: true
-      - in: query
-        name: is_active
-        schema:
-          type: boolean
-        description: Filter by active status
-      - in: query
-        name: is_default
-        schema:
-          type: boolean
-        description: Filter for default rate cards (party=NULL)
-      - in: query
-        name: party_id
-        schema:
-          type: string
-        description: Filter by Party ID (or 'null' for default rate cards)
-      tags:
-      - rate-cards
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RateCardOutput'
-          description: ''
-    post:
-      operationId: rate_cards_create
-      summary: Create a new rate card
-      tags:
-      - rate-cards
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RateCardInput'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/RateCardInput'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/RateCardInput'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RateCardOutput'
-          description: ''
-        '400':
-          description: No response body
-  /api/rate-cards/{id}/:
-    get:
-      operationId: rate_cards_retrieve
-      summary: Retrieve a rate card by ID
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this rate card.
-        required: true
-      tags:
-      - rate-cards
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RateCardOutput'
-          description: ''
-        '404':
-          description: No response body
-  /api/rent-runs/:
-    get:
-      operationId: rent_runs_list
-      summary: List rent runs for a facility
-      parameters:
-      - in: query
-        name: facility_id
-        schema:
-          type: integer
-        description: Filter by Facility ID
-        required: true
-      - in: query
-        name: status
-        schema:
-          type: string
-        description: Filter by status (DRAFT, POSTED, CANCELLED)
-      tags:
-      - rent-runs
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RentRunOutput'
-          description: ''
-    post:
-      operationId: rent_runs_create
-      summary: Create a new rent run (DRAFT)
-      tags:
-      - rent-runs
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RentRunCreateInput'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/RentRunCreateInput'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/RentRunCreateInput'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RentRunOutput'
-          description: ''
-        '400':
-          description: No response body
-  /api/rent-runs/{id}/:
-    get:
-      operationId: rent_runs_retrieve
-      summary: Retrieve a rent run by ID
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Rent Run.
-        required: true
-      tags:
-      - rent-runs
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RentRunOutput'
-          description: ''
-        '404':
-          description: No response body
-  /api/rent-runs/{id}/cancel/:
-    post:
-      operationId: rent_runs_cancel_create
-      summary: Cancel a DRAFT rent run
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Rent Run.
-        required: true
-      tags:
-      - rent-runs
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RentRunOutput'
-          description: ''
-        '400':
-          description: No response body
-  /api/rent-runs/{id}/pdf/:
-    get:
-      operationId: rent_runs_pdf_retrieve
-      summary: Stream PDF for a rent run
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Rent Run.
-        required: true
-      tags:
-      - rent-runs
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/pdf:
-              schema:
-                type: string
-                format: binary
-          description: ''
-        '400':
-          description: No response body
-        '404':
-          description: No response body
-  /api/rent-runs/{id}/post/:
-    post:
-      operationId: rent_runs_post_create
-      summary: Post a DRAFT rent run
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this Rent Run.
-        required: true
-      tags:
-      - rent-runs
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RentRunOutput'
-          description: ''
-        '400':
-          description: No response body
-  /api/rent-runs/preview/:
-    post:
-      operationId: rent_runs_preview_create
-      summary: Preview a rent run without persisting changes
-      tags:
-      - rent-runs
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RentRunPreviewInput'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/RentRunPreviewInput'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/RentRunPreviewInput'
-        required: true
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RentRunPreviewOutput'
-          description: ''
-        '400':
-          description: No response body
   /api/reports/dn-register/:
     get:
       operationId: reports_dn_register_retrieve
@@ -1708,31 +1549,6 @@ paths:
         schema:
           type: string
         description: Filter by Invoice status
-      tags:
-      - reports
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      responses:
-        '200':
-          description: No response body
-  /api/reports/rent-runs/{rent_run_id}/:
-    get:
-      operationId: reports_rent_runs_retrieve
-      summary: Rent run detail report export
-      parameters:
-      - in: query
-        name: export_format
-        schema:
-          type: string
-        description: 'Response format: ''json'' (default) or ''csv''. Named export_format
-          (not ''format'') to avoid colliding with DRF''s reserved content-negotiation
-          query parameter.'
-      - in: path
-        name: rent_run_id
-        schema:
-          type: integer
-        required: true
       tags:
       - reports
       security:
@@ -1961,11 +1777,15 @@ paths:
           description: No response body
 components:
   schemas:
-    ChamberInput:
+    BlockInput:
       type: object
       properties:
         facility_id:
           type: integer
+          nullable: true
+        chamber_id:
+          type: integer
+          nullable: true
         floor_id:
           type: integer
         name:
@@ -1981,10 +1801,9 @@ components:
           type: boolean
           default: true
       required:
-      - facility_id
       - floor_id
       - name
-    ChamberOutput:
+    BlockOutput:
       type: object
       properties:
         id:
@@ -1994,6 +1813,12 @@ components:
           type: integer
           readOnly: true
         floor_name:
+          type: string
+          readOnly: true
+        chamber_id:
+          type: integer
+          readOnly: true
+        chamber_name:
           type: string
           readOnly: true
         facility_id:
@@ -2024,6 +1849,8 @@ components:
           format: date-time
           readOnly: true
       required:
+      - chamber_id
+      - chamber_name
       - created_at
       - facility_id
       - floor_id
@@ -2031,7 +1858,7 @@ components:
       - id
       - name
       - updated_at
-    ChamberUpdateInput:
+    BlockUpdateInput:
       type: object
       properties:
         floor_id:
@@ -2044,6 +1871,68 @@ components:
         capacity_bags:
           type: integer
           nullable: true
+        is_active:
+          type: boolean
+    ChamberInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        name:
+          type: string
+          maxLength: 50
+        sort_order:
+          type: integer
+          default: 0
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - facility_id
+      - name
+    ChamberOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        facility_id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        sort_order:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - facility_id
+      - id
+      - name
+      - updated_at
+    ChamberUpdateInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        name:
+          type: string
+          maxLength: 50
+        sort_order:
+          type: integer
         is_active:
           type: boolean
     CommodityInput:
@@ -2235,6 +2124,20 @@ components:
           type: string
           default: ''
           maxLength: 1000
+        loading_charge:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          default: '0.00'
+        loading_unloading_rate_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          default: '0.00'
+        loading_charge_mode:
+          allOf:
+          - $ref: '#/components/schemas/LoadingChargeModeEnum'
+          default: FLAT
         status:
           allOf:
           - $ref: '#/components/schemas/StatusEnum'
@@ -2282,6 +2185,19 @@ components:
           maxLength: 255
         remarks:
           type: string
+        loading_charge:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        loading_unloading_rate_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        loading_charge_mode:
+          $ref: '#/components/schemas/LoadingChargeModeEnum'
+        computed_loading_charge:
+          type: string
+          readOnly: true
         status:
           $ref: '#/components/schemas/StatusEnum'
         lines:
@@ -2298,6 +2214,7 @@ components:
           format: date-time
           readOnly: true
       required:
+      - computed_loading_charge
       - created_at
       - dispatch_date
       - dn_number
@@ -2401,6 +2318,9 @@ components:
       properties:
         facility_id:
           type: integer
+          nullable: true
+        chamber_id:
+          type: integer
         name:
           type: string
           maxLength: 50
@@ -2411,13 +2331,19 @@ components:
           type: boolean
           default: true
       required:
-      - facility_id
+      - chamber_id
       - name
     FloorOutput:
       type: object
       properties:
         id:
           type: integer
+          readOnly: true
+        chamber_id:
+          type: integer
+          readOnly: true
+        chamber_name:
+          type: string
           readOnly: true
         facility_id:
           type: integer
@@ -2441,6 +2367,8 @@ components:
           format: date-time
           readOnly: true
       required:
+      - chamber_id
+      - chamber_name
       - created_at
       - facility_id
       - id
@@ -2449,6 +2377,8 @@ components:
     FloorUpdateInput:
       type: object
       properties:
+        chamber_id:
+          type: integer
         name:
           type: string
           maxLength: 50
@@ -2505,6 +2435,10 @@ components:
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
           default: '0.00'
+        loading_charge_mode:
+          allOf:
+          - $ref: '#/components/schemas/LoadingChargeModeEnum'
+          default: FLAT
         inward_time:
           type: string
           format: time
@@ -2574,6 +2508,11 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        loading_charge_mode:
+          $ref: '#/components/schemas/LoadingChargeModeEnum'
+        computed_loading_charge:
+          type: string
+          readOnly: true
         inward_time:
           type: string
           format: time
@@ -2594,6 +2533,7 @@ components:
           format: date-time
           readOnly: true
       required:
+      - computed_loading_charge
       - created_at
       - facility_id
       - grn_number
@@ -2609,11 +2549,11 @@ components:
       properties:
         facility_id:
           type: integer
-        rent_run_id:
+        party_id:
           type: integer
+          nullable: true
       required:
       - facility_id
-      - rent_run_id
     InvoiceLineOutput:
       type: object
       properties:
@@ -2627,15 +2567,10 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
-        rent_run_line_id:
-          type: integer
-          nullable: true
-          readOnly: true
       required:
       - amount
       - description
       - id
-      - rent_run_line_id
     InvoiceOutput:
       type: object
       properties:
@@ -2670,10 +2605,6 @@ components:
         facility_gstin_snapshot:
           type: string
           maxLength: 15
-        rent_run_id:
-          type: integer
-          nullable: true
-          readOnly: true
         invoice_date:
           type: string
           format: date
@@ -2717,8 +2648,15 @@ components:
       - lines
       - party_id
       - party_name
-      - rent_run_id
       - updated_at
+    LoadingChargeModeEnum:
+      enum:
+      - FLAT
+      - PER_UNIT
+      type: string
+      description: |-
+        * `FLAT` - Flat
+        * `PER_UNIT` - Per Unit
     LoginInput:
       type: object
       properties:
@@ -2751,10 +2689,13 @@ components:
           type: string
           default: ''
           maxLength: 50
+        chamber_id:
+          type: integer
+          nullable: true
         floor_id:
           type: integer
           nullable: true
-        chamber_id:
+        block_id:
           type: integer
           nullable: true
         special_remarks:
@@ -2764,6 +2705,10 @@ components:
         initial_qty:
           type: integer
           minimum: 1
+        unit:
+          type: string
+          default: ''
+          maxLength: 20
         unit_weight:
           type: string
           format: decimal
@@ -2828,22 +2773,30 @@ components:
         rack:
           type: string
           maxLength: 50
-        floor_ref_id:
+        chamber_ref_id:
           type: integer
           readOnly: true
           nullable: true
-        chamber_ref_id:
+        chamber_name:
+          type: string
+          readOnly: true
+        floor_ref_id:
           type: integer
           readOnly: true
           nullable: true
         floor_name:
           type: string
           readOnly: true
-          nullable: true
-        chamber_name:
-          type: string
+        block_ref_id:
+          type: integer
           readOnly: true
           nullable: true
+        block_name:
+          type: string
+          readOnly: true
+        location_display:
+          type: string
+          readOnly: true
         special_remarks:
           type: string
           maxLength: 255
@@ -2857,6 +2810,9 @@ components:
           maximum: 9223372036854775807
           minimum: 0
           format: int64
+        unit:
+          type: string
+          maxLength: 20
         unit_weight:
           type: string
           format: decimal
@@ -2877,6 +2833,8 @@ components:
           format: date-time
           readOnly: true
       required:
+      - block_name
+      - block_ref_id
       - chamber_name
       - chamber_ref_id
       - commodity_code
@@ -2893,6 +2851,7 @@ components:
       - id
       - initial_qty
       - inward_date
+      - location_display
       - lot_number
       - party_code
       - party_id
@@ -2907,22 +2866,6 @@ components:
           minimum: 1
       required:
       - qty
-    MissingRateCard:
-      type: object
-      properties:
-        commodity_id:
-          type: integer
-        commodity_name:
-          type: string
-        weight_category:
-          type: string
-        lot_number:
-          type: string
-      required:
-      - commodity_id
-      - commodity_name
-      - lot_number
-      - weight_category
     PartyInput:
       type: object
       properties:
@@ -3024,353 +2967,6 @@ components:
       - type
       - type_display
       - updated_at
-    RateCardInput:
-      type: object
-      properties:
-        facility_id:
-          type: integer
-        commodity_id:
-          type: integer
-        party_id:
-          type: integer
-          nullable: true
-        weight_category:
-          $ref: '#/components/schemas/WeightCategoryEnum'
-        rate_per_bag_per_month:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-        effective_from:
-          type: string
-          format: date
-        is_active:
-          type: boolean
-          default: true
-      required:
-      - commodity_id
-      - effective_from
-      - facility_id
-      - rate_per_bag_per_month
-      - weight_category
-    RateCardOutput:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        facility_id:
-          type: integer
-          readOnly: true
-        party_id:
-          type: integer
-          nullable: true
-          readOnly: true
-        party_name:
-          type: string
-          readOnly: true
-          nullable: true
-        is_default:
-          type: boolean
-          readOnly: true
-        commodity_id:
-          type: integer
-          readOnly: true
-        commodity_name:
-          type: string
-          readOnly: true
-        commodity_code:
-          type: string
-          readOnly: true
-        weight_category:
-          $ref: '#/components/schemas/WeightCategoryEnum'
-        weight_category_display:
-          type: string
-          readOnly: true
-        rate_per_bag_per_month:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-        effective_from:
-          type: string
-          format: date
-        is_active:
-          type: boolean
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        updated_at:
-          type: string
-          format: date-time
-          readOnly: true
-      required:
-      - commodity_code
-      - commodity_id
-      - commodity_name
-      - created_at
-      - effective_from
-      - facility_id
-      - id
-      - is_default
-      - party_id
-      - party_name
-      - rate_per_bag_per_month
-      - updated_at
-      - weight_category
-      - weight_category_display
-    RentRunCreateInput:
-      type: object
-      properties:
-        facility_id:
-          type: integer
-        period_start:
-          type: string
-          format: date
-        period_end:
-          type: string
-          format: date
-        party_id:
-          type: integer
-          nullable: true
-        commodity_id:
-          type: integer
-          nullable: true
-        chamber:
-          type: string
-          default: ''
-        min_billing_days:
-          type: integer
-          minimum: 0
-          default: 0
-        notes:
-          type: string
-          default: ''
-      required:
-      - facility_id
-      - period_end
-      - period_start
-    RentRunLineOutput:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        lot_id:
-          type: integer
-          readOnly: true
-        lot_number:
-          type: string
-          readOnly: true
-        commodity_name:
-          type: string
-          readOnly: true
-        party_id:
-          type: integer
-          readOnly: true
-        party_name:
-          type: string
-          readOnly: true
-        qty:
-          type: integer
-          maximum: 9223372036854775807
-          minimum: 0
-          format: int64
-        weight_category:
-          $ref: '#/components/schemas/WeightCategoryEnum'
-        rate_per_bag_per_month:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-        days_stored:
-          type: integer
-          maximum: 9223372036854775807
-          minimum: 0
-          format: int64
-        amount:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
-      required:
-      - amount
-      - commodity_name
-      - days_stored
-      - id
-      - lot_id
-      - lot_number
-      - party_id
-      - party_name
-      - qty
-      - rate_per_bag_per_month
-      - weight_category
-    RentRunOutput:
-      type: object
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        facility_id:
-          type: integer
-          readOnly: true
-        period_start:
-          type: string
-          format: date
-        period_end:
-          type: string
-          format: date
-        party_id:
-          type: integer
-          nullable: true
-          readOnly: true
-        party_name:
-          type: string
-          readOnly: true
-          nullable: true
-        commodity_id:
-          type: integer
-          nullable: true
-          readOnly: true
-        commodity_name:
-          type: string
-          readOnly: true
-          nullable: true
-        chamber:
-          type: string
-          maxLength: 50
-        min_billing_days:
-          type: integer
-          maximum: 9223372036854775807
-          minimum: 0
-          format: int64
-        notes:
-          type: string
-        status:
-          $ref: '#/components/schemas/StatusEnum'
-        run_date:
-          type: string
-          format: date-time
-          readOnly: true
-        lines:
-          type: array
-          items:
-            $ref: '#/components/schemas/RentRunLineOutput'
-          readOnly: true
-        total_amount:
-          type: number
-          format: double
-          readOnly: true
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        updated_at:
-          type: string
-          format: date-time
-          readOnly: true
-      required:
-      - commodity_id
-      - commodity_name
-      - created_at
-      - facility_id
-      - id
-      - lines
-      - party_id
-      - party_name
-      - period_end
-      - period_start
-      - run_date
-      - total_amount
-      - updated_at
-    RentRunPreviewInput:
-      type: object
-      properties:
-        facility_id:
-          type: integer
-        period_start:
-          type: string
-          format: date
-        period_end:
-          type: string
-          format: date
-        party_id:
-          type: integer
-          nullable: true
-        commodity_id:
-          type: integer
-          nullable: true
-        chamber:
-          type: string
-          default: ''
-        min_billing_days:
-          type: integer
-          minimum: 0
-          default: 0
-      required:
-      - facility_id
-      - period_end
-      - period_start
-    RentRunPreviewLine:
-      type: object
-      properties:
-        lot_id:
-          type: integer
-        lot_number:
-          type: string
-        commodity_id:
-          type: integer
-        commodity_name:
-          type: string
-        party_id:
-          type: integer
-        party_name:
-          type: string
-        qty:
-          type: integer
-        weight_category:
-          type: string
-        rate_per_bag_per_month:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
-        days_stored:
-          type: integer
-        amount:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
-        rate_source:
-          type: string
-      required:
-      - amount
-      - commodity_id
-      - commodity_name
-      - days_stored
-      - lot_id
-      - lot_number
-      - party_id
-      - party_name
-      - qty
-      - rate_per_bag_per_month
-      - rate_source
-      - weight_category
-    RentRunPreviewOutput:
-      type: object
-      properties:
-        lines:
-          type: array
-          items:
-            $ref: '#/components/schemas/RentRunPreviewLine'
-        total_amount:
-          type: string
-          format: decimal
-          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
-        missing_rate_cards:
-          type: array
-          items:
-            $ref: '#/components/schemas/MissingRateCard'
-      required:
-      - lines
-      - missing_rate_cards
-      - total_amount
     RoleEnum:
       enum:
       - ADMIN
@@ -3495,16 +3091,6 @@ components:
         password:
           type: string
           writeOnly: true
-    WeightCategoryEnum:
-      enum:
-      - KG_20
-      - KG_50
-      - OTHER
-      type: string
-      description: |-
-        * `KG_20` - 20 kg bag
-        * `KG_50` - 50 kg bag
-        * `OTHER` - Other
   securitySchemes:
     basicAuth:
       type: http

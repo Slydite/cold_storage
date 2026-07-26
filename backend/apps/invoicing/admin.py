@@ -6,7 +6,7 @@ from .models import Invoice, InvoiceLine
 class InvoiceLineInline(admin.TabularInline):
     model = InvoiceLine
     extra = 0
-    readonly_fields = ('description', 'rent_run_line', 'amount', 'created_at')
+    readonly_fields = ('description', 'amount', 'created_at')
 
     def has_add_permission(self, request, obj=None):
         return False

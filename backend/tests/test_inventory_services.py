@@ -283,3 +283,61 @@ def test_get_lots_list_excludes_draft_grn_lots(default_facility, test_party, tes
 
     lots_after_post = get_lots_list(facility_id=default_facility.id)
     assert lot in lots_after_post
+
+
+@pytest.mark.django_db
+def test_grn_computed_loading_charge_flat_mode(default_facility, test_party, test_commodity):
+    from decimal import Decimal
+    from libs.choices import ChargeMode
+
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        loading_charge=Decimal('1500.00'),
+        loading_charge_mode=ChargeMode.FLAT,
+        items=[
+            {"commodity_id": test_commodity.id, "initial_qty": 100},
+            {"commodity_id": test_commodity.id, "initial_qty": 50},
+            {"commodity_id": test_commodity.id, "initial_qty": 25}
+        ]
+    )
+    assert grn.computed_loading_charge() == Decimal('1500.00')
+
+
+@pytest.mark.django_db
+def test_grn_computed_loading_charge_per_unit_mode(default_facility, test_party, test_commodity):
+    from decimal import Decimal
+    from libs.choices import ChargeMode
+
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        loading_unloading_rate_per_bag=Decimal('15.00'),
+        loading_charge_mode=ChargeMode.PER_UNIT,
+        items=[
+            {"commodity_id": test_commodity.id, "initial_qty": 100},
+            {"commodity_id": test_commodity.id, "initial_qty": 50},
+            {"commodity_id": test_commodity.id, "initial_qty": 25}
+        ]
+    )
+    # 175 units * 15.00 = 2625.00
+    assert grn.computed_loading_charge() == Decimal('2625.00')
+
+
+@pytest.mark.django_db
+def test_lot_unit_override_and_fallback(default_facility, test_party, test_commodity):
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        items=[
+            {"commodity_id": test_commodity.id, "initial_qty": 100, "unit": "BOXES"},
+            {"commodity_id": test_commodity.id, "initial_qty": 50}  # Omitted -> falls back to commodity.unit ('BAGS')
+        ]
+    )
+    lots = list(grn.lots.order_by('id'))
+    assert lots[0].unit == "BOXES"
+    assert lots[1].unit == test_commodity.unit  # "BAGS"
+

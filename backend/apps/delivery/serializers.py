@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from libs.choices import ChargeMode
 from .models import DeliveryNote, DeliveryLine
 
 
@@ -15,6 +16,9 @@ class DeliveryNoteCreateInputSerializer(serializers.Serializer):
     driver_name = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
     transporter = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     remarks = serializers.CharField(max_length=1000, required=False, allow_blank=True, default='')
+    loading_charge = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0.00)
+    loading_unloading_rate_per_unit = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0.00)
+    loading_charge_mode = serializers.ChoiceField(choices=ChargeMode.choices, default=ChargeMode.FLAT)
     status = serializers.ChoiceField(choices=DeliveryNote.Status.choices, default=DeliveryNote.Status.DRAFT)
     lines = DeliveryLineInputSerializer(many=True, required=False, default=list)
 
@@ -45,6 +49,7 @@ class DeliveryNoteOutputSerializer(serializers.ModelSerializer):
     party_name = serializers.CharField(source='party.name', read_only=True)
     party_code = serializers.CharField(source='party.code', read_only=True)
     lines = DeliveryLineOutputSerializer(many=True, read_only=True)
+    computed_loading_charge = serializers.SerializerMethodField()
 
     class Meta:
         model = DeliveryNote
@@ -60,8 +65,15 @@ class DeliveryNoteOutputSerializer(serializers.ModelSerializer):
             'driver_name',
             'transporter',
             'remarks',
+            'loading_charge',
+            'loading_unloading_rate_per_unit',
+            'loading_charge_mode',
+            'computed_loading_charge',
             'status',
             'lines',
             'created_at',
             'updated_at'
         ]
+
+    def get_computed_loading_charge(self, obj):
+        return obj.computed_loading_charge()

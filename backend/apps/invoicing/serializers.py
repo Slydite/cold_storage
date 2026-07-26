@@ -9,7 +9,6 @@ class InvoiceLineOutputSerializer(serializers.ModelSerializer):
             'id',
             'description',
             'amount',
-            'rent_run_line_id',
         ]
 
 
@@ -31,7 +30,6 @@ class InvoiceOutputSerializer(serializers.ModelSerializer):
             'facility_name_snapshot',
             'facility_address_snapshot',
             'facility_gstin_snapshot',
-            'rent_run_id',
             'invoice_date',
             'status',
             'subtotal',
@@ -46,4 +44,4 @@ class InvoiceOutputSerializer(serializers.ModelSerializer):
 
 class GenerateInvoicesInputSerializer(serializers.Serializer):
     facility_id = serializers.IntegerField()
-    rent_run_id = serializers.IntegerField()
+    party_id = serializers.IntegerField(required=False, allow_null=True, default=None)

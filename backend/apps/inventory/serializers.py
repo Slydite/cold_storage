@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from libs.choices import ChargeMode
 from .models import Commodity, GRN, Lot
 
 class CommodityInputSerializer(serializers.Serializer):
@@ -37,6 +38,7 @@ class LotItemInputSerializer(serializers.Serializer):
     block_id = serializers.IntegerField(required=False, allow_null=True, default=None)
     special_remarks = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     initial_qty = serializers.IntegerField(min_value=1)
+    unit = serializers.CharField(max_length=20, required=False, allow_blank=True, default='')
     unit_weight = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0.00)
     rent_rate_per_unit = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0.00)
 
@@ -51,11 +53,12 @@ class LotOutputSerializer(serializers.ModelSerializer):
     party_name = serializers.CharField(source='grn.party.name', read_only=True)
     party_code = serializers.CharField(source='grn.party.code', read_only=True)
     chamber_ref_id = serializers.IntegerField(source='chamber_ref.id', read_only=True, allow_null=True)
-    chamber_name = serializers.CharField(source='chamber_ref.name', read_only=True, allow_null=True)
+    chamber_name = serializers.SerializerMethodField()
     floor_ref_id = serializers.IntegerField(source='floor_ref.id', read_only=True, allow_null=True)
-    floor_name = serializers.CharField(source='floor_ref.name', read_only=True, allow_null=True)
+    floor_name = serializers.SerializerMethodField()
     block_ref_id = serializers.IntegerField(source='block_ref.id', read_only=True, allow_null=True)
-    block_name = serializers.CharField(source='block_ref.name', read_only=True, allow_null=True)
+    block_name = serializers.SerializerMethodField()
+    location_display = serializers.CharField(read_only=True)
 
     class Meta:
         model = Lot
@@ -82,9 +85,11 @@ class LotOutputSerializer(serializers.ModelSerializer):
             'floor_name',
             'block_ref_id',
             'block_name',
+            'location_display',
             'special_remarks',
             'initial_qty',
             'remaining_qty',
+            'unit',
             'unit_weight',
             'rent_rate_per_unit',
             'inward_date',
@@ -92,6 +97,14 @@ class LotOutputSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
 
+    def get_chamber_name(self, obj):
+        return obj.chamber_ref.name if obj.chamber_ref else (obj.chamber or None)
+
+    def get_floor_name(self, obj):
+        return obj.floor_ref.name if obj.floor_ref else (obj.floor or None)
+
+    def get_block_name(self, obj):
+        return obj.block_ref.name if obj.block_ref else (obj.rack or None)
 
 
 class GRNCreateInputSerializer(serializers.Serializer):
@@ -107,6 +120,7 @@ class GRNCreateInputSerializer(serializers.Serializer):
     transporter = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     preservation_rate_per_bag_per_month = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0.00)
     loading_unloading_rate_per_bag = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0.00)
+    loading_charge_mode = serializers.ChoiceField(choices=ChargeMode.choices, default=ChargeMode.FLAT)
     inward_time = serializers.TimeField(required=False, allow_null=True, default=None)
     status = serializers.ChoiceField(choices=GRN.Status.choices, default=GRN.Status.POSTED)
     items = LotItemInputSerializer(many=True, required=False, default=list)
@@ -116,6 +130,7 @@ class GRNOutputSerializer(serializers.ModelSerializer):
     party_name = serializers.CharField(source='party.name', read_only=True)
     party_code = serializers.CharField(source='party.code', read_only=True)
     lots = LotOutputSerializer(many=True, read_only=True)
+    computed_loading_charge = serializers.SerializerMethodField()
 
     class Meta:
         model = GRN
@@ -136,6 +151,8 @@ class GRNOutputSerializer(serializers.ModelSerializer):
             'transporter',
             'preservation_rate_per_bag_per_month',
             'loading_unloading_rate_per_bag',
+            'loading_charge_mode',
+            'computed_loading_charge',
             'inward_time',
             'status',
             'lots',
@@ -143,6 +160,10 @@ class GRNOutputSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
 
+    def get_computed_loading_charge(self, obj):
+        return obj.computed_loading_charge()
+
 
 class LotWithdrawalInputSerializer(serializers.Serializer):
     qty = serializers.IntegerField(min_value=1)
+

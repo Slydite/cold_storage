@@ -10,9 +10,7 @@ from apps.inventory.serializers import GRNOutputSerializer
 from apps.delivery.services import create_delivery_note, post_delivery_note, build_delivery_note_pdf
 from apps.delivery.models import DeliveryNote, DeliveryLine
 from apps.delivery.serializers import DeliveryNoteOutputSerializer
-from apps.invoicing.services import build_invoice_pdf, generate_invoices_for_rent_run, _amount_in_words
-from apps.billing.services import create_rate_card, create_rent_run, post_rent_run, build_rent_run_pdf
-from apps.billing.models import RateCard
+from apps.invoicing.services import build_invoice_pdf, generate_invoices_for_uninvoiced_deliveries, _amount_in_words
 
 
 @pytest.fixture
@@ -124,14 +122,6 @@ def test_pdf_determinism(default_facility, test_party, test_commodity):
     Assert that rendering the same record twice produces byte-identical output (same SHA256 / bytes).
     This is the core property on-the-fly streaming rests on.
     """
-    create_rate_card(
-        facility_id=default_facility.id,
-        commodity_id=test_commodity.id,
-        weight_category=RateCard.WeightCategory.KG_50,
-        rate_per_bag_per_month=Decimal('50.00'),
-        effective_from=date(2026, 1, 1)
-    )
-
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -140,7 +130,8 @@ def test_pdf_determinism(default_facility, test_party, test_commodity):
         items=[{
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
-            "unit_weight": Decimal('50.00')
+            "unit_weight": Decimal('50.00'),
+            "rent_rate_per_unit": Decimal('50.00')
         }]
     )
     lot = grn.lots.first()
@@ -149,20 +140,13 @@ def test_pdf_determinism(default_facility, test_party, test_commodity):
         facility_id=default_facility.id,
         party_id=test_party.id,
         dispatch_date=date(2026, 7, 10),
-        status=DeliveryNote.Status.DRAFT,
+        status=DeliveryNote.Status.POSTED,
         lines=[{"lot_id": lot.id, "qty": 10}]
     )
 
-    rent_run = create_rent_run(
+    invoices = generate_invoices_for_uninvoiced_deliveries(
         facility_id=default_facility.id,
-        period_start=date(2026, 7, 1),
-        period_end=date(2026, 7, 31)
-    )
-    post_rent_run(rent_run_id=rent_run.id)
-
-    invoices = generate_invoices_for_rent_run(
-        facility_id=default_facility.id,
-        rent_run_id=rent_run.id
+        party_id=test_party.id
     )
     invoice = invoices[0]
 
@@ -175,11 +159,6 @@ def test_pdf_determinism(default_facility, test_party, test_commodity):
     dn_pdf1 = build_delivery_note_pdf(delivery_note_id=dn.id)
     dn_pdf2 = build_delivery_note_pdf(delivery_note_id=dn.id)
     assert dn_pdf1 == dn_pdf2
-
-    # Test RentRun PDF determinism
-    rr_pdf1 = build_rent_run_pdf(rent_run_id=rent_run.id)
-    rr_pdf2 = build_rent_run_pdf(rent_run_id=rent_run.id)
-    assert rr_pdf1 == rr_pdf2
 
     # Test Invoice PDF determinism
     inv_pdf1 = build_invoice_pdf(invoice_id=invoice.id)
@@ -283,3 +262,34 @@ def test_render_pdf_helper(default_facility):
     assert isinstance(pdf_bytes, bytes)
     assert pdf_bytes.startswith(b'%PDF')
 
+
+@pytest.mark.django_db
+def test_grn_pdf_rendering_locations(default_facility, test_party, test_commodity):
+    from apps.locations.services import create_chamber, create_floor, create_block
+
+    chamber = create_chamber(facility_id=default_facility.id, name="Chamber 1")
+    floor = create_floor(chamber_id=chamber.id, name="Floor 2")
+    block = create_block(floor_id=floor.id, name="Block A")
+
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 1),
+        items=[
+            {
+                "commodity_id": test_commodity.id,
+                "initial_qty": 100,
+                "chamber_id": chamber.id,
+                "floor_id": floor.id,
+                "block_id": block.id
+            },
+            {
+                "commodity_id": test_commodity.id,
+                "initial_qty": 50
+            }
+        ]
+    )
+
+    pdf_bytes = build_grn_pdf(grn_id=grn.id)
+    assert isinstance(pdf_bytes, bytes)
+    assert pdf_bytes.startswith(b'%PDF')

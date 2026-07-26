@@ -1,46 +1,95 @@
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
-
+from django.utils import timezone
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
 from libs.lookups import get_facility_or_raise
 from libs.pdf import render_pdf
 from libs.sequences import get_next_sequence_number
-from apps.billing.models import RentRun
+from apps.billing.services import compute_delivery_line_rent, days_stored
+from apps.delivery.selectors import get_uninvoiced_delivery_lines
 from .models import Invoice, InvoiceLine
 from .selectors import get_invoice_by_id
 
 
 @transaction.atomic
-def generate_invoices_for_rent_run(*, facility_id: int, rent_run_id: int) -> list[Invoice]:
+def generate_invoices_for_uninvoiced_deliveries(
+    *,
+    facility_id: int,
+    party_id: int | None = None
+) -> list[Invoice]:
     """
-    Generate one Invoice per party for all lines in a POSTED RentRun.
+    Generate one Invoice per party for uninvoiced delivery lines (withdrawals).
+    
+    Implements Rule 3 (Only withdrawn stock is invoiced) and Anti-double-billing Invariant:
+    - Queries uninvoiced delivery lines from POSTED delivery notes via get_uninvoiced_delivery_lines.
+    - Computes rent using compute_delivery_line_rent pure calculator.
+    - Bills GRN one-time loading charge IN FULL on the FIRST invoice that includes any withdrawal
+      from that GRN (if loading_charge_invoiced_at IS NULL).
+    - Bills DN one-time loading charge on the invoice that includes that DN's lines (if loading_charge_invoiced_at IS NULL).
+    - Marks DeliveryLine.invoiced_at and links DeliveryLine.invoice_line.
     """
     facility = get_facility_or_raise(facility_id)
+    now = timezone.now()
 
-    try:
-        rent_run = RentRun.objects.select_for_update().get(pk=rent_run_id, facility=facility)
-    except RentRun.DoesNotExist:
-        raise ValidationError(f"RentRun with ID {rent_run_id} does not exist in facility {facility_id}.")
+    lines = list(get_uninvoiced_delivery_lines(facility_id=facility_id, party_id=party_id))
+    if not lines:
+        return []
 
-    if rent_run.status != RentRun.Status.POSTED:
-        raise ValidationError(f"Cannot generate invoices: RentRun current status is '{rent_run.status}', must be POSTED.")
-
-    if Invoice.objects.filter(rent_run=rent_run).exists():
-        raise ValidationError("An invoice has already been generated for this rent run.")
-
-    rent_run_lines = rent_run.lines.select_related('party', 'lot', 'lot__commodity').all()
-
-    # Group lines by party
+    # Group delivery lines by party
     party_lines_map = {}
-    for line in rent_run_lines:
-        party_lines_map.setdefault(line.party, []).append(line)
+    for line in lines:
+        party = line.delivery_note.party
+        party_lines_map.setdefault(party, []).append(line)
 
     created_invoices = []
-    for party, lines in sorted(party_lines_map.items(), key=lambda item: item[0].id):
+    for party, line_list in sorted(party_lines_map.items(), key=lambda item: item[0].id):
         inv_number = get_next_sequence_number(facility=facility, sequence_type='INV')
-        subtotal = sum((Decimal(line.amount) for line in lines), Decimal('0.00')).quantize(Decimal('0.01'))
+        
+        # Prepare invoice items: list of tuples (description, amount, delivery_line_ref, grn_ref, dn_ref)
+        invoice_items = []
+
+        # 1. Rent for each delivery line
+        for line in line_list:
+            rent_amount = compute_delivery_line_rent(line)
+            d_count = days_stored(line.lot.inward_date, line.delivery_note.dispatch_date)
+            desc = f"Rent - Lot {line.lot.lot_number} ({line.lot.commodity.name}) - Qty: {line.qty} ({d_count} days)"
+            invoice_items.append({
+                'description': desc,
+                'amount': rent_amount,
+                'delivery_line': line
+            })
+
+        # 2. GRN loading charges (billed once on first withdrawal)
+        processed_grns = set()
+        for line in line_list:
+            grn = line.lot.grn
+            if grn.id not in processed_grns and grn.loading_charge_invoiced_at is None:
+                processed_grns.add(grn.id)
+                charge = grn.computed_loading_charge()
+                if charge > Decimal('0.00'):
+                    invoice_items.append({
+                        'description': f"Loading Charge - GRN #{grn.grn_number}",
+                        'amount': charge,
+                        'grn': grn
+                    })
+
+        # 3. DN loading charges (billed once on invoice containing DN's lines)
+        processed_dns = set()
+        for line in line_list:
+            dn = line.delivery_note
+            if dn.id not in processed_dns and dn.loading_charge_invoiced_at is None:
+                processed_dns.add(dn.id)
+                charge = dn.computed_loading_charge()
+                if charge > Decimal('0.00'):
+                    invoice_items.append({
+                        'description': f"Delivery Charge - DN #{dn.dn_number}",
+                        'amount': charge,
+                        'dn': dn
+                    })
+
+        subtotal = sum((item['amount'] for item in invoice_items), Decimal('0.00')).quantize(Decimal('0.01'))
         gst_rate = Decimal('18.00')
         gst_amount = (subtotal * gst_rate / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         total_amount = subtotal + gst_amount
@@ -56,7 +105,6 @@ def generate_invoices_for_rent_run(*, facility_id: int, rent_run_id: int) -> lis
             facility=facility,
             invoice_number=inv_number,
             party=party,
-            rent_run=rent_run,
             invoice_date=date.today(),
             status=Invoice.Status.DRAFT,
             party_gstin_snapshot=party_gstin_snapshot,
@@ -73,15 +121,31 @@ def generate_invoices_for_rent_run(*, facility_id: int, rent_run_id: int) -> lis
         invoice.full_clean()
         invoice.save()
 
-        for line in lines:
+        # Create InvoiceLine objects and mark DeliveryLine, GRN, DN as invoiced
+        for item in invoice_items:
             inv_line = InvoiceLine(
                 invoice=invoice,
-                description=f"Rent - {line.lot.lot_number} ({line.lot.commodity.name}) - {line.days_stored} days",
-                rent_run_line=line,
-                amount=line.amount
+                description=item['description'],
+                amount=item['amount']
             )
             inv_line.full_clean()
             inv_line.save()
+
+            if 'delivery_line' in item:
+                dl = item['delivery_line']
+                dl.invoiced_at = now
+                dl.invoice_line = inv_line
+                dl.save(update_fields=['invoiced_at', 'invoice_line'])
+
+            if 'grn' in item:
+                g = item['grn']
+                g.loading_charge_invoiced_at = now
+                g.save(update_fields=['loading_charge_invoiced_at'])
+
+            if 'dn' in item:
+                d = item['dn']
+                d.loading_charge_invoiced_at = now
+                d.save(update_fields=['loading_charge_invoiced_at'])
 
         created_invoices.append(get_invoice_by_id(invoice.id))
 
@@ -121,7 +185,6 @@ def cancel_invoice(*, invoice_id: int) -> Invoice:
         raise ValidationError(f"Cannot cancel Invoice: current status is '{invoice.status}', must be DRAFT.")
 
     invoice.status = Invoice.Status.CANCELLED
-    invoice.full_clean()
     invoice.save()
     return get_invoice_by_id(invoice.id)
 
@@ -162,9 +225,6 @@ def _amount_in_words(amount: Decimal) -> str:
     """
     Convert a Decimal amount to words using the Indian numbering system.
     e.g. 145200 -> "Rupees One Lakh Forty Five Thousand Two Hundred only"
-
-    This is business logic, not a rendering concern -- it stayed behind when PDF
-    generation moved from reportlab to WeasyPrint templates.
     """
     if amount is None:
         return "Rupees Zero only"
@@ -191,12 +251,6 @@ def _amount_in_words(amount: Decimal) -> str:
 def build_invoice_pdf(*, invoice_id: int) -> bytes:
     """
     Generate PDF bytes for an invoice on the fly using WeasyPrint.
-    Performs no file I/O and no model save.
-
-    Precedence: Snapshot values (party_name_snapshot, party_address_snapshot, party_gstin_snapshot,
-    facility_name_snapshot, facility_address_snapshot, facility_gstin_snapshot) take precedence
-    over live relations to ensure reprinted legal documents accurately reflect historical issue state.
-    If a snapshot field is blank (e.g. for older invoices), it falls back to the live relation.
     """
     try:
         invoice = get_invoice_by_id(invoice_id)
@@ -232,5 +286,3 @@ def build_invoice_pdf(*, invoice_id: int) -> bytes:
         'amount_in_words': amount_in_words_str,
     }
     return render_pdf('pdf/invoice.html', context)
-
-

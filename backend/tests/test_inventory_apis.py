@@ -1,4 +1,5 @@
 import pytest
+from decimal import Decimal
 from rest_framework import status
 from datetime import date
 from apps.parties.services import create_party
@@ -107,3 +108,28 @@ def test_lot_api_withdraw(auth_client, default_facility, party, commodity):
     withdraw_res = auth_client.post(f'/api/lots/{lot_id}/withdraw/', {"qty": 150})
     assert withdraw_res.status_code == status.HTTP_200_OK
     assert withdraw_res.data['remaining_qty'] == 350
+
+
+@pytest.mark.django_db
+def test_grn_api_roundtrip_loading_charge_mode(auth_client, default_facility, party, commodity):
+    grn_payload = {
+        "facility_id": default_facility.id,
+        "party_id": party.id,
+        "receipt_date": "2026-07-25",
+        "loading_charge_mode": "PER_UNIT",
+        "loading_unloading_rate_per_bag": "12.50",
+        "items": [
+            {
+                "commodity_id": commodity.id,
+                "initial_qty": 200,
+                "unit": "CRATES"
+            }
+        ]
+    }
+
+    res = auth_client.post('/api/grns/', grn_payload, format='json')
+    assert res.status_code == status.HTTP_201_CREATED
+    assert res.data['loading_charge_mode'] == "PER_UNIT"
+    assert res.data['computed_loading_charge'] == Decimal("2500.00")
+    assert res.data['lots'][0]['unit'] == "CRATES"
+

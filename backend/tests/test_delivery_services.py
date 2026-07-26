@@ -247,3 +247,45 @@ def test_create_delivery_note_facility_validation(default_facility, test_party, 
             lines=[{"lot_id": other_lot.id, "qty": 10}]
         )
     assert "does not exist in facility" in str(exc.value)
+
+
+@pytest.mark.django_db
+def test_dn_computed_loading_charge_flat_mode(default_facility, test_party, posted_grn):
+    from decimal import Decimal
+    from libs.choices import ChargeMode
+
+    lots = list(posted_grn.lots.order_by('id'))
+    dn = create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        dispatch_date=date(2026, 7, 25),
+        loading_charge=Decimal('800.00'),
+        loading_charge_mode=ChargeMode.FLAT,
+        lines=[
+            {"lot_id": lots[0].id, "qty": 40},
+            {"lot_id": lots[1].id, "qty": 80}
+        ]
+    )
+    assert dn.computed_loading_charge() == Decimal('800.00')
+
+
+@pytest.mark.django_db
+def test_dn_computed_loading_charge_per_unit_mode(default_facility, test_party, posted_grn):
+    from decimal import Decimal
+    from libs.choices import ChargeMode
+
+    lots = list(posted_grn.lots.order_by('id'))
+    dn = create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        dispatch_date=date(2026, 7, 25),
+        loading_unloading_rate_per_unit=Decimal('5.50'),
+        loading_charge_mode=ChargeMode.PER_UNIT,
+        lines=[
+            {"lot_id": lots[0].id, "qty": 40},
+            {"lot_id": lots[1].id, "qty": 60}
+        ]
+    )
+    # 100 units * 5.50 = 550.00
+    assert dn.computed_loading_charge() == Decimal('550.00')
+

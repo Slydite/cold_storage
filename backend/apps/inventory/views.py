@@ -9,6 +9,7 @@ from rest_framework.decorators import action
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
+from libs.choices import ChargeMode
 from .selectors import (
     get_commodities_list,
     get_commodity_by_id,
@@ -195,6 +196,7 @@ class GRNViewSet(ViewSet):
                 transporter=serializer.validated_data.get('transporter', ''),
                 preservation_rate_per_bag_per_month=serializer.validated_data.get('preservation_rate_per_bag_per_month', 0),
                 loading_unloading_rate_per_bag=serializer.validated_data.get('loading_unloading_rate_per_bag', 0),
+                loading_charge_mode=serializer.validated_data.get('loading_charge_mode', ChargeMode.FLAT),
                 inward_time=serializer.validated_data.get('inward_time', None),
                 status=serializer.validated_data.get('status', GRN.Status.POSTED),
                 items=serializer.validated_data.get('items', [])

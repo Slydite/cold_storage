@@ -9,6 +9,7 @@ from rest_framework.decorators import action
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
+from libs.choices import ChargeMode
 from .selectors import (
     get_delivery_notes_list,
     get_delivery_note_by_id
@@ -89,6 +90,9 @@ class DeliveryNoteViewSet(ViewSet):
                 driver_name=serializer.validated_data.get('driver_name', ''),
                 transporter=serializer.validated_data.get('transporter', ''),
                 remarks=serializer.validated_data.get('remarks', ''),
+                loading_charge=serializer.validated_data.get('loading_charge', 0),
+                loading_unloading_rate_per_unit=serializer.validated_data.get('loading_unloading_rate_per_unit', 0),
+                loading_charge_mode=serializer.validated_data.get('loading_charge_mode', ChargeMode.FLAT),
                 status=serializer.validated_data.get('status', DeliveryNote.Status.DRAFT),
                 lines=serializer.validated_data.get('lines', [])
             )

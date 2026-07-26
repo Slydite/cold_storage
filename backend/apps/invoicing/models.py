@@ -3,7 +3,6 @@ from django.db import models
 from simple_history.models import HistoricalRecords
 from apps.facilities.models import Facility
 from apps.parties.models import Party
-from apps.billing.models import RentRun, RentRunLine
 
 
 class Invoice(models.Model):
@@ -15,13 +14,6 @@ class Invoice(models.Model):
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='invoices')
     invoice_number = models.CharField(max_length=100, unique=True)
     party = models.ForeignKey(Party, on_delete=models.PROTECT, related_name='invoices')
-    rent_run = models.ForeignKey(
-        RentRun,
-        on_delete=models.PROTECT,
-        related_name='invoices',
-        null=True,
-        blank=True
-    )
     invoice_date = models.DateField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     party_gstin_snapshot = models.CharField(max_length=15, blank=True)
@@ -50,13 +42,6 @@ class Invoice(models.Model):
 class InvoiceLine(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='lines')
     description = models.CharField(max_length=500)
-    rent_run_line = models.ForeignKey(
-        RentRunLine,
-        on_delete=models.PROTECT,
-        related_name='invoice_lines',
-        null=True,
-        blank=True
-    )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
 
     created_at = models.DateTimeField(auto_now_add=True)

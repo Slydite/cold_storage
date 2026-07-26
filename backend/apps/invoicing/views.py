@@ -14,7 +14,7 @@ from .selectors import (
     get_invoice_by_id,
 )
 from .services import (
-    generate_invoices_for_rent_run,
+    generate_invoices_for_uninvoiced_deliveries,
     post_invoice,
     cancel_invoice,
     build_invoice_pdf,
@@ -74,16 +74,16 @@ class InvoiceViewSet(ViewSet):
     @extend_schema(
         request=GenerateInvoicesInputSerializer,
         responses={201: InvoiceOutputSerializer(many=True), 400: None},
-        summary="Generate one invoice per party for a POSTED rent run"
+        summary="Generate invoices for uninvoiced stock withdrawals"
     )
     def create(self, request):
         serializer = GenerateInvoicesInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         try:
-            invoices = generate_invoices_for_rent_run(
+            invoices = generate_invoices_for_uninvoiced_deliveries(
                 facility_id=serializer.validated_data['facility_id'],
-                rent_run_id=serializer.validated_data['rent_run_id']
+                party_id=serializer.validated_data.get('party_id')
             )
         except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -136,4 +136,3 @@ class InvoiceViewSet(ViewSet):
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{invoice.invoice_number}.pdf"'
         return response
-

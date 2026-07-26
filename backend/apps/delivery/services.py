@@ -1,11 +1,13 @@
 from typing import List, Dict, Any
 from datetime import date
+from decimal import Decimal
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
 from libs.sequences import get_next_sequence_number
 from libs.lookups import get_facility_or_raise, get_party_or_raise
 from libs.pdf import render_pdf
+from libs.choices import ChargeMode
 from apps.inventory.models import Lot
 from apps.inventory.services import withdraw_stock_from_lot
 from .models import DeliveryNote, DeliveryLine
@@ -21,6 +23,9 @@ def create_delivery_note(
     driver_name: str = '',
     transporter: str = '',
     remarks: str = '',
+    loading_charge: Decimal = Decimal('0.00'),
+    loading_unloading_rate_per_unit: Decimal = Decimal('0.00'),
+    loading_charge_mode: str = ChargeMode.FLAT,
     status: str = DeliveryNote.Status.DRAFT,
     lines: List[Dict[str, Any]] = None
 ) -> DeliveryNote:
@@ -35,6 +40,9 @@ def create_delivery_note(
 
     if status not in DeliveryNote.Status.values:
         raise ValidationError(f"Invalid status: {status}. Allowed: {DeliveryNote.Status.values}")
+
+    if loading_charge_mode not in ChargeMode.values:
+        raise ValidationError(f"Invalid loading_charge_mode: {loading_charge_mode}. Allowed: {ChargeMode.values}")
 
     lines = lines or []
     lot_ids = [line_data.get('lot_id') for line_data in lines if line_data.get('lot_id') is not None]
@@ -70,6 +78,9 @@ def create_delivery_note(
         driver_name=driver_name,
         transporter=transporter,
         remarks=remarks,
+        loading_charge=loading_charge,
+        loading_unloading_rate_per_unit=loading_unloading_rate_per_unit,
+        loading_charge_mode=loading_charge_mode,
         status=DeliveryNote.Status.DRAFT
     )
     dn.full_clean()

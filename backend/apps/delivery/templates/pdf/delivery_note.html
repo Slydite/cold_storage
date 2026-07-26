@@ -56,6 +56,17 @@
     </tbody>
 </table>
 
+{% if dn.computed_loading_charge %}
+<div style="margin-top: 8px; font-size: 9pt;">
+    <strong>Loading & Unloading Charge (लोडिंग व अनलोडिंग लेबर मजदूरी):</strong>
+    {% if dn.loading_charge_mode == 'PER_UNIT' %}
+        ₹{{ dn.loading_unloading_rate_per_unit|floatformat:2 }} / unit (Total: ₹{{ dn.computed_loading_charge|floatformat:2 }})
+    {% else %}
+        ₹{{ dn.computed_loading_charge|floatformat:2 }} (Flat)
+    {% endif %}
+</div>
+{% endif %}
+
 <div class="note-text">
     <strong>Note:</strong> After the delivery of goods we are not responsible for any complaint. (माल की सुपुर्दगी के बाद हमारी कोई जिम्मेदारी नहीं होगी।)
 </div>

@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from libs.sequences import get_next_sequence_number
 from libs.lookups import get_facility_or_raise, get_party_or_raise
 from libs.pdf import render_pdf
+from libs.choices import ChargeMode
 from apps.locations.models import Chamber, Floor, Block
 from .models import Commodity, GRN, Lot
 
@@ -74,6 +75,7 @@ def create_grn(
     transporter: str = '',
     preservation_rate_per_bag_per_month: Decimal = Decimal('0.00'),
     loading_unloading_rate_per_bag: Decimal = Decimal('0.00'),
+    loading_charge_mode: str = ChargeMode.FLAT,
     inward_time: Any = None,
     status: str = GRN.Status.POSTED,
     items: List[Dict[str, Any]] = None
@@ -87,6 +89,9 @@ def create_grn(
 
     if status not in GRN.Status.values:
         raise ValidationError(f"Invalid status: {status}. Allowed: {GRN.Status.values}")
+
+    if loading_charge_mode not in ChargeMode.values:
+        raise ValidationError(f"Invalid loading_charge_mode: {loading_charge_mode}. Allowed: {ChargeMode.values}")
 
     grn_number = get_next_sequence_number(facility=facility, sequence_type='GRN')
 
@@ -104,6 +109,7 @@ def create_grn(
         transporter=transporter,
         preservation_rate_per_bag_per_month=preservation_rate_per_bag_per_month,
         loading_unloading_rate_per_bag=loading_unloading_rate_per_bag,
+        loading_charge_mode=loading_charge_mode,
         inward_time=inward_time,
         status=status
     )
@@ -188,6 +194,8 @@ def create_grn(
         if floor_ref is not None:
             floor_text = floor_ref.name
 
+        unit = item_data.get('unit') or commodity.unit or Lot.UnitType.BAGS
+
         lot = Lot(
             facility=facility,
             grn=grn,
@@ -202,6 +210,7 @@ def create_grn(
             special_remarks=item_data.get('special_remarks', ''),
             initial_qty=initial_qty,
             remaining_qty=initial_qty,  # Rule #2: Derived server-side
+            unit=unit,
             unit_weight=item_data.get('unit_weight', 0.00),
             rent_rate_per_unit=item_data.get('rent_rate_per_unit', 0.00),
             inward_date=receipt_date

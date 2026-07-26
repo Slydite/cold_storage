@@ -11,9 +11,6 @@ from apps.inventory.selectors import get_lots_list, get_grns_list
 from apps.inventory.serializers import GRNOutputSerializer
 from apps.delivery.selectors import get_delivery_notes_list
 from apps.delivery.serializers import DeliveryNoteOutputSerializer
-from apps.billing.selectors import get_rent_run_by_id
-from apps.billing.serializers import RentRunOutputSerializer
-from apps.billing.models import RentRun
 from apps.invoicing.selectors import get_invoices_list
 from apps.invoicing.serializers import InvoiceOutputSerializer
 
@@ -209,60 +206,6 @@ class DNRegisterView(APIView):
             return csv_response("dn-register.csv", header, rows)
 
         serializer = DeliveryNoteOutputSerializer(qs, many=True)
-        return Response(serializer.data)
-
-
-class RentRunReportView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    @extend_schema(
-        parameters=[
-            OpenApiParameter('export_format', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Response format: 'json' (default) or 'csv'. Named export_format (not 'format') to avoid colliding with DRF's reserved content-negotiation query parameter."),
-        ],
-        summary="Rent run detail report export"
-    )
-    def get(self, request, rent_run_id: int):
-        try:
-            rent_run = get_rent_run_by_id(rent_run_id)
-        except (RentRun.DoesNotExist, ValueError):
-            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        fmt = request.query_params.get('export_format', 'json').lower()
-
-        if fmt == 'csv':
-            lines = list(rent_run.lines.all())
-            header = ["lot_number", "commodity_name", "party_name", "qty", "weight_category", "rate_per_bag_per_month", "days_stored", "amount"]
-            rows = []
-            total_qty = 0
-            total_amount = Decimal('0.00')
-            for line in lines:
-                qty = line.qty or 0
-                amt = line.amount or Decimal('0.00')
-                total_qty += qty
-                total_amount += amt
-                rows.append([
-                    line.lot.lot_number if line.lot else "",
-                    line.lot.commodity.name if (line.lot and line.lot.commodity) else "",
-                    line.party.name if line.party else "",
-                    qty,
-                    line.weight_category,
-                    line.rate_per_bag_per_month,
-                    line.days_stored,
-                    amt
-                ])
-            rows.append([
-                "TOTAL",
-                "",
-                "",
-                total_qty,
-                "",
-                "",
-                "",
-                total_amount
-            ])
-            return csv_response(f"rent-run-{rent_run_id}.csv", header, rows)
-
-        serializer = RentRunOutputSerializer(rent_run)
         return Response(serializer.data)
 
 

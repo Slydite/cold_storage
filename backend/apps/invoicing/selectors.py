@@ -9,11 +9,11 @@ def get_invoices_list(
 ) -> QuerySet[Invoice]:
     """
     Fetch all invoices for a facility with optional party_id and status filters.
-    Preloads facility, party, rent_run, and lines.
+    Preloads facility, party, and lines.
     Ordered by -invoice_date, -id.
     """
     qs = Invoice.objects.filter(facility_id=facility_id).select_related(
-        'facility', 'party', 'rent_run'
+        'facility', 'party'
     ).prefetch_related('lines')
 
     if party_id:
@@ -25,8 +25,8 @@ def get_invoices_list(
 
 def get_invoice_by_id(invoice_id: int) -> Invoice:
     """
-    Fetch a single Invoice by ID with preloaded facility, party, rent_run, and lines.
+    Fetch a single Invoice by ID with preloaded facility, party, and lines.
     """
     return Invoice.objects.select_related(
-        'facility', 'party', 'rent_run'
+        'facility', 'party'
     ).prefetch_related('lines').get(pk=invoice_id)
