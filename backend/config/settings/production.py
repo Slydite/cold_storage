@@ -29,8 +29,16 @@ CSRF_COOKIE_SECURE = True
 SECURE_SSL_REDIRECT = config('DJANGO_SECURE_SSL_REDIRECT', default=True, cast=bool)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_HSTS_SECONDS = config('DJANGO_HSTS_SECONDS', default=31536000, cast=int)
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# Both default to False deliberately. includeSubDomains forces *every*
+# subdomain of this domain to HTTPS in any browser that has visited this
+# site, which breaks sibling subdomains that are still http-only, and the
+# effect persists for max-age even after the header is removed. preload is
+# harder still to undo. Turn these on only once every subdomain is known to
+# be HTTPS-only.
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config(
+    'DJANGO_HSTS_INCLUDE_SUBDOMAINS', default=False, cast=bool
+)
+SECURE_HSTS_PRELOAD = config('DJANGO_HSTS_PRELOAD', default=False, cast=bool)
 
 # Middleware - Insert WhiteNoise immediately after SecurityMiddleware
 MIDDLEWARE = list(MIDDLEWARE)
