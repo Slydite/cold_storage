@@ -31,6 +31,19 @@ def clear_stale_location_data(apps, schema_editor):
     Chamber.objects.all().delete()
     Floor.objects.all().delete()
 
+    # Django creates foreign keys as DEFERRABLE INITIALLY DEFERRED, so on
+    # PostgreSQL the deletes above only queue trigger events -- they are not
+    # checked until commit. The schema operations that follow in this same
+    # transaction then fail with "cannot ALTER TABLE ... because it has
+    # pending trigger events". Forcing the constraints to be checked now
+    # drains that queue so the ALTER TABLEs can proceed.
+    #
+    # SQLite has no deferred trigger events and does not support the
+    # statement, hence the vendor guard. This is why the bug only appeared
+    # against production Postgres and not in local development.
+    if schema_editor.connection.vendor == 'postgresql':
+        schema_editor.execute('SET CONSTRAINTS ALL IMMEDIATE')
+
 
 class Migration(migrations.Migration):
 
