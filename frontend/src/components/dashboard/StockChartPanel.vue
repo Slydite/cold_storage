@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
 import { Bar } from 'vue-chartjs'
@@ -23,13 +24,14 @@ const props = defineProps<{
   loading: boolean
 }>()
 
-const groupBy = ref<'commodity' | 'chamber'>('commodity')
-const groupOptions = [
-  { label: 'By Commodity', value: 'commodity' },
-  { label: 'By Chamber', value: 'chamber' }
-]
-
+const { t } = useI18n()
 const themeStore = useThemeStore()
+
+const groupBy = ref<'commodity' | 'chamber'>('commodity')
+const groupOptions = computed(() => [
+  { label: t('dashboard.byCommodity'), value: 'commodity' },
+  { label: t('dashboard.byChamber'), value: 'chamber' }
+])
 
 const currentData = computed(() => {
   return groupBy.value === 'commodity' ? props.stockByCommodity : props.stockByChamber
@@ -49,7 +51,7 @@ const chartData = computed(() => {
     labels,
     datasets: [
       {
-        label: 'Stock (MT)',
+        label: t('dashboard.stockUnit'),
         data,
         backgroundColor: barColor,
         hoverBackgroundColor: hoverColor,
@@ -78,7 +80,7 @@ const chartOptions = computed(() => {
         borderWidth: 1,
         padding: 12,
         callbacks: {
-          label: (context: { raw: unknown }) => `Stock: ${context.raw} MT`
+          label: (context: { raw: unknown }) => `${t('dashboard.stockUnit')}: ${context.raw}`
         }
       }
     },
@@ -93,7 +95,7 @@ const chartOptions = computed(() => {
         ticks: {
           color: textColor,
           font: { family: 'Inter', size: 12 },
-          callback: (value: number | string) => `${value} MT`
+          callback: (value: number | string) => `${value}`
         }
       }
     }
@@ -105,7 +107,7 @@ const chartOptions = computed(() => {
   <div class="card-panel chart-panel">
     <div class="panel-header">
       <div>
-        <h3 class="panel-title">Stock Breakdown (MT)</h3>
+        <h3 class="panel-title">{{ t('dashboard.stockBreakdown') }}</h3>
       </div>
       <Select
         v-model="groupBy"
@@ -119,7 +121,7 @@ const chartOptions = computed(() => {
     <div class="chart-container">
       <Skeleton v-if="loading" width="100%" height="100%" />
       <div v-else-if="!hasData" class="empty-chart">
-        <span>No active stock available to display</span>
+        <span>{{ t('dashboard.noStockData') }}</span>
       </div>
       <Bar v-else :data="chartData" :options="chartOptions" />
     </div>

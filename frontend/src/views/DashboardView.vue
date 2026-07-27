@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDashboardStats } from '../composables/useDashboardStats'
 import StatCards from '../components/dashboard/StatCards.vue'
 import StockChartPanel from '../components/dashboard/StockChartPanel.vue'
 import RecentActivitiesPanel from '../components/dashboard/RecentActivitiesPanel.vue'
 import QuickActions from '../components/dashboard/QuickActions.vue'
 import DashboardErrorBanner from '../components/dashboard/DashboardErrorBanner.vue'
+
+const { t, te } = useI18n()
 
 const {
   totalStock,
@@ -19,13 +23,20 @@ const {
   errorMessage,
   refetch
 } = useDashboardStats()
+
+const localizedErrorMessage = computed(() => {
+  if (errorMessage.value && te(errorMessage.value)) {
+    return t(errorMessage.value)
+  }
+  return errorMessage.value
+})
 </script>
 
 <template>
   <div class="dashboard-page">
     <DashboardErrorBanner
       v-if="isError"
-      :message="errorMessage"
+      :message="localizedErrorMessage"
       @retry="refetch"
     />
 

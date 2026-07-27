@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 import { useFacility } from '../composables/useFacility'
 import {
   useInvoiceList,
@@ -9,10 +10,10 @@ import {
 } from '../composables/useInvoices'
 import InvoiceTable from '../components/invoicing/InvoiceTable.vue'
 import GenerateInvoiceDialog from '../components/invoicing/GenerateInvoiceDialog.vue'
-
 import type { InvoiceOutput } from '../api/invoicing'
 
 const toast = useToast()
+const { t } = useI18n()
 const { facilityId } = useFacility()
 
 const searchQuery = ref('')
@@ -50,15 +51,15 @@ async function handlePost(id: number) {
     const updated = await postMutation.mutateAsync(id)
     toast.add({
       severity: 'success',
-      summary: 'Invoice Posted',
-      detail: `Invoice ${updated.invoice_number} is now POSTED.`,
+      summary: t('invoicing.invoicePostedSummary'),
+      detail: t('invoicing.invoicePostedDetail', { number: updated.invoice_number }),
       life: 4000
     })
   } catch (err) {
     toast.add({
       severity: 'error',
-      summary: 'Failed to Post',
-      detail: err instanceof Error ? err.message : 'Could not post invoice',
+      summary: t('invoicing.postFailed'),
+      detail: err instanceof Error ? err.message : t('invoicing.postFailed'),
       life: 5000
     })
   }
@@ -69,15 +70,15 @@ async function handleCancel(id: number) {
     const updated = await cancelMutation.mutateAsync(id)
     toast.add({
       severity: 'info',
-      summary: 'Invoice Cancelled',
-      detail: `Invoice ${updated.invoice_number} was cancelled.`,
+      summary: t('invoicing.invoiceCancelledSummary'),
+      detail: t('invoicing.invoiceCancelledDetail', { number: updated.invoice_number }),
       life: 4000
     })
   } catch (err) {
     toast.add({
       severity: 'error',
-      summary: 'Failed to Cancel',
-      detail: err instanceof Error ? err.message : 'Could not cancel invoice',
+      summary: t('invoicing.cancelFailed'),
+      detail: err instanceof Error ? err.message : t('invoicing.cancelFailed'),
       life: 5000
     })
   }
@@ -89,8 +90,8 @@ function handleGenerateSuccess(createdInvoices: InvoiceOutput[]) {
   const partyNames = Array.from(new Set(createdInvoices.map((inv) => inv.party_name).filter(Boolean))).join(', ')
   toast.add({
     severity: 'success',
-    summary: 'Invoices Generated',
-    detail: `Created ${count} invoice(s) [${numbers}] for ${partyNames}.`,
+    summary: t('invoicing.invoicesGeneratedSummary'),
+    detail: t('invoicing.invoicesGeneratedDetail', { count, numbers, partyNames }),
     life: 6000
   })
 }
@@ -98,7 +99,7 @@ function handleGenerateSuccess(createdInvoices: InvoiceOutput[]) {
 function handleGenerateError(message: string) {
   toast.add({
     severity: 'error',
-    summary: 'Generation Error',
+    summary: t('invoicing.generationError'),
     detail: message,
     life: 6000
   })
@@ -118,6 +119,7 @@ function handleGenerateError(message: string) {
       @retry="refetch"
       @post="handlePost"
       @cancel="handleCancel"
+      @refresh="refetch"
     />
 
     <GenerateInvoiceDialog

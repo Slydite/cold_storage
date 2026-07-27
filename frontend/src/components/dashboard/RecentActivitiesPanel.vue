@@ -1,20 +1,25 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import Skeleton from 'primevue/skeleton'
 import { FileCheck2, Truck, Activity } from 'lucide-vue-next'
-import type { ActivityItem } from '../../composables/useDashboardStats'
+import { useLocaleStore } from '../../stores/locale'
+import { formatRelativeTime, type ActivityItem } from '../../composables/useDashboardStats'
 
 defineProps<{
   activities: ActivityItem[]
   loading: boolean
 }>()
+
+const { t } = useI18n()
+const localeStore = useLocaleStore()
 </script>
 
 <template>
   <div class="card-panel activities-panel">
     <div class="panel-header">
-      <h3 class="panel-title">Recent Activities</h3>
+      <h3 class="panel-title">{{ t('dashboard.recentActivities') }}</h3>
       <router-link to="/grn" class="view-all-link">
-        <span>View all</span>
+        <span>{{ t('common.viewAll') }}</span>
       </router-link>
     </div>
 
@@ -30,7 +35,7 @@ defineProps<{
 
     <div v-else-if="activities.length === 0" class="empty-activities">
       <Activity :size="28" class="empty-icon" />
-      <span>No recent activity recorded yet</span>
+      <span>{{ t('dashboard.noRecentActivities') }}</span>
     </div>
 
     <div v-else class="activities-list">
@@ -41,13 +46,21 @@ defineProps<{
         </div>
         <div class="activity-details">
           <div class="activity-title">
-            <span>{{ act.title }}</span>
+            <span>
+              {{
+                act.type === 'grn'
+                  ? t('dashboard.grnCreated', { number: act.docNumber })
+                  : t('dashboard.dnCreated', { number: act.docNumber })
+              }}
+            </span>
           </div>
           <div v-if="act.partyName" class="activity-meta">
-            Party: <span class="party-name">{{ act.partyName }}</span>
+            {{ t('dashboard.partyLabel') }}: <span class="party-name">{{ act.partyName }}</span>
           </div>
         </div>
-        <div class="activity-time">{{ act.time }}</div>
+        <div class="activity-time">
+          {{ formatRelativeTime(act.createdAt, localeStore.locale) }}
+        </div>
       </div>
     </div>
   </div>

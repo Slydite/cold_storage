@@ -6,6 +6,7 @@ import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 import { Trash2, CreditCard } from 'lucide-vue-next'
 import { formatCurrency, formatQty } from '../../utils/format'
 import { useDeleteInvoicePayment } from '../../composables/useInvoices'
@@ -25,6 +26,7 @@ const emit = defineEmits<{
   refresh: []
 }>()
 
+const { t } = useI18n()
 const confirm = useConfirm()
 const toast = useToast()
 const deletePaymentMutation = useDeleteInvoicePayment()
@@ -47,16 +49,16 @@ const handleDeletePayment = (payment: PaymentOutput) => {
   if (!props.invoice) return
 
   confirm.require({
-    message: `Are you sure you want to delete payment of ${formatCurrency(Number(payment.amount))}?`,
-    header: 'Confirm Payment Deletion',
+    message: t('invoicing.deletePaymentMessage', { amount: formatCurrency(Number(payment.amount)) }),
+    header: t('invoicing.deletePaymentHeader'),
     icon: 'pi pi-exclamation-triangle',
     rejectProps: {
-      label: 'Cancel',
+      label: t('common.cancel'),
       severity: 'secondary',
       outlined: true
     },
     acceptProps: {
-      label: 'Delete Payment',
+      label: t('invoicing.deletePayment'),
       severity: 'danger'
     },
     accept: async () => {
@@ -67,16 +69,16 @@ const handleDeletePayment = (payment: PaymentOutput) => {
         })
         toast.add({
           severity: 'success',
-          summary: 'Payment Deleted',
-          detail: 'Payment deleted successfully',
+          summary: t('invoicing.paymentDeletedSummary'),
+          detail: t('invoicing.paymentDeletedDetail'),
           life: 3000
         })
         emit('refresh')
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to delete payment'
+        const msg = err instanceof Error ? err.message : t('errors.generic')
         toast.add({
           severity: 'error',
-          summary: 'Error',
+          summary: t('common.error'),
           detail: msg,
           life: 5000
         })
@@ -92,7 +94,7 @@ const handleDeletePayment = (payment: PaymentOutput) => {
       :visible="visible"
       @update:visible="emit('update:visible', $event)"
       modal
-      :header="`Invoice Details: ${invoice?.invoice_number || ''}`"
+      :header="t('invoicing.invoiceDetails', { number: invoice?.invoice_number || '' })"
       :style="{ width: '750px', maxWidth: '95vw' }"
     >
       <div v-if="invoice" class="invoice-detail-body">
@@ -100,37 +102,37 @@ const handleDeletePayment = (payment: PaymentOutput) => {
         <div class="meta-card">
           <div class="meta-grid">
             <div class="meta-item">
-              <span class="label">Party / Customer</span>
-              <strong class="val">{{ invoice.party_name || 'Party #' + invoice.party_id }}</strong>
+              <span class="label">{{ t('delivery.customerParty') }}</span>
+              <strong class="val">{{ invoice.party_name || `${t('grn.party')} #${invoice.party_id}` }}</strong>
             </div>
 
             <div class="meta-item">
-              <span class="label">Invoice Date</span>
+              <span class="label">{{ t('invoicing.invoiceDate') }}</span>
               <span class="val">{{ invoice.invoice_date }}</span>
             </div>
 
             <div class="meta-item">
-              <span class="label">Payment Status</span>
+              <span class="label">{{ t('invoicing.paymentStatus') }}</span>
               <div>
                 <Tag
-                  :value="invoice.payment_status || 'UNPAID'"
+                  :value="invoice.payment_status ? t(`status.${invoice.payment_status}`) : t('status.UNPAID')"
                   :severity="getPaymentSeverity(invoice.payment_status)"
                 />
               </div>
             </div>
 
             <div class="meta-item">
-              <span class="label">Total Amount</span>
+              <span class="label">{{ t('common.totalAmount') }}</span>
               <strong class="val text-lg">{{ formatCurrency(Number(invoice.total_amount || 0)) }}</strong>
             </div>
 
             <div class="meta-item">
-              <span class="label">Amount Paid</span>
+              <span class="label">{{ t('common.amountPaid') }}</span>
               <span class="val text-success text-lg">{{ formatCurrency(Number(invoice.amount_paid || 0)) }}</span>
             </div>
 
             <div class="meta-item">
-              <span class="label">Amount Due</span>
+              <span class="label">{{ t('common.amountDue') }}</span>
               <strong class="val text-danger text-lg">{{ formatCurrency(Number(invoice.amount_due || 0)) }}</strong>
             </div>
           </div>
@@ -138,7 +140,7 @@ const handleDeletePayment = (payment: PaymentOutput) => {
 
         <!-- Invoice Line Items Table -->
         <div class="section-container">
-          <h4 class="section-title">Invoice Billed Line Items</h4>
+          <h4 class="section-title">{{ t('invoicing.billedLineItems') }}</h4>
           <DataTable
             :value="invoice.lines || []"
             size="small"
@@ -146,22 +148,22 @@ const handleDeletePayment = (payment: PaymentOutput) => {
             responsiveLayout="scroll"
             class="custom-datatable"
           >
-            <Column field="description" header="Description">
+            <Column field="description" :header="t('common.description')">
               <template #body="{ data }">
-                <span>{{ data.description || 'Rent / Charge Line' }}</span>
+                <span>{{ data.description }}</span>
               </template>
             </Column>
-            <Column field="quantity" header="Qty">
+            <Column field="quantity" :header="t('common.quantity')">
               <template #body="{ data }">
                 <span class="num-val">{{ formatQty(data.quantity || 0, 0) }}</span>
               </template>
             </Column>
-            <Column field="unit_price" header="Rate (₹)">
+            <Column field="unit_price" :header="t('common.perUnitRate')">
               <template #body="{ data }">
                 <span class="num-val">{{ formatCurrency(Number(data.unit_price || 0)) }}</span>
               </template>
             </Column>
-            <Column field="amount" header="Subtotal (₹)">
+            <Column field="amount" :header="t('common.subtotalRs')">
               <template #body="{ data }">
                 <strong class="num-val">{{ formatCurrency(Number(data.amount || 0)) }}</strong>
               </template>
@@ -172,7 +174,7 @@ const handleDeletePayment = (payment: PaymentOutput) => {
         <!-- Payment History Table -->
         <div class="section-container">
           <div class="section-header">
-            <h4 class="section-title">Payment Receipts History</h4>
+            <h4 class="section-title">{{ t('invoicing.paymentReceiptsHistory') }}</h4>
             <button
               v-if="invoice.payment_status !== 'PAID'"
               type="button"
@@ -180,12 +182,12 @@ const handleDeletePayment = (payment: PaymentOutput) => {
               @click="showRecordPayment = true"
             >
               <CreditCard :size="14" />
-              <span>Record Payment</span>
+              <span>{{ t('invoicing.recordPayment') }}</span>
             </button>
           </div>
 
           <div v-if="!invoice.payments || invoice.payments.length === 0" class="empty-payments">
-            <p>No payment receipts recorded for this invoice yet.</p>
+            <p>{{ t('invoicing.noPaymentReceipts') }}</p>
           </div>
 
           <DataTable
@@ -196,36 +198,36 @@ const handleDeletePayment = (payment: PaymentOutput) => {
             responsiveLayout="scroll"
             class="custom-datatable"
           >
-            <Column field="payment_date" header="Date">
+            <Column field="payment_date" :header="t('common.date')">
               <template #body="{ data }">
                 <span>{{ data.payment_date }}</span>
               </template>
             </Column>
 
-            <Column field="method" header="Method">
+            <Column field="method" :header="t('invoicing.paymentMethod')">
               <template #body="{ data }">
-                <span class="badge-subtle">{{ data.method || 'CASH' }}</span>
+                <span class="badge-subtle">{{ data.method ? t(`paymentMethod.${data.method}`) : t('paymentMethod.CASH') }}</span>
               </template>
             </Column>
 
-            <Column field="reference_number" header="Reference No.">
+            <Column field="reference_number" :header="t('invoicing.transactionRefNo')">
               <template #body="{ data }">
                 <span>{{ data.reference_number || '—' }}</span>
               </template>
             </Column>
 
-            <Column field="amount" header="Amount (₹)">
+            <Column field="amount" :header="t('invoicing.paymentAmount')">
               <template #body="{ data }">
                 <strong class="num-val text-success">{{ formatCurrency(Number(data.amount || 0)) }}</strong>
               </template>
             </Column>
 
-            <Column header="Actions" style="width: 70px" alignFrozen="right">
+            <Column :header="t('common.actions')" style="width: 70px" alignFrozen="right">
               <template #body="{ data }">
                 <button
                   type="button"
                   class="icon-btn danger-hover"
-                  title="Delete Payment"
+                  :title="t('invoicing.deletePayment')"
                   @click="handleDeletePayment(data)"
                 >
                   <Trash2 :size="15" />

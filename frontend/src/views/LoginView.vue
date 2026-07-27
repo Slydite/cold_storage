@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
@@ -14,15 +15,18 @@ import { useAuthStore } from '../stores/auth'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 const serverError = ref<string | null>(null)
 
-const loginSchema = toTypedSchema(
-  z.object({
-    username: z.string().min(1, 'Username is required'),
-    password: z.string().min(1, 'Password is required')
-  })
+const loginSchema = computed(() =>
+  toTypedSchema(
+    z.object({
+      username: z.string().min(1, t('auth.usernameRequired')),
+      password: z.string().min(1, t('auth.passwordRequired'))
+    })
+  )
 )
 
 const { handleSubmit, errors, defineField, isSubmitting } = useForm({
@@ -39,18 +43,18 @@ const onSubmit = handleSubmit(async (values) => {
     await authStore.login(values.username, values.password)
     toast.add({
       severity: 'success',
-      summary: 'Welcome back',
-      detail: 'Logged in successfully',
+      summary: t('auth.welcomeBack'),
+      detail: t('auth.loggedInSuccess'),
       life: 3000
     })
     const redirectPath = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
     router.push(redirectPath)
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Invalid credentials'
+    const msg = err instanceof Error ? err.message : t('auth.invalidCredentials')
     serverError.value = msg
     toast.add({
       severity: 'error',
-      summary: 'Login Failed',
+      summary: t('auth.loginFailed'),
       detail: msg,
       life: 5000
     })
@@ -65,8 +69,8 @@ const onSubmit = handleSubmit(async (values) => {
         <div class="logo-badge">
           <Snowflake class="logo-icon" :size="28" />
         </div>
-        <h1 class="brand-title">Cold Storage</h1>
-        <p class="brand-sub">Management System</p>
+        <h1 class="brand-title">{{ t('auth.title') }}</h1>
+        <p class="brand-sub">{{ t('auth.subtitle') }}</p>
       </div>
 
       <form @submit.prevent="onSubmit" class="login-form">
@@ -75,12 +79,12 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-field">
-          <label for="username" class="form-label">Username</label>
+          <label for="username" class="form-label">{{ t('auth.username') }}</label>
           <InputText
             id="username"
             v-model="username"
             v-bind="usernameProps"
-            placeholder="Enter username"
+            :placeholder="t('auth.usernamePlaceholder')"
             class="full-width"
             :invalid="!!errors.username"
             autocomplete="username"
@@ -89,14 +93,14 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-field">
-          <label for="password" class="form-label">Password</label>
+          <label for="password" class="form-label">{{ t('auth.password') }}</label>
           <Password
             id="password"
             v-model="password"
             v-bind="passwordProps"
             :feedback="false"
             toggleMask
-            placeholder="Enter password"
+            :placeholder="t('auth.passwordPlaceholder')"
             class="full-width"
             inputClass="full-width"
             :invalid="!!errors.password"
@@ -107,7 +111,7 @@ const onSubmit = handleSubmit(async (values) => {
 
         <Button
           type="submit"
-          label="Sign In"
+          :label="isSubmitting || authStore.isLoading ? t('auth.signingIn') : t('auth.signIn')"
           class="submit-btn"
           :loading="isSubmitting || authStore.isLoading"
           :disabled="isSubmitting || authStore.isLoading"

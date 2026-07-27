@@ -2,38 +2,16 @@ import { ref, computed, type Ref, type ComputedRef } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
+import { useI18n } from 'vue-i18n'
 import { useCreateDeliveryNote } from './useDeliveryNotes'
 import { useToast } from 'primevue/usetoast'
 import type { DeliveryNoteCreateInput, DeliveryLineInput, LoadingChargeModeEnum } from '../api/delivery'
 import type { LotOutput } from '../api/lot'
 
-const lineItemSchema = z.object({
-  lot_id: z
-    .number()
-    .nullable()
-    .refine((v): v is number => v != null && v > 0, { message: 'Lot is required' }),
-  qty: z.number().min(1, 'Qty must be at least 1')
-})
-
-export type FormDeliveryLine = z.input<typeof lineItemSchema>
-type ValidatedDeliveryLine = z.output<typeof lineItemSchema>
-
-const deliveryNoteFormSchema = z.object({
-  party_id: z
-    .number()
-    .nullable()
-    .refine((v): v is number => v != null && v > 0, { message: 'Party is required' }),
-  dispatch_date: z
-    .date()
-    .nullable()
-    .refine((v): v is Date => v != null, { message: 'Dispatch date is required' }),
-  vehicle_number: z.string().optional(),
-  driver_name: z.string().optional(),
-  remarks: z.string().optional(),
-  loading_charge_mode: z.enum(['FLAT', 'PER_UNIT']),
-  loading_charge: z.string().optional(),
-  loading_unloading_rate_per_unit: z.string().optional()
-})
+export interface FormDeliveryLine {
+  lot_id: number | null
+  qty: number
+}
 
 const createDefaultLine = (): FormDeliveryLine => ({
   lot_id: null,
@@ -46,10 +24,40 @@ export function useDeliveryNoteForm(
   onSuccessCallback?: (dnNumber: string, status: string) => void
 ) {
   const toast = useToast()
+  const { t } = useI18n()
   const createMutation = useCreateDeliveryNote()
 
+  const lineItemSchema = computed(() =>
+    z.object({
+      lot_id: z
+        .number()
+        .nullable()
+        .refine((v): v is number => v != null && v > 0, { message: t('validation.lotRequired') }),
+      qty: z.number().min(1, t('validation.qtyMin1'))
+    })
+  )
+
+  const deliveryNoteFormSchema = computed(() =>
+    z.object({
+      party_id: z
+        .number()
+        .nullable()
+        .refine((v): v is number => v != null && v > 0, { message: t('validation.partyRequired') }),
+      dispatch_date: z
+        .date()
+        .nullable()
+        .refine((v): v is Date => v != null, { message: t('validation.dispatchDateRequired') }),
+      vehicle_number: z.string().optional(),
+      driver_name: z.string().optional(),
+      remarks: z.string().optional(),
+      loading_charge_mode: z.enum(['FLAT', 'PER_UNIT']),
+      loading_charge: z.string().optional(),
+      loading_unloading_rate_per_unit: z.string().optional()
+    })
+  )
+
   const { handleSubmit, errors, defineField, resetForm } = useForm({
-    validationSchema: toTypedSchema(deliveryNoteFormSchema),
+    validationSchema: computed(() => toTypedSchema(deliveryNoteFormSchema.value)),
     initialValues: {
       party_id: null as number | null,
       dispatch_date: new Date(),
@@ -109,7 +117,7 @@ export function useDeliveryNoteForm(
     if (!line || line.lot_id == null) return null
     const avail = getLotAvailable(line.lot_id)
     if (avail !== null && line.qty > avail) {
-      return `Qty cannot exceed available stock (${avail})`
+      return t('delivery.qtyExceedsAvailable', { avail })
     }
     return null
   }
@@ -127,8 +135,8 @@ export function useDeliveryNoteForm(
     if (!facilityId.value) {
       toast.add({
         severity: 'error',
-        summary: 'Error',
-        detail: 'Facility ID is not available.',
+        summary: t('common.error'),
+        detail: t('errors.facilityIdUnavailable'),
         life: 4000
       })
       return
@@ -137,21 +145,25 @@ export function useDeliveryNoteForm(
     if (hasQtyExceeded.value) {
       toast.add({
         severity: 'error',
-        summary: 'Validation Error',
-        detail: 'One or more lines exceed the available lot quantity.',
+        summary: t('common.actionFailed'),
+        detail: t('errors.invalidLineItems'),
         life: 4000
       })
       return
     }
 
     const submitFn = handleSubmit(async (formValues) => {
-      const parsed = z.array(lineItemSchema).min(1, 'At least one line item is required').safeParse(lines.value)
+      const parsed = z
+        .array(lineItemSchema.value)
+        .min(1, t('errors.atLeastOneLineItem'))
+        .safeParse(lines.value)
+
       if (!parsed.success) {
         const firstIssue = parsed.error.issues[0]
-        const msg = firstIssue ? firstIssue.message : 'Invalid line items'
+        const msg = firstIssue ? firstIssue.message : t('errors.invalidLineItems')
         toast.add({
           severity: 'error',
-          summary: 'Validation Error',
+          summary: t('common.error'),
           detail: msg,
           life: 4000
         })
@@ -159,14 +171,14 @@ export function useDeliveryNoteForm(
       }
 
       for (let i = 0; i < parsed.data.length; i++) {
-        const line: ValidatedDeliveryLine | undefined = parsed.data[i]
-        if (!line) continue
+        const line = parsed.data[i]
+        if (!line || line.lot_id == null) continue
         const avail = getLotAvailable(line.lot_id)
         if (avail !== null && line.qty > avail) {
           toast.add({
             severity: 'error',
-            summary: 'Validation Error',
-            detail: `Line item quantity (${line.qty}) exceeds available lot quantity (${avail}).`,
+            summary: t('common.error'),
+            detail: t('delivery.lineQtyExceedsAvailable', { qty: line.qty, avail }),
             life: 4000
           })
           return
@@ -178,8 +190,8 @@ export function useDeliveryNoteForm(
       const dd = String(formValues.dispatch_date.getDate()).padStart(2, '0')
       const formattedDate = `${yyyy}-${mm}-${dd}`
 
-      const formattedLines: DeliveryLineInput[] = parsed.data.map((line: ValidatedDeliveryLine) => ({
-        lot_id: line.lot_id,
+      const formattedLines: DeliveryLineInput[] = parsed.data.map((line) => ({
+        lot_id: line.lot_id!,
         qty: line.qty
       }))
 
@@ -203,10 +215,10 @@ export function useDeliveryNoteForm(
           onSuccessCallback(result.dn_number, targetStatus)
         }
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Failed to create Delivery Note'
+        const msg = err instanceof Error ? err.message : t('delivery.createFailed')
         toast.add({
           severity: 'error',
-          summary: 'Error',
+          summary: t('common.error'),
           detail: msg,
           life: 5000
         })
@@ -246,4 +258,3 @@ export function useDeliveryNoteForm(
     resetForm: handleResetForm
   }
 }
-

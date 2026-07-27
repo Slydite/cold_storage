@@ -2,43 +2,21 @@ import { ref, computed, type Ref, type ComputedRef } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
+import { useI18n } from 'vue-i18n'
 import { useCreateGrn } from './useGrns'
 import { useToast } from 'primevue/usetoast'
 import type { GrnCreateInput, LotItemInput, LoadingChargeModeEnum } from '../api/grn'
 
-const lineItemSchema = z.object({
-  commodity_id: z
-    .number()
-    .nullable()
-    .refine((v): v is number => v != null && v > 0, { message: 'Commodity is required' }),
-  chamber_id: z.number().nullable().optional(),
-  floor_id: z.number().nullable().optional(),
-  block_id: z.number().nullable().optional(),
-  initial_qty: z.number().min(1, 'Qty must be at least 1'),
-  unit: z.string().optional(),
-  unit_weight: z.number().nullable().optional(),
-  rent_rate_per_unit: z.number().nullable().optional()
-})
-
-export type FormLineItem = z.input<typeof lineItemSchema>
-type ValidatedLineItem = z.output<typeof lineItemSchema>
-
-const grnFormSchema = z.object({
-  party_id: z
-    .number()
-    .nullable()
-    .refine((v): v is number => v != null && v > 0, { message: 'Party is required' }),
-  receipt_date: z
-    .date()
-    .nullable()
-    .refine((v): v is Date => v != null, { message: 'Receipt date is required' }),
-  vehicle_number: z.string().optional(),
-  driver_name: z.string().optional(),
-  remarks: z.string().optional(),
-  loading_charge_mode: z.enum(['FLAT', 'PER_UNIT']),
-  loading_charge: z.string().optional(),
-  loading_unloading_rate_per_bag: z.string().optional()
-})
+export interface FormLineItem {
+  commodity_id: number | null
+  chamber_id?: number | null
+  floor_id?: number | null
+  block_id?: number | null
+  initial_qty: number
+  unit?: string
+  unit_weight?: number | null
+  rent_rate_per_unit?: number | null
+}
 
 const createDefaultLineItem = (): FormLineItem => ({
   commodity_id: null,
@@ -56,10 +34,46 @@ export function useGrnForm(
   onSuccessCallback?: (grnNumber: string, status: string) => void
 ) {
   const toast = useToast()
+  const { t } = useI18n()
   const createGrnMutation = useCreateGrn()
 
+  const lineItemSchema = computed(() =>
+    z.object({
+      commodity_id: z
+        .number()
+        .nullable()
+        .refine((v): v is number => v != null && v > 0, { message: t('validation.commodityRequired') }),
+      chamber_id: z.number().nullable().optional(),
+      floor_id: z.number().nullable().optional(),
+      block_id: z.number().nullable().optional(),
+      initial_qty: z.number().min(1, t('validation.qtyMin1')),
+      unit: z.string().optional(),
+      unit_weight: z.number().nullable().optional(),
+      rent_rate_per_unit: z.number().nullable().optional()
+    })
+  )
+
+  const grnFormSchema = computed(() =>
+    z.object({
+      party_id: z
+        .number()
+        .nullable()
+        .refine((v): v is number => v != null && v > 0, { message: t('validation.partyRequired') }),
+      receipt_date: z
+        .date()
+        .nullable()
+        .refine((v): v is Date => v != null, { message: t('validation.receiptDateRequired') }),
+      vehicle_number: z.string().optional(),
+      driver_name: z.string().optional(),
+      remarks: z.string().optional(),
+      loading_charge_mode: z.enum(['FLAT', 'PER_UNIT']),
+      loading_charge: z.string().optional(),
+      loading_unloading_rate_per_bag: z.string().optional()
+    })
+  )
+
   const { handleSubmit, errors, defineField, resetForm } = useForm({
-    validationSchema: toTypedSchema(grnFormSchema),
+    validationSchema: computed(() => toTypedSchema(grnFormSchema.value)),
     initialValues: {
       party_id: null as number | null,
       receipt_date: new Date(),
@@ -131,21 +145,25 @@ export function useGrnForm(
     if (!facilityId.value) {
       toast.add({
         severity: 'error',
-        summary: 'Error',
-        detail: 'Facility ID is not available.',
+        summary: t('common.error'),
+        detail: t('errors.facilityIdUnavailable'),
         life: 4000
       })
       return
     }
 
     const submitFn = handleSubmit(async (formValues) => {
-      const parsed = z.array(lineItemSchema).min(1, 'At least one line item is required').safeParse(items.value)
+      const parsed = z
+        .array(lineItemSchema.value)
+        .min(1, t('errors.atLeastOneLineItem'))
+        .safeParse(items.value)
+
       if (!parsed.success) {
         const firstIssue = parsed.error.issues[0]
-        const msg = firstIssue ? firstIssue.message : 'Invalid line items'
+        const msg = firstIssue ? firstIssue.message : t('errors.invalidLineItems')
         toast.add({
           severity: 'error',
-          summary: 'Validation Error',
+          summary: t('common.error'),
           detail: msg,
           life: 4000
         })
@@ -157,8 +175,8 @@ export function useGrnForm(
       const dd = String(formValues.receipt_date.getDate()).padStart(2, '0')
       const formattedDate = `${yyyy}-${mm}-${dd}`
 
-      const formattedItems: LotItemInput[] = parsed.data.map((item: ValidatedLineItem) => ({
-        commodity_id: item.commodity_id,
+      const formattedItems: LotItemInput[] = parsed.data.map((item) => ({
+        commodity_id: item.commodity_id!,
         chamber_id: item.chamber_id || undefined,
         floor_id: item.floor_id || undefined,
         block_id: item.block_id || undefined,
@@ -187,18 +205,20 @@ export function useGrnForm(
         const isDraft = targetStatus === 'DRAFT'
         toast.add({
           severity: isDraft ? 'info' : 'success',
-          summary: isDraft ? 'Draft Saved' : 'GRN Created',
-          detail: `GRN ${result.grn_number} has been successfully ${isDraft ? 'saved as draft' : 'posted'}.`,
+          summary: isDraft ? t('grn.draftSavedToastSummary') : t('grn.createdToastSummary'),
+          detail: isDraft
+            ? t('grn.draftSavedToastDetail', { number: result.grn_number })
+            : t('grn.createdToastDetail', { number: result.grn_number }),
           life: 4000
         })
         if (onSuccessCallback) {
           onSuccessCallback(result.grn_number, targetStatus)
         }
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Failed to create GRN'
+        const msg = err instanceof Error ? err.message : t('grn.createFailed')
         toast.add({
           severity: 'error',
-          summary: 'Error',
+          summary: t('common.error'),
           detail: msg,
           life: 5000
         })
@@ -236,5 +256,3 @@ export function useGrnForm(
     resetForm: handleResetForm
   }
 }
-
-

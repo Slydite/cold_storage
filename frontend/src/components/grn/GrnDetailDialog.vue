@@ -3,375 +3,276 @@ import { ref } from 'vue'
 import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
-import { Download, Printer } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
+import { Printer } from 'lucide-vue-next'
 import { formatCurrency, formatQty } from '../../utils/format'
-import { exportToCsv } from '../../utils/csvExport'
 import { downloadPdf } from '../../utils/downloadPdf'
+import { exportToCsv } from '../../utils/csvExport'
 import type { GrnOutput } from '../../api/grn'
 
-interface Props {
+const props = defineProps<{
   visible: boolean
   grn: GrnOutput | null
-}
-
-const props = defineProps<Props>()
+}>()
 
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
 }>()
 
-const handleClose = () => {
-  emit('update:visible', false)
-}
-
 const toast = useToast()
-const downloadingId = ref<number | null>(null)
+const { t } = useI18n()
+const downloadingPdf = ref(false)
 
-async function handleDownloadPdf(id: number, docNumber: string) {
-  downloadingId.value = id
+async function handleDownloadPdf() {
+  if (!props.grn) return
+  downloadingPdf.value = true
   try {
-    await downloadPdf(`/api/grns/${id}/pdf/`, `${docNumber}.pdf`)
+    await downloadPdf(`/api/grns/${props.grn.id}/pdf/`, `${props.grn.grn_number}.pdf`)
   } catch (err) {
     toast.add({
       severity: 'error',
-      summary: 'PDF Failed',
-      detail: err instanceof Error ? err.message : 'Could not generate PDF',
+      summary: t('common.pdfFailed'),
+      detail: err instanceof Error ? err.message : t('common.pdfFailed'),
       life: 5000
     })
   } finally {
-    downloadingId.value = null
+    downloadingPdf.value = false
   }
 }
 
-const handleExportLots = () => {
+function handleExportLotsCsv() {
   if (!props.grn || !props.grn.lots) return
   const headers = [
-    'Commodity',
-    'Lot No.',
-    'Chamber',
-    'Floor',
-    'Initial Qty',
-    'Remaining Qty',
-    'Unit Weight',
-    'Special Remarks'
+    t('inventory.lotNo'),
+    t('grn.commodityProduct'),
+    t('inventory.location'),
+    t('common.quantity'),
+    t('inventory.remainingQty'),
+    t('common.unit'),
+    t('common.weight'),
+    t('common.rate')
   ]
   const rows = props.grn.lots.map((lot) => [
-    lot.commodity_name || '—',
-    lot.lot_number || '—',
-    lot.chamber_name || lot.chamber || '—',
-    lot.floor_name || lot.floor || '—',
+    lot.lot_number,
+    lot.commodity_name || '-',
+    lot.location_display || '-',
     lot.initial_qty,
     lot.remaining_qty,
-    lot.unit_weight ? `${lot.unit_weight} kg` : '—',
-    lot.special_remarks || '—'
+    lot.commodity_unit || 'Bags',
+    lot.unit_weight || '-',
+    lot.rent_rate_per_unit || '-'
   ])
-  exportToCsv(`grn_${props.grn.grn_number}_lots.csv`, headers, rows)
+  exportToCsv(`${props.grn.grn_number}_lots.csv`, headers, rows)
 }
 </script>
 
 <template>
   <Dialog
-    :visible="props.visible"
-    @update:visible="emit('update:visible', $event)"
+    :visible="visible"
+    @update:visible="(val) => emit('update:visible', val)"
     modal
-    :header="props.grn ? `GRN Details - ${props.grn.grn_number}` : 'GRN Details'"
-    :style="{ width: '880px', maxWidth: '95vw' }"
-    :dismissableMask="true"
-    @hide="handleClose"
+    :header="grn ? t('grn.detailsHeader', { number: grn.grn_number }) : t('grn.details')"
+    :style="{ width: '800px', maxWidth: '95vw' }"
   >
-    <div v-if="props.grn" class="detail-dialog-body">
-      <!-- Header Info Grid -->
-      <div class="info-card">
-        <div class="info-item">
-          <span class="info-label">GRN Number</span>
-          <span class="info-val code-link">{{ props.grn.grn_number }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Receipt Date</span>
-          <span class="info-val">{{ props.grn.receipt_date || '—' }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Status</span>
-          <div>
-            <span
-              class="status-pill"
-              :class="{
-                success: props.grn.status === 'POSTED',
-                warning: props.grn.status === 'DRAFT',
-                danger: props.grn.status === 'CANCELLED'
-              }"
-            >
-              {{ props.grn.status || '—' }}
-            </span>
-          </div>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Party</span>
-          <span class="info-val party-name">
-            {{ props.grn.party_name ? `${props.grn.party_name}${props.grn.party_code ? ` (${props.grn.party_code})` : ''}` : '—' }}
-          </span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Vehicle No.</span>
-          <span class="info-val">{{ props.grn.vehicle_number || '—' }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Driver Name</span>
-          <span class="info-val">{{ props.grn.driver_name || '—' }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Transporter</span>
-          <span class="info-val">{{ props.grn.transporter || '—' }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Bill No.</span>
-          <span class="info-val">{{ props.grn.bill_no || '—' }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Bilty No.</span>
-          <span class="info-val">{{ props.grn.bilty_no || '—' }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Inward Time</span>
-          <span class="info-val">{{ props.grn.inward_time || '—' }}</span>
-        </div>
-      </div>
-
-      <!-- Charges Block -->
-      <div class="charges-card">
-        <h4 class="section-subtitle">Receiving Charges</h4>
-        <div class="charges-grid">
-          <div class="info-item">
-            <span class="info-label">Charge Mode</span>
-            <span class="info-val">
-              {{ props.grn.loading_charge_mode === 'PER_UNIT' ? 'Per Unit Rate' : 'Flat Amount' }}
-            </span>
-          </div>
-          <div v-if="props.grn.loading_charge_mode === 'PER_UNIT'" class="info-item">
-            <span class="info-label">Receiving Rate / Unit</span>
-            <span class="info-val num-val">
-              {{ props.grn.loading_unloading_rate_per_bag ? formatCurrency(Number(props.grn.loading_unloading_rate_per_bag)) + ' / unit' : '—' }}
-            </span>
-          </div>
-          <div v-else class="info-item">
-            <span class="info-label">Flat Receiving Charge</span>
-            <span class="info-val num-val">
-              {{ props.grn.loading_charge ? formatCurrency(Number(props.grn.loading_charge)) : '—' }}
-            </span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Computed Receiving Charge</span>
-            <span class="info-val num-val highlight-val">
-              {{ props.grn.computed_loading_charge ? formatCurrency(Number(props.grn.computed_loading_charge)) : '—' }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Remarks if present -->
-      <div v-if="props.grn.remarks" class="remarks-box">
-        <span class="info-label">Remarks:</span>
-        <span class="remarks-text">{{ props.grn.remarks }}</span>
-      </div>
-
-      <!-- Lots Section -->
-      <div class="lines-header">
-        <h4 class="lines-title">Inward Lots ({{ props.grn.lots ? props.grn.lots.length : 0 }})</h4>
-        <button class="btn-outlined btn-sm" type="button" @click="handleExportLots">
-          <Download :size="14" />
-          <span>Export CSV</span>
+    <div v-if="grn" class="grn-detail-content">
+      <!-- Status Tag -->
+      <div class="detail-header-status">
+        <Tag
+          :value="t(`status.${(grn.status || 'DRAFT').toLowerCase()}`)"
+          :severity="grn.status === 'POSTED' ? 'success' : grn.status === 'CANCELLED' ? 'danger' : 'warn'"
+        />
+        <button
+          class="btn-outlined btn-sm"
+          type="button"
+          :disabled="downloadingPdf"
+          @click="handleDownloadPdf"
+        >
+          <Printer :size="15" />
+          <span>PDF</span>
         </button>
       </div>
 
-      <div class="table-card">
+      <!-- Main Info Meta Grid -->
+      <div class="meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">{{ t('grn.grnNumber') }}</span>
+          <strong class="meta-value">{{ grn.grn_number }}</strong>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">{{ t('common.date') }}</span>
+          <span class="meta-value">{{ grn.receipt_date }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">{{ t('grn.party') }}</span>
+          <strong class="meta-value">{{ grn.party_name }}</strong>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">{{ t('grn.vehicle') }}</span>
+          <span class="meta-value">{{ grn.vehicle_number || '-' }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">{{ t('grn.driverName') }}</span>
+          <span class="meta-value">{{ grn.driver_name || '-' }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">{{ t('grn.receivingCharge') }}</span>
+          <span class="meta-value">
+            {{ grn.loading_charge ? formatCurrency(Number(grn.loading_charge)) : '-' }}
+          </span>
+        </div>
+      </div>
+
+      <div v-if="grn.remarks" class="remarks-box">
+        <strong>{{ t('common.remarks') }}:</strong> {{ grn.remarks }}
+      </div>
+
+      <!-- Inward Lots Table -->
+      <div class="lots-section">
+        <div class="lots-header">
+          <h4 class="section-title">
+            {{ t('grn.inwardLots', { count: grn.lots ? grn.lots.length : 0 }) }}
+          </h4>
+          <button
+            v-if="grn.lots && grn.lots.length > 0"
+            class="btn-outlined btn-sm"
+            type="button"
+            @click="handleExportLotsCsv"
+          >
+            {{ t('grn.exportLotsCsv') }}
+          </button>
+        </div>
+
         <DataTable
-          :value="props.grn.lots || []"
+          :value="grn.lots || []"
           size="small"
           stripedRows
           responsiveLayout="scroll"
-          paginator
-          :rows="8"
+          class="custom-datatable"
         >
-          <Column field="commodity_name" header="Commodity">
+          <Column field="lot_number" :header="t('inventory.lotNo')">
             <template #body="{ data }">
-              <span>{{ data.commodity_name || '—' }}</span>
+              <span class="code-link">{{ data.lot_number }}</span>
             </template>
           </Column>
 
-          <Column field="lot_number" header="Lot No.">
+          <Column field="commodity_name" :header="t('grn.commodityProduct')" />
+
+          <Column :header="t('inventory.location')">
             <template #body="{ data }">
-              <span class="code-link">{{ data.lot_number || '—' }}</span>
+              <span>{{ data.location_display || [data.chamber_name, data.floor_name, data.block_name].filter(Boolean).join(' / ') || '-' }}</span>
             </template>
           </Column>
 
-          <Column header="Location">
+          <Column field="initial_qty" :header="t('inventory.inQty')">
             <template #body="{ data }">
-              <span>{{ data.location_display || [data.chamber_name || data.chamber, data.floor_name || data.floor].filter(Boolean).join(' / ') || '—' }}</span>
+              <span class="num-val">{{ formatQty(data.initial_qty, 0) }}</span>
             </template>
           </Column>
 
-          <Column field="initial_qty" header="Initial Qty">
+          <Column field="remaining_qty" :header="t('inventory.remainingQty')">
             <template #body="{ data }">
-              <span class="num-val">{{ formatQty(data.initial_qty, 0) }} {{ data.unit || '' }}</span>
+              <strong class="num-val">{{ formatQty(data.remaining_qty, 0) }}</strong>
             </template>
           </Column>
 
-          <Column field="remaining_qty" header="Remaining">
+          <Column field="commodity_unit" :header="t('common.unit')" />
+
+          <Column field="unit_weight" :header="t('common.weight') + ' (MT)'">
             <template #body="{ data }">
-              <span class="num-val">{{ formatQty(data.remaining_qty, 0) }}</span>
+              <span class="num-val">{{ data.unit_weight || '-' }}</span>
             </template>
           </Column>
 
-          <Column field="unit_weight" header="Unit Wt">
+          <Column field="rent_rate_per_unit" :header="t('common.rate')">
             <template #body="{ data }">
-              <span>{{ data.unit_weight ? `${data.unit_weight} kg` : '—' }}</span>
-            </template>
-          </Column>
-
-          <Column field="special_remarks" header="Remarks">
-            <template #body="{ data }">
-              <span>{{ data.special_remarks || '—' }}</span>
+              <span class="num-val">{{ data.rent_rate_per_unit ? formatCurrency(Number(data.rent_rate_per_unit)) : '-' }}</span>
             </template>
           </Column>
         </DataTable>
       </div>
     </div>
-
-    <template #footer>
-      <div class="dialog-footer">
-        <div class="pdf-action-group">
-          <button
-            v-if="props.grn"
-            class="btn-primary"
-            type="button"
-            title="PDF"
-            aria-label="PDF"
-            :disabled="downloadingId === props.grn.id"
-            @click="handleDownloadPdf(props.grn.id, props.grn.grn_number)"
-          >
-            <Printer :size="15" />
-            <span>PDF</span>
-          </button>
-        </div>
-        <button class="btn-outlined" type="button" @click="handleClose">Close</button>
-      </div>
-    </template>
   </Dialog>
 </template>
 
 <style scoped>
-.detail-dialog-body {
+.grn-detail-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 8px 0;
+  gap: 20px;
+  padding-top: 8px;
 }
 
-.info-card {
+.detail-header-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.meta-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
   background: var(--bg-surface-hover);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 16px;
 }
 
-.info-item {
+.meta-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.info-label {
-  font-size: 11px;
+.meta-label {
+  font-size: 11.5px;
+  font-weight: 600;
   color: var(--text-secondary);
-  font-weight: 600;
   text-transform: uppercase;
 }
 
-.info-val {
+.meta-value {
   font-size: 13.5px;
-  font-weight: 600;
   color: var(--text-primary);
-}
-
-.charges-card {
-  background: var(--bg-surface-hover);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.section-subtitle {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.charges-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
 }
 
 .remarks-box {
-  background: var(--bg-surface-hover);
+  background: var(--accent-primary-light);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 13px;
-  display: flex;
-  gap: 8px;
-}
-
-.remarks-text {
   color: var(--text-primary);
 }
 
-.lines-header {
+.lots-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lots-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 4px;
 }
 
-.lines-title {
-  font-size: 14px;
+.section-title {
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .btn-sm {
-  padding: 6px 12px;
+  padding: 5px 10px;
   font-size: 12px;
 }
 
-.dialog-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.pdf-action-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 @media (max-width: 640px) {
-  .info-card {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .charges-grid {
-    grid-template-columns: repeat(1, 1fr);
+  .meta-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -6,9 +6,8 @@ import { useDeliveryNoteList } from './useDeliveryNotes'
 
 export interface ActivityItem {
   id: string
-  title: string
+  docNumber: string
   partyName: string
-  time: string
   createdAt: string
   type: 'grn' | 'dn'
   badgeClass: string
@@ -20,7 +19,7 @@ export interface StockGroup {
   count: number // number of lots
 }
 
-export function formatRelativeTime(dateString: string): string {
+export function formatRelativeTime(dateString: string, locale: string = 'en'): string {
   if (!dateString) return ''
   const date = new Date(dateString)
   const timestamp = date.getTime()
@@ -33,12 +32,15 @@ export function formatRelativeTime(dateString: string): string {
   const diffHr = Math.floor(diffMin / 60)
   const diffDay = Math.floor(diffHr / 24)
 
-  if (diffSec < 60) return 'Just now'
-  if (diffMin < 60) return `${diffMin} ${diffMin === 1 ? 'min' : 'mins'} ago`
-  if (diffHr < 24) return `${diffHr} ${diffHr === 1 ? 'hr' : 'hrs'} ago`
-  if (diffDay < 30) return `${diffDay} ${diffDay === 1 ? 'day' : 'days'} ago`
+  const loc = locale === 'hi' ? 'hi-IN' : 'en-IN'
+  const rtf = new Intl.RelativeTimeFormat(loc, { numeric: 'auto' })
 
-  return date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
+  if (diffSec < 60) return locale === 'hi' ? 'अभी' : 'Just now'
+  if (diffMin < 60) return rtf.format(-diffMin, 'minute')
+  if (diffHr < 24) return rtf.format(-diffHr, 'hour')
+  if (diffDay < 30) return rtf.format(-diffDay, 'day')
+
+  return date.toLocaleDateString(loc, { month: 'short', day: 'numeric' })
 }
 
 export function useDashboardStats() {
@@ -83,9 +85,8 @@ export function useDashboardStats() {
 
     const grnItems: ActivityItem[] = grns.map((grn) => ({
       id: `grn-${grn.id}`,
-      title: `GRN ${grn.grn_number} created`,
+      docNumber: grn.grn_number,
       partyName: grn.party_name || '',
-      time: formatRelativeTime(grn.created_at),
       createdAt: grn.created_at,
       type: 'grn',
       badgeClass: 'badge-purple'
@@ -93,9 +94,8 @@ export function useDashboardStats() {
 
     const dnItems: ActivityItem[] = dns.map((dn) => ({
       id: `dn-${dn.id}`,
-      title: `DN ${dn.dn_number} created`,
+      docNumber: dn.dn_number,
       partyName: dn.party_name || '',
-      time: formatRelativeTime(dn.created_at),
       createdAt: dn.created_at,
       type: 'dn',
       badgeClass: 'badge-blue'
@@ -169,11 +169,11 @@ export function useDashboardStats() {
   )
 
   const errorMessage = computed(() => {
-    if (facilityError.value) return 'Failed to load facility information'
+    if (facilityError.value) return 'errors.failedToLoadFacility'
     if (lotQuery.error.value instanceof Error) return lotQuery.error.value.message
     if (grnQuery.error.value instanceof Error) return grnQuery.error.value.message
     if (deliveryNoteQuery.error.value instanceof Error) return deliveryNoteQuery.error.value.message
-    return 'Failed to load dashboard metrics'
+    return 'errors.failedToLoadDashboard'
   })
 
   const refetch = () => {

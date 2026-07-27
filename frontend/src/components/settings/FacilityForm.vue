@@ -3,6 +3,7 @@ import { watch, computed } from 'vue'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import Skeleton from 'primevue/skeleton'
+import { useI18n } from 'vue-i18n'
 import { Save, RefreshCw, Building } from 'lucide-vue-next'
 import { useToast } from 'primevue/usetoast'
 import { useForm } from 'vee-validate'
@@ -11,6 +12,7 @@ import { z } from 'zod'
 import { useFacility } from '../../composables/useFacility'
 import { useUpdateFacility } from '../../composables/useFacilities'
 
+const { t } = useI18n()
 const toast = useToast()
 const { facilityId, facilities, isLoading, isError, refetch } = useFacility()
 const updateFacilityMutation = useUpdateFacility()
@@ -20,19 +22,21 @@ const currentFacility = computed(() => {
   return facilities.value.find((f) => f.id === facilityId.value) ?? null
 })
 
-const facilitySchema = z.object({
-  name: z.string().min(1, 'Facility name is required'),
-  address: z.string().optional(),
-  gstin: z.string().optional(),
-  phone: z.string().optional(),
-  factory_phone: z.string().optional(),
-  bank_account_no: z.string().optional(),
-  bank_ifsc: z.string().optional(),
-  terms_and_conditions: z.string().optional()
-})
+const facilitySchema = computed(() =>
+  z.object({
+    name: z.string().min(1, t('validation.facilityNameRequired')),
+    address: z.string().optional(),
+    gstin: z.string().optional(),
+    phone: z.string().optional(),
+    factory_phone: z.string().optional(),
+    bank_account_no: z.string().optional(),
+    bank_ifsc: z.string().optional(),
+    terms_and_conditions: z.string().optional()
+  })
+)
 
 const { handleSubmit, errors, defineField, resetForm } = useForm({
-  validationSchema: toTypedSchema(facilitySchema),
+  validationSchema: computed(() => toTypedSchema(facilitySchema.value)),
   initialValues: {
     name: '',
     address: '',
@@ -93,15 +97,15 @@ const onSubmit = handleSubmit(async (values) => {
     })
     toast.add({
       severity: 'success',
-      summary: 'Saved',
-      detail: 'Facility details updated successfully',
+      summary: t('settings.profileSavedSummary'),
+      detail: t('settings.profileSavedDetail'),
       life: 3000
     })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Failed to update facility details'
+    const msg = err instanceof Error ? err.message : t('settings.profileSaveFailed')
     toast.add({
       severity: 'error',
-      summary: 'Update Failed',
+      summary: t('settings.profileSaveFailed'),
       detail: msg,
       life: 5000
     })
@@ -121,34 +125,34 @@ const onSubmit = handleSubmit(async (values) => {
 
     <!-- Error State -->
     <div v-else-if="isError" class="state-card error-state">
-      <p class="error-msg">Failed to load facility data.</p>
+      <p class="error-msg">{{ t('errors.failedToLoadFacility') }}</p>
       <button type="button" class="btn-outlined" @click="refetch()">
         <RefreshCw :size="14" />
-        <span>Retry</span>
+        <span>{{ t('common.retry') }}</span>
       </button>
     </div>
 
     <!-- Empty State -->
     <div v-else-if="!currentFacility" class="state-card empty-state">
       <Building :size="40" class="empty-icon" />
-      <h3>No Facility Selected</h3>
-      <p>Please select a working facility from the sidebar or list table.</p>
+      <h3>{{ t('settings.noFacilitiesRegistered') }}</h3>
+      <p>{{ t('settings.noFacilitiesDesc') }}</p>
     </div>
 
     <!-- Form Content -->
     <form v-else @submit.prevent="onSubmit" class="facility-card">
       <div class="card-header">
         <div>
-          <h3 class="card-title">Facility Profile & Details</h3>
+          <h3 class="card-title">{{ t('settings.facilityProfileTitle') }}</h3>
           <p class="card-desc">
-            Edit master details for <strong>{{ currentFacility.name }}</strong> (Code: {{ currentFacility.code }}).
+            {{ t('settings.facilityProfileDesc', { name: currentFacility.name, code: currentFacility.code }) }}
           </p>
         </div>
       </div>
 
       <div class="form-grid">
         <div class="form-group">
-          <label for="fac-name">Facility Name <span class="required">*</span></label>
+          <label for="fac-name">{{ t('locations.facility') }} {{ t('common.name') }} <span class="required">*</span></label>
           <InputText
             id="fac-name"
             v-model="name"
@@ -160,7 +164,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group">
-          <label for="fac-gstin">GSTIN</label>
+          <label for="fac-gstin">{{ t('common.gstin') }}</label>
           <InputText
             id="fac-gstin"
             v-model="gstin"
@@ -173,7 +177,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group">
-          <label for="fac-phone">Office Phone</label>
+          <label for="fac-phone">{{ t('settings.officePhone') }}</label>
           <InputText
             id="fac-phone"
             v-model="phone"
@@ -184,7 +188,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group">
-          <label for="fac-factory-phone">Factory/Gate Phone</label>
+          <label for="fac-factory-phone">{{ t('settings.factoryGatePhone') }}</label>
           <InputText
             id="fac-factory-phone"
             v-model="factory_phone"
@@ -195,7 +199,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group">
-          <label for="fac-bank-ac">Bank Account No.</label>
+          <label for="fac-bank-ac">{{ t('settings.bankAccountNo') }}</label>
           <InputText
             id="fac-bank-ac"
             v-model="bank_account_no"
@@ -206,7 +210,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group">
-          <label for="fac-bank-ifsc">Bank IFSC Code</label>
+          <label for="fac-bank-ifsc">{{ t('settings.bankIfscCode') }}</label>
           <InputText
             id="fac-bank-ifsc"
             v-model="bank_ifsc"
@@ -217,7 +221,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group span-2">
-          <label for="fac-address">Facility Address</label>
+          <label for="fac-address">{{ t('settings.facilityAddress') }}</label>
           <InputText
             id="fac-address"
             v-model="address"
@@ -228,7 +232,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group span-2">
-          <label for="fac-terms">Terms & Conditions</label>
+          <label for="fac-terms">{{ t('settings.termsConditions') }}</label>
           <Textarea
             id="fac-terms"
             v-model="terms_and_conditions"
@@ -247,7 +251,7 @@ const onSubmit = handleSubmit(async (values) => {
           :disabled="updateFacilityMutation.isPending.value"
         >
           <Save :size="16" />
-          <span>{{ updateFacilityMutation.isPending.value ? 'Saving...' : 'Save Profile' }}</span>
+          <span>{{ updateFacilityMutation.isPending.value ? t('common.saveDraft') : t('settings.saveProfile') }}</span>
         </button>
       </div>
     </form>

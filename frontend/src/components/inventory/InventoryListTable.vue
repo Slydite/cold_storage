@@ -6,6 +6,7 @@ import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
+import { useI18n } from 'vue-i18n'
 import { FilterMatchMode } from '@primevue/core/api'
 import { Search, Filter, FilterX, Download, AlertCircle, RefreshCw, Package } from 'lucide-vue-next'
 import { formatQty } from '../../utils/format'
@@ -48,34 +49,36 @@ const emit = defineEmits<{
   retry: []
 }>()
 
-const statusOptions = [
-  { label: 'Active Lots', value: 'active' },
-  { label: 'Depleted Lots', value: 'depleted' },
-  { label: 'All Lots', value: 'all' }
-]
+const { t } = useI18n()
+
+const statusOptions = computed(() => [
+  { label: t('inventory.activeLots'), value: 'active' },
+  { label: t('inventory.depletedLots'), value: 'depleted' },
+  { label: t('inventory.allLots'), value: 'all' }
+])
 
 const facilityFilterOptions = computed(() => [
-  { label: 'All Cold Storages', value: undefined },
+  { label: t('common.allFacilities'), value: undefined },
   ...(props.facilities || []).map((f) => ({ label: f.name, value: f.id }))
 ])
 
 const chamberFilterOptions = computed(() => [
-  { label: 'All Chambers', value: undefined },
+  { label: t('common.allChambers'), value: undefined },
   ...(props.chambers || []).map((c) => ({ label: c.name, value: c.id }))
 ])
 
 const floorFilterOptions = computed(() => [
-  { label: 'All Floors', value: undefined },
+  { label: t('common.allFloors'), value: undefined },
   ...(props.floors || []).map((f) => ({ label: f.name, value: f.id }))
 ])
 
 const blockFilterOptions = computed(() => [
-  { label: 'All Blocks', value: undefined },
+  { label: t('common.allBlocks'), value: undefined },
   ...(props.blocks || []).map((b) => ({ label: b.name, value: b.id }))
 ])
 
 const partyFilterOptions = computed(() => [
-  { label: 'All Parties', value: undefined },
+  { label: t('common.allParties'), value: undefined },
   ...(props.parties || []).map((p) => ({ label: `${p.name} (${p.code})`, value: p.id }))
 ])
 
@@ -124,15 +127,15 @@ function handleClearAll() {
 
 const handleExport = () => {
   const headers = [
-    'Lot No.',
-    'Cold Storage',
-    'Location',
-    'Party',
-    'Item / Product',
-    'In Date',
-    'In Qty',
-    'Remaining Qty',
-    'Status'
+    t('inventory.lotNo'),
+    t('inventory.coldStorage'),
+    t('inventory.location'),
+    t('inventory.party'),
+    t('inventory.itemProduct'),
+    t('inventory.inDate'),
+    t('inventory.inQty'),
+    t('inventory.remainingQty'),
+    t('common.status')
   ]
   const rows = props.lots.map((lot) => [
     lot.lot_number,
@@ -143,7 +146,7 @@ const handleExport = () => {
     lot.inward_date,
     formatQty(lot.initial_qty),
     formatQty(lot.remaining_qty),
-    lot.remaining_qty > 0 ? 'Active' : 'Consumed'
+    lot.remaining_qty > 0 ? t('status.active') : t('inventory.consumed')
   ])
   exportToCsv('inventory_lots.csv', headers, rows)
 }
@@ -160,7 +163,7 @@ const handleExport = () => {
             :value="searchQuery"
             @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
             type="text"
-            placeholder="Search lot no., item..."
+            :placeholder="t('inventory.searchPlaceholder')"
             class="custom-search-input"
           />
         </div>
@@ -171,7 +174,7 @@ const handleExport = () => {
           optionLabel="label"
           optionValue="value"
           class="toolbar-select"
-          placeholder="Cold Storage"
+          :placeholder="t('inventory.coldStorage')"
         />
         <Select
           :modelValue="selectedChamberId"
@@ -180,7 +183,7 @@ const handleExport = () => {
           optionLabel="label"
           optionValue="value"
           class="toolbar-select"
-          placeholder="Chamber"
+          :placeholder="t('locations.chamber')"
         />
         <Select
           :modelValue="selectedFloorId"
@@ -190,7 +193,7 @@ const handleExport = () => {
           optionValue="value"
           class="toolbar-select"
           :disabled="selectedChamberId === undefined"
-          placeholder="Floor"
+          :placeholder="t('locations.floor')"
         />
         <Select
           :modelValue="selectedBlockId"
@@ -200,7 +203,7 @@ const handleExport = () => {
           optionValue="value"
           class="toolbar-select"
           :disabled="selectedFloorId === undefined"
-          placeholder="Block"
+          :placeholder="t('locations.block')"
         />
         <Select
           :modelValue="selectedPartyId"
@@ -210,7 +213,7 @@ const handleExport = () => {
           optionValue="value"
           class="toolbar-select"
           :disabled="selectedFacilityId === undefined"
-          :placeholder="selectedFacilityId === undefined ? 'Select a cold storage to filter by party' : 'Select Party'"
+          :placeholder="selectedFacilityId === undefined ? t('inventory.selectFacilityToFilterParty') : t('inventory.party')"
         />
         <Select
           :modelValue="selectedStatus"
@@ -232,7 +235,7 @@ const handleExport = () => {
           title="Toggle inline column filters"
         >
           <Filter :size="15" />
-          <span>Filters</span>
+          <span>{{ t('common.filter') }}</span>
           <span v-if="hasActiveFilters" class="filter-count-badge">{{ activeFilterCount }}</span>
         </button>
         <button
@@ -243,11 +246,11 @@ const handleExport = () => {
           title="Clear all active filters and search"
         >
           <FilterX :size="15" />
-          <span>Clear Filters</span>
+          <span>{{ t('common.clearFilters') }}</span>
         </button>
         <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
-          <span>Export</span>
+          <span>{{ t('common.export') }}</span>
         </button>
       </div>
     </div>
@@ -255,11 +258,11 @@ const handleExport = () => {
     <!-- Explicit State 1: Error State -->
     <div v-if="props.error" class="state-card error-card">
       <AlertCircle :size="36" class="state-icon text-danger" />
-      <h4 class="state-title">Failed to load inventory lots</h4>
-      <p class="state-desc">{{ props.errorDetail || 'There was an issue connecting to the server. Please try again.' }}</p>
+      <h4 class="state-title">{{ t('inventory.failedToLoad') }}</h4>
+      <p class="state-desc">{{ props.errorDetail || t('errors.generic') }}</p>
       <button class="btn-primary" type="button" @click="emit('retry')">
         <RefreshCw :size="15" />
-        <span>Retry</span>
+        <span>{{ t('common.retry') }}</span>
       </button>
     </div>
 
@@ -272,8 +275,8 @@ const handleExport = () => {
     <!-- Explicit State 3: Empty State -->
     <div v-else-if="props.lots.length === 0" class="state-card empty-card">
       <Package :size="40" class="state-icon text-muted" />
-      <h4 class="state-title">No inventory lots found</h4>
-      <p class="state-desc">Post a Goods Receipt Note (GRN) to populate stock inventory.</p>
+      <h4 class="state-title">{{ t('inventory.noLotsFound') }}</h4>
+      <p class="state-desc">{{ t('inventory.noLotsDesc') }}</p>
     </div>
 
     <!-- Happy Path: DataTable View -->
@@ -293,7 +296,7 @@ const handleExport = () => {
         responsiveLayout="scroll"
         class="custom-datatable"
       >
-        <Column field="lot_number" header="Lot No." sortable>
+        <Column field="lot_number" :header="t('inventory.lotNo')" sortable>
           <template #body="{ data }">
             <span class="code-link">{{ data.lot_number }}</span>
           </template>
@@ -302,14 +305,14 @@ const handleExport = () => {
               v-model="filterModel.value"
               type="text"
               @input="filterCallback()"
-              placeholder="Filter Lot No."
+              :placeholder="`${t('common.filter')} ${t('inventory.lotNo')}`"
               class="p-column-filter"
               size="small"
             />
           </template>
         </Column>
 
-        <Column field="facility_name" header="Cold Storage" sortable>
+        <Column field="facility_name" :header="t('inventory.coldStorage')" sortable>
           <template #body="{ data }">
             <span>{{ data.facility_name || '-' }}</span>
           </template>
@@ -318,14 +321,14 @@ const handleExport = () => {
               v-model="filterModel.value"
               type="text"
               @input="filterCallback()"
-              placeholder="Filter Storage"
+              :placeholder="`${t('common.filter')} ${t('inventory.coldStorage')}`"
               class="p-column-filter"
               size="small"
             />
           </template>
         </Column>
 
-        <Column field="party_name" header="Party" sortable>
+        <Column field="party_name" :header="t('inventory.party')" sortable>
           <template #body="{ data }">
             <span class="party-name" v-if="data.party_name">{{ data.party_name }}</span>
             <span v-else>-</span>
@@ -335,27 +338,27 @@ const handleExport = () => {
               v-model="filterModel.value"
               type="text"
               @input="filterCallback()"
-              placeholder="Filter Party"
+              :placeholder="`${t('common.filter')} ${t('inventory.party')}`"
               class="p-column-filter"
               size="small"
             />
           </template>
         </Column>
 
-        <Column field="commodity_name" header="Item / Product" sortable>
+        <Column field="commodity_name" :header="t('inventory.itemProduct')" sortable>
           <template #filter="{ filterModel, filterCallback }">
             <InputText
               v-model="filterModel.value"
               type="text"
               @input="filterCallback()"
-              placeholder="Filter Item"
+              :placeholder="`${t('common.filter')} ${t('common.commodity')}`"
               class="p-column-filter"
               size="small"
             />
           </template>
         </Column>
 
-        <Column field="location_display" header="Location" sortable>
+        <Column field="location_display" :header="t('inventory.location')" sortable>
           <template #body="{ data }">
             <span>{{ data.location_display || '—' }}</span>
           </template>
@@ -364,14 +367,14 @@ const handleExport = () => {
               v-model="filterModel.value"
               type="text"
               @input="filterCallback()"
-              placeholder="Filter Location"
+              :placeholder="`${t('common.filter')} ${t('inventory.location')}`"
               class="p-column-filter"
               size="small"
             />
           </template>
         </Column>
 
-        <Column field="inward_date" header="In Date" sortable>
+        <Column field="inward_date" :header="t('inventory.inDate')" sortable>
           <template #filter="{ filterModel, filterCallback }">
             <DatePicker
               v-model="filterModel.value"
@@ -385,25 +388,25 @@ const handleExport = () => {
           </template>
         </Column>
 
-        <Column field="initial_qty" header="In Qty" sortable>
+        <Column field="initial_qty" :header="t('inventory.inQty')" sortable>
           <template #body="{ data }">
             <span class="num-val">{{ formatQty(data.initial_qty) }}</span>
           </template>
         </Column>
 
-        <Column field="remaining_qty" header="Remaining Qty" sortable>
+        <Column field="remaining_qty" :header="t('inventory.remainingQty')" sortable>
           <template #body="{ data }">
             <span class="num-val text-bold">{{ formatQty(data.remaining_qty) }}</span>
           </template>
         </Column>
 
-        <Column header="Status">
+        <Column :header="t('common.status')">
           <template #body="{ data }">
             <span
               class="status-pill"
               :class="data.remaining_qty > 0 ? 'success' : 'danger'"
             >
-              {{ data.remaining_qty > 0 ? 'Active' : 'Consumed' }}
+              {{ data.remaining_qty > 0 ? t('status.active') : t('inventory.consumed') }}
             </span>
           </template>
         </Column>

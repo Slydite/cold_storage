@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { watch, computed } from 'vue'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import DatePicker from 'primevue/datepicker'
+import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
@@ -26,32 +27,35 @@ const emit = defineEmits<{
   success: []
 }>()
 
+const { t } = useI18n()
 const toast = useToast()
 const createPaymentMutation = useCreateInvoicePayment()
 
-const paymentMethodOptions = [
-  { label: 'Bank Transfer (NEFT/RTGS)', value: 'BANK_TRANSFER' },
-  { label: 'UPI / Digital Payment', value: 'UPI' },
-  { label: 'Cash', value: 'CASH' },
-  { label: 'Cheque', value: 'CHEQUE' },
-  { label: 'Other', value: 'OTHER' }
-]
+const paymentMethodOptions = computed(() => [
+  { label: t('paymentMethod.BANK_TRANSFER'), value: 'BANK_TRANSFER' },
+  { label: t('paymentMethod.UPI'), value: 'UPI' },
+  { label: t('paymentMethod.CASH'), value: 'CASH' },
+  { label: t('paymentMethod.CHEQUE'), value: 'CHEQUE' },
+  { label: t('paymentMethod.OTHER'), value: 'OTHER' }
+])
 
-const paymentSchema = z.object({
-  amount: z.number().min(0.01, 'Payment amount must be greater than 0'),
-  payment_date: z
-    .date()
-    .nullable()
-    .refine((v): v is Date => v != null, { message: 'Payment date is required' }),
-  method: z.enum(['CASH', 'BANK_TRANSFER', 'CHEQUE', 'UPI', 'OTHER'], {
-    message: 'Method is required'
-  }),
-  reference: z.string().optional(),
-  notes: z.string().optional()
-})
+const paymentSchema = computed(() =>
+  z.object({
+    amount: z.number().min(0.01, t('validation.paymentAmountMin')),
+    payment_date: z
+      .date()
+      .nullable()
+      .refine((v): v is Date => v != null, { message: t('validation.paymentDateRequired') }),
+    method: z.enum(['CASH', 'BANK_TRANSFER', 'CHEQUE', 'UPI', 'OTHER'], {
+      message: t('validation.methodRequired')
+    }),
+    reference: z.string().optional(),
+    notes: z.string().optional()
+  })
+)
 
 const { handleSubmit, errors, defineField, resetForm } = useForm({
-  validationSchema: toTypedSchema(paymentSchema),
+  validationSchema: computed(() => toTypedSchema(paymentSchema.value)),
   initialValues: {
     amount: 0,
     payment_date: new Date(),
@@ -107,18 +111,18 @@ const onSubmit = handleSubmit(async (values) => {
 
     toast.add({
       severity: 'success',
-      summary: 'Payment Recorded',
-      detail: `Recorded payment of ${formatCurrency(values.amount)} for invoice ${props.invoice.invoice_number}`,
+      summary: t('invoicing.paymentRecordedSummary'),
+      detail: t('invoicing.paymentRecordedDetail', { amount: formatCurrency(values.amount), number: props.invoice.invoice_number }),
       life: 3000
     })
 
     emit('success')
     emit('update:visible', false)
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Failed to record payment'
+    const msg = err instanceof Error ? err.message : t('invoicing.recordPaymentFailed')
     toast.add({
       severity: 'error',
-      summary: 'Error',
+      summary: t('common.error'),
       detail: msg,
       life: 5000
     })
@@ -131,27 +135,27 @@ const onSubmit = handleSubmit(async (values) => {
     :visible="visible"
     @update:visible="emit('update:visible', $event)"
     modal
-    :header="`Record Payment: ${invoice?.invoice_number || ''}`"
+    :header="t('invoicing.recordPaymentHeader', { number: invoice?.invoice_number || '' })"
     :style="{ width: '450px' }"
   >
     <form v-if="invoice" @submit.prevent="onSubmit" class="dialog-form">
       <div class="summary-due-card">
         <div class="due-item">
-          <span class="label">Total Amount:</span>
+          <span class="label">{{ t('common.totalAmount') }}:</span>
           <span class="val font-bold">{{ formatCurrency(Number(invoice.total_amount || 0)) }}</span>
         </div>
         <div class="due-item">
-          <span class="label">Amount Paid:</span>
+          <span class="label">{{ t('common.amountPaid') }}:</span>
           <span class="val text-success">{{ formatCurrency(Number(invoice.amount_paid || 0)) }}</span>
         </div>
         <div class="due-item">
-          <span class="label">Amount Due:</span>
+          <span class="label">{{ t('common.amountDue') }}:</span>
           <span class="val text-danger font-bold">{{ formatCurrency(Number(invoice.amount_due || 0)) }}</span>
         </div>
       </div>
 
       <div class="form-group">
-        <label for="pay-amount">Payment Amount (₹) <span class="required">*</span></label>
+        <label for="pay-amount">{{ t('invoicing.paymentAmount') }} <span class="required">*</span></label>
         <InputNumber
           id="pay-amount"
           v-model="amount"
@@ -167,7 +171,7 @@ const onSubmit = handleSubmit(async (values) => {
       </div>
 
       <div class="form-group">
-        <label for="pay-date">Payment Date <span class="required">*</span></label>
+        <label for="pay-date">{{ t('invoicing.paymentDate') }} <span class="required">*</span></label>
         <DatePicker
           id="pay-date"
           v-model="payment_date"
@@ -181,7 +185,7 @@ const onSubmit = handleSubmit(async (values) => {
       </div>
 
       <div class="form-group">
-        <label for="pay-method">Payment Method <span class="required">*</span></label>
+        <label for="pay-method">{{ t('invoicing.paymentMethod') }} <span class="required">*</span></label>
         <Select
           id="pay-method"
           v-model="method"
@@ -194,23 +198,23 @@ const onSubmit = handleSubmit(async (values) => {
       </div>
 
       <div class="form-group">
-        <label for="pay-ref">Transaction / Reference No.</label>
+        <label for="pay-ref">{{ t('invoicing.transactionRefNo') }}</label>
         <InputText
           id="pay-ref"
           v-model="reference"
           v-bind="refProps"
-          placeholder="e.g. UTR / Cheque No. / Transaction ID"
+          :placeholder="t('invoicing.transactionRefNo')"
           class="w-full"
         />
       </div>
 
       <div class="form-group">
-        <label for="pay-notes">Notes</label>
+        <label for="pay-notes">{{ t('invoicing.notes') }}</label>
         <InputText
           id="pay-notes"
           v-model="notes"
           v-bind="notesProps"
-          placeholder="Optional notes"
+          :placeholder="t('invoicing.notes')"
           class="w-full"
         />
       </div>
@@ -222,14 +226,14 @@ const onSubmit = handleSubmit(async (values) => {
           @click="emit('update:visible', false)"
           :disabled="createPaymentMutation.isPending.value"
         >
-          Cancel
+          {{ t('common.cancel') }}
         </button>
         <button
           type="submit"
           class="btn-primary"
           :disabled="createPaymentMutation.isPending.value"
         >
-          {{ createPaymentMutation.isPending.value ? 'Recording...' : 'Save Payment' }}
+          {{ createPaymentMutation.isPending.value ? t('invoicing.recording') : t('common.save') }}
         </button>
       </div>
     </form>

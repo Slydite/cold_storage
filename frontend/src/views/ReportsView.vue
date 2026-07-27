@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { Info } from 'lucide-vue-next'
 import { useFacility } from '../composables/useFacility'
 import StockSummaryCard from '../components/reports/StockSummaryCard.vue'
 import RegisterExportCard from '../components/reports/RegisterExportCard.vue'
-import { Info } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const { facilityId } = useFacility()
 </script>
 
@@ -11,9 +13,9 @@ const { facilityId } = useFacility()
   <div class="page-container">
     <div class="reports-header-banner">
       <div class="banner-content">
-        <h3 class="banner-title">Reports & Data Registers</h3>
+        <h3 class="banner-title">{{ t('reports.bannerTitle') }}</h3>
         <p class="banner-desc">
-          Generate comprehensive audit logs, register ledgers, and stock summaries. Export as CSV files or view quick inline previews.
+          {{ t('reports.bannerDesc') }}
         </p>
       </div>
     </div>
@@ -24,8 +26,8 @@ const { facilityId } = useFacility()
 
       <!-- 2. GRN Register -->
       <RegisterExportCard
-        title="GRN Inward Register"
-        description="Complete inward goods movement log filtered by date range and status."
+        :title="t('reports.grnRegisterTitle')"
+        :description="t('reports.grnRegisterDesc')"
         endpoint="/api/reports/grn-register/"
         reportType="grn"
         :facilityId="facilityId"
@@ -33,8 +35,8 @@ const { facilityId } = useFacility()
 
       <!-- 3. DN Register -->
       <RegisterExportCard
-        title="Delivery Note Register"
-        description="Complete outward goods movement log filtered by date range and status."
+        :title="t('reports.dnRegisterTitle')"
+        :description="t('reports.dnRegisterDesc')"
         endpoint="/api/reports/dn-register/"
         reportType="dn"
         :facilityId="facilityId"
@@ -42,8 +44,8 @@ const { facilityId } = useFacility()
 
       <!-- 4. Invoice Register -->
       <RegisterExportCard
-        title="GST Invoice Register"
-        description="Comprehensive GST invoice ledger including party GSTIN snapshots and total amounts."
+        :title="t('reports.gstRegisterTitle')"
+        :description="t('reports.gstRegisterDesc')"
         endpoint="/api/reports/invoices/"
         reportType="invoice"
         :facilityId="facilityId"
@@ -53,7 +55,7 @@ const { facilityId } = useFacility()
     <div class="reports-note">
       <Info :size="16" class="note-icon" />
       <span>
-        Looking for Rent Run specific reports? Detailed per-run breakdown reports can be exported directly from individual Rent Run details on the <strong>Billing</strong> page.
+        {{ t('reports.rentRunNote') }}
       </span>
     </div>
   </div>

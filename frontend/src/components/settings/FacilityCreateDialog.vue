@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { watch, computed } from 'vue'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
@@ -20,22 +21,25 @@ const emit = defineEmits<{
   created: []
 }>()
 
+const { t } = useI18n()
 const toast = useToast()
 const createFacilityMutation = useCreateFacility()
 
-const facilitySchema = z.object({
-  name: z.string().min(1, 'Facility name is required'),
-  address: z.string().optional(),
-  gstin: z.string().optional(),
-  phone: z.string().optional(),
-  factory_phone: z.string().optional(),
-  bank_account_no: z.string().optional(),
-  bank_ifsc: z.string().optional(),
-  terms_and_conditions: z.string().optional()
-})
+const facilitySchema = computed(() =>
+  z.object({
+    name: z.string().min(1, t('validation.facilityNameRequired')),
+    address: z.string().optional(),
+    gstin: z.string().optional(),
+    phone: z.string().optional(),
+    factory_phone: z.string().optional(),
+    bank_account_no: z.string().optional(),
+    bank_ifsc: z.string().optional(),
+    terms_and_conditions: z.string().optional()
+  })
+)
 
 const { handleSubmit, errors, defineField, resetForm } = useForm({
-  validationSchema: toTypedSchema(facilitySchema),
+  validationSchema: computed(() => toTypedSchema(facilitySchema.value)),
   initialValues: {
     name: '',
     address: '',
@@ -91,17 +95,17 @@ const onSubmit = handleSubmit(async (values) => {
     })
     toast.add({
       severity: 'success',
-      summary: 'Facility Created',
-      detail: `Facility "${values.name}" created successfully`,
+      summary: t('settings.facilityCreatedSummary'),
+      detail: t('settings.facilityCreatedDetail', { name: values.name }),
       life: 3000
     })
     emit('update:visible', false)
     emit('created')
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Failed to create facility'
+    const msg = err instanceof Error ? err.message : t('settings.facilityCreateFailed')
     toast.add({
       severity: 'error',
-      summary: 'Creation Failed',
+      summary: t('settings.facilityCreateFailed'),
       detail: msg,
       life: 5000
     })
@@ -114,18 +118,18 @@ const onSubmit = handleSubmit(async (values) => {
     :visible="visible"
     @update:visible="emit('update:visible', $event)"
     modal
-    header="Add Working Facility"
+    :header="t('settings.addWorkingFacility')"
     :style="{ width: '560px' }"
   >
     <form @submit.prevent="onSubmit" class="dialog-form">
       <div class="form-grid">
         <div class="form-group">
-          <label for="new-fac-name">Facility Name <span class="required">*</span></label>
+          <label for="new-fac-name">{{ t('locations.facility') }} {{ t('common.name') }} <span class="required">*</span></label>
           <InputText
             id="new-fac-name"
             v-model="name"
             v-bind="nameProps"
-            placeholder="e.g. Main Cold Storage"
+            :placeholder="t('locations.facility')"
             class="w-full"
             :class="{ 'p-invalid': errors.name }"
           />
@@ -133,7 +137,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group">
-          <label for="new-fac-gstin">GSTIN</label>
+          <label for="new-fac-gstin">{{ t('common.gstin') }}</label>
           <InputText
             id="new-fac-gstin"
             v-model="gstin"
@@ -144,40 +148,40 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group">
-          <label for="new-fac-phone">Phone</label>
+          <label for="new-fac-phone">{{ t('settings.officePhone') }}</label>
           <InputText
             id="new-fac-phone"
             v-model="phone"
             v-bind="phoneProps"
-            placeholder="Office phone"
+            :placeholder="t('settings.officePhone')"
             class="w-full"
           />
         </div>
 
         <div class="form-group">
-          <label for="new-fac-factory-phone">Factory Phone</label>
+          <label for="new-fac-factory-phone">{{ t('settings.factoryGatePhone') }}</label>
           <InputText
             id="new-fac-factory-phone"
             v-model="factory_phone"
             v-bind="factoryPhoneProps"
-            placeholder="Gate phone"
+            :placeholder="t('settings.factoryGatePhone')"
             class="w-full"
           />
         </div>
 
         <div class="form-group">
-          <label for="new-fac-bank-ac">Bank Account No.</label>
+          <label for="new-fac-bank-ac">{{ t('settings.bankAccountNo') }}</label>
           <InputText
             id="new-fac-bank-ac"
             v-model="bank_account_no"
             v-bind="bankAccountNoProps"
-            placeholder="A/C number"
+            :placeholder="t('settings.bankAccountNo')"
             class="w-full"
           />
         </div>
 
         <div class="form-group">
-          <label for="new-fac-bank-ifsc">Bank IFSC</label>
+          <label for="new-fac-bank-ifsc">{{ t('settings.bankIfscCode') }}</label>
           <InputText
             id="new-fac-bank-ifsc"
             v-model="bank_ifsc"
@@ -188,24 +192,24 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group span-2">
-          <label for="new-fac-address">Address</label>
+          <label for="new-fac-address">{{ t('settings.facilityAddress') }}</label>
           <InputText
             id="new-fac-address"
             v-model="address"
             v-bind="addressProps"
-            placeholder="Facility location"
+            :placeholder="t('settings.facilityAddress')"
             class="w-full"
           />
         </div>
 
         <div class="form-group span-2">
-          <label for="new-fac-terms">Terms & Conditions</label>
+          <label for="new-fac-terms">{{ t('settings.termsConditions') }}</label>
           <Textarea
             id="new-fac-terms"
             v-model="terms_and_conditions"
             v-bind="termsProps"
             rows="2"
-            placeholder="Terms for invoices/GRN"
+            :placeholder="t('settings.termsConditions')"
             class="w-full"
           />
         </div>
@@ -218,14 +222,14 @@ const onSubmit = handleSubmit(async (values) => {
           @click="emit('update:visible', false)"
           :disabled="createFacilityMutation.isPending.value"
         >
-          Cancel
+          {{ t('common.cancel') }}
         </button>
         <button
           type="submit"
           class="btn-primary"
           :disabled="createFacilityMutation.isPending.value"
         >
-          {{ createFacilityMutation.isPending.value ? 'Creating...' : 'Create Facility' }}
+          {{ createFacilityMutation.isPending.value ? t('common.loading') : t('settings.addFacility') }}
         </button>
       </div>
     </form>

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
+import Tag from 'primevue/tag'
 import { FilterMatchMode } from '@primevue/core/api'
 import {
   Search,
@@ -45,24 +46,24 @@ const emit = defineEmits<{
   'update:selectedStatus': [status: string]
   newDelivery: []
   retry: []
-  view: [delivery: DeliveryNoteOutput]
+  view: [dn: DeliveryNoteOutput]
   post: [id: number]
   cancel: [id: number]
 }>()
 
-const confirm = useConfirm()
 const toast = useToast()
+const { t } = useI18n()
 const downloadingId = ref<number | null>(null)
 
 async function handleDownloadPdf(id: number, docNumber: string) {
   downloadingId.value = id
   try {
-    await downloadPdf(`/api/delivery-notes/${id}/pdf/`, `${docNumber}.pdf`)
+    await downloadPdf(`/api/deliveries/${id}/pdf/`, `${docNumber}.pdf`)
   } catch (err) {
     toast.add({
       severity: 'error',
-      summary: 'PDF Failed',
-      detail: err instanceof Error ? err.message : 'Could not generate PDF',
+      summary: t('common.pdfFailed'),
+      detail: err instanceof Error ? err.message : t('common.pdfFailed'),
       life: 5000
     })
   } finally {
@@ -70,18 +71,12 @@ async function handleDownloadPdf(id: number, docNumber: string) {
   }
 }
 
-const statusOptions = [
-  { label: 'All Statuses', value: 'all' },
-  { label: 'Draft', value: 'DRAFT' },
-  { label: 'Posted', value: 'POSTED' },
-  { label: 'Cancelled', value: 'CANCELLED' }
-]
-
-const statusFilterOptions = [
-  { label: 'DRAFT', value: 'DRAFT' },
-  { label: 'POSTED', value: 'POSTED' },
-  { label: 'CANCELLED', value: 'CANCELLED' }
-]
+const statusOptions = computed(() => [
+  { label: t('common.allStatuses'), value: 'all' },
+  { label: t('status.posted'), value: 'POSTED' },
+  { label: t('status.draft'), value: 'DRAFT' },
+  { label: t('status.cancelled'), value: 'CANCELLED' }
+])
 
 function buildDefaultFilters() {
   return {
@@ -115,62 +110,29 @@ function handleClearAll() {
   emit('update:selectedStatus', 'all')
 }
 
-function computeTotalQty(dn: DeliveryNoteOutput): number {
+function computeTotalQuantity(dn: DeliveryNoteOutput): number {
   if (!dn.lines || dn.lines.length === 0) return 0
   return dn.lines.reduce((sum, line) => sum + (line.qty || 0), 0)
 }
 
 const handleExport = () => {
-  const headers = ['DN No.', 'Dispatch Date', 'Party', 'Vehicle No.', 'Total Qty', 'Status']
+  const headers = [
+    t('delivery.deliveryNumber'),
+    t('delivery.dispatchDate'),
+    t('delivery.customerParty'),
+    t('delivery.vehicleNo'),
+    t('delivery.totalDispatchQty'),
+    t('common.status')
+  ]
   const rows = props.deliveries.map((dn) => [
     dn.dn_number,
     dn.dispatch_date,
     dn.party_name,
     dn.vehicle_number || '-',
-    formatQty(computeTotalQty(dn)),
+    formatQty(computeTotalQuantity(dn), 0),
     dn.status || '-'
   ])
   exportToCsv('deliveries.csv', headers, rows)
-}
-
-const confirmPost = (dn: DeliveryNoteOutput) => {
-  confirm.require({
-    message: `Are you sure you want to post Delivery Note ${dn.dn_number}? This will withdraw stock from inventory and cannot be directly undone.`,
-    header: 'Confirm Stock Withdrawal',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: {
-      label: 'Cancel',
-      severity: 'secondary',
-      outlined: true
-    },
-    acceptProps: {
-      label: 'Post Delivery Note',
-      severity: 'success'
-    },
-    accept: () => {
-      emit('post', dn.id)
-    }
-  })
-}
-
-const confirmCancel = (dn: DeliveryNoteOutput) => {
-  confirm.require({
-    message: `Are you sure you want to cancel draft Delivery Note ${dn.dn_number}?`,
-    header: 'Cancel Delivery Note',
-    icon: 'pi pi-exclamation-circle',
-    rejectProps: {
-      label: 'Back',
-      severity: 'secondary',
-      outlined: true
-    },
-    acceptProps: {
-      label: 'Cancel DN',
-      severity: 'danger'
-    },
-    accept: () => {
-      emit('cancel', dn.id)
-    }
-  })
 }
 </script>
 
@@ -185,10 +147,11 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
             :value="searchQuery"
             @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
             type="text"
-            placeholder="Search DN no., party, vehicle..."
+            :placeholder="t('delivery.searchPlaceholder')"
             class="custom-search-input"
           />
         </div>
+
         <Select
           :modelValue="selectedStatus"
           @update:modelValue="emit('update:selectedStatus', $event)"
@@ -209,7 +172,7 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
           title="Toggle inline column filters"
         >
           <Filter :size="15" />
-          <span>Filters</span>
+          <span>{{ t('common.filter') }}</span>
           <span v-if="hasActiveFilters" class="filter-count-badge">{{ activeFilterCount }}</span>
         </button>
         <button
@@ -220,48 +183,48 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
           title="Clear all active filters and search"
         >
           <FilterX :size="15" />
-          <span>Clear Filters</span>
+          <span>{{ t('common.clear') }}</span>
         </button>
         <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
-          <span>Export</span>
+          <span>{{ t('common.export') }}</span>
         </button>
         <button class="btn-primary" type="button" @click="emit('newDelivery')">
           <Plus :size="16" />
-          <span>New Delivery (DN)</span>
+          <span>{{ t('delivery.newDeliveryDn') }}</span>
         </button>
       </div>
     </div>
 
-    <!-- Explicit State 1: Error State -->
+    <!-- Error State -->
     <div v-if="props.error" class="state-card error-card">
       <AlertCircle :size="36" class="state-icon text-danger" />
-      <h4 class="state-title">Failed to load Delivery Notes</h4>
-      <p class="state-desc">{{ props.errorDetail || 'There was an issue connecting to the server. Please try again.' }}</p>
+      <h4 class="state-title">{{ t('delivery.failedToLoad') }}</h4>
+      <p class="state-desc">{{ props.errorDetail || t('errors.network') }}</p>
       <button class="btn-primary" type="button" @click="emit('retry')">
         <RefreshCw :size="15" />
-        <span>Retry</span>
+        <span>{{ t('common.retry') }}</span>
       </button>
     </div>
 
-    <!-- Explicit State 2: Skeleton Loading State -->
+    <!-- Skeleton Loading State -->
     <div v-else-if="props.loading" class="skeleton-container">
       <Skeleton height="42px" class="mb-3" />
       <Skeleton height="56px" class="mb-2" v-for="i in 5" :key="i" />
     </div>
 
-    <!-- Explicit State 3: Empty State -->
+    <!-- Empty State -->
     <div v-else-if="props.deliveries.length === 0" class="state-card empty-card">
       <Truck :size="40" class="state-icon text-muted" />
-      <h4 class="state-title">No Delivery Notes found</h4>
-      <p class="state-desc">Create delivery notes to issue and dispatch inventory to depositors.</p>
+      <h4 class="state-title">{{ t('delivery.noDeliveriesFound') }}</h4>
+      <p class="state-desc">{{ t('delivery.noDeliveriesDesc') }}</p>
       <button class="btn-primary" type="button" @click="emit('newDelivery')">
         <Plus :size="16" />
-        <span>New Delivery (DN)</span>
+        <span>{{ t('delivery.newDeliveryDn') }}</span>
       </button>
     </div>
 
-    <!-- Happy Path: DataTable View -->
+    <!-- DataTable View -->
     <div v-else class="table-card">
       <DataTable
         :value="props.deliveries"
@@ -278,7 +241,7 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
         responsiveLayout="scroll"
         class="custom-datatable"
       >
-        <Column field="dn_number" header="DN No." sortable>
+        <Column field="dn_number" :header="t('delivery.deliveryNumber')" sortable>
           <template #body="{ data }">
             <span class="code-link clickable" @click="emit('view', data)">{{ data.dn_number }}</span>
           </template>
@@ -287,14 +250,14 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
               v-model="filterModel.value"
               type="text"
               @input="filterCallback()"
-              placeholder="Filter DN No."
+              placeholder="Filter..."
               class="p-column-filter"
               size="small"
             />
           </template>
         </Column>
 
-        <Column field="dispatch_date" header="Dispatch Date" sortable>
+        <Column field="dispatch_date" :header="t('delivery.dispatchDate')" sortable>
           <template #filter="{ filterModel, filterCallback }">
             <DatePicker
               v-model="filterModel.value"
@@ -308,7 +271,7 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
           </template>
         </Column>
 
-        <Column field="party_name" header="Party" sortable>
+        <Column field="party_name" :header="t('delivery.customerParty')" sortable>
           <template #body="{ data }">
             <span class="party-name">{{ data.party_name }}</span>
           </template>
@@ -317,84 +280,55 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
               v-model="filterModel.value"
               type="text"
               @input="filterCallback()"
-              placeholder="Filter party..."
+              placeholder="Filter..."
               class="p-column-filter"
               size="small"
             />
           </template>
         </Column>
 
-        <Column field="vehicle_number" header="Vehicle No.">
+        <Column field="vehicle_number" :header="t('delivery.vehicleNo')" sortable>
           <template #body="{ data }">
             <span>{{ data.vehicle_number || '-' }}</span>
           </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              placeholder="Filter vehicle..."
-              class="p-column-filter"
-              size="small"
+        </Column>
+
+        <Column :header="t('delivery.totalDispatchQty')">
+          <template #body="{ data }">
+            <strong class="num-val">{{ formatQty(computeTotalQuantity(data), 0) }}</strong>
+          </template>
+        </Column>
+
+        <Column field="status" :header="t('common.status')" sortable>
+          <template #body="{ data }">
+            <Tag
+              :value="t(`status.${(data.status || 'draft').toLowerCase()}`)"
+              :severity="data.status === 'POSTED' ? 'success' : data.status === 'CANCELLED' ? 'danger' : 'warn'"
             />
           </template>
         </Column>
 
-        <Column header="Total Qty">
-          <template #body="{ data }">
-            <span class="num-val">{{ formatQty(computeTotalQty(data)) }}</span>
-          </template>
-        </Column>
-
-        <Column field="status" header="Status" sortable>
-          <template #body="{ data }">
-            <span
-              class="status-pill"
-              :class="{
-                success: data.status === 'POSTED',
-                warning: data.status === 'DRAFT',
-                danger: data.status === 'CANCELLED'
-              }"
-            >
-              {{ data.status }}
-            </span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <Select
-              v-model="filterModel.value"
-              @change="filterCallback()"
-              :options="statusFilterOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Status"
-              class="p-column-filter"
-              size="small"
-              showClear
-            />
-          </template>
-        </Column>
-
-        <Column header="Actions">
+        <Column :header="t('common.actions')">
           <template #body="{ data }">
             <div class="row-actions">
-              <button class="icon-btn" title="View details" type="button" @click="emit('view', data)">
+              <button class="icon-btn" :title="t('common.details')" type="button" @click="emit('view', data)">
                 <Eye :size="16" />
               </button>
               <button
                 v-if="data.status === 'DRAFT'"
                 class="icon-btn"
-                title="Post Delivery Note"
+                title="Post DN"
                 type="button"
-                @click="confirmPost(data)"
+                @click="emit('post', data.id)"
               >
                 <FileCheck :size="16" />
               </button>
               <button
                 v-if="data.status === 'DRAFT'"
                 class="icon-btn danger-hover"
-                title="Cancel Delivery Note"
+                title="Cancel DN"
                 type="button"
-                @click="confirmCancel(data)"
+                @click="emit('cancel', data.id)"
               >
                 <XCircle :size="16" />
               </button>
@@ -420,19 +354,14 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
 .code-link.clickable {
   cursor: pointer;
 }
-
 .master-list-container {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 100%;
+  transition: all 0.25s ease;
 }
-
-.icon-muted {
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
 .state-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -445,43 +374,32 @@ const confirmCancel = (dn: DeliveryNoteOutput) => {
   justify-content: center;
   gap: 12px;
 }
-
-.state-icon {
-  margin-bottom: 4px;
-}
-
 .state-icon.text-danger {
   color: var(--status-danger-color);
 }
-
 .state-icon.text-muted {
   color: var(--text-secondary);
 }
-
 .state-title {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
 }
-
 .state-desc {
   font-size: 13px;
   color: var(--text-secondary);
   max-width: 380px;
   margin-bottom: 8px;
 }
-
 .skeleton-container {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
   padding: 20px;
 }
-
 .mb-2 {
   margin-bottom: 8px;
 }
-
 .mb-3 {
   margin-bottom: 12px;
 }

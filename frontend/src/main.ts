@@ -13,6 +13,8 @@ import 'primeicons/primeicons.css'
 
 import App from './App.vue'
 import router from './router'
+import i18n from './i18n'
+import { useLocaleStore } from './stores/locale'
 
 // Open-Source MIT Custom PrimeVue Preset
 const ColdStoragePreset = definePreset(Aura, {
@@ -36,8 +38,38 @@ const ColdStoragePreset = definePreset(Aura, {
 const app = createApp(App)
 
 app.use(createPinia())
+app.use(i18n)
+
+// Initialize locale store pre-mount to sync locale and document.documentElement.lang
+useLocaleStore()
+
 app.use(router)
-app.use(VueQueryPlugin)
+// Explicit query defaults.
+//
+// The shop leaves this open on a counter machine all day, so nothing ever
+// triggers a visibility or focus event and the screen would otherwise show
+// whatever it loaded that morning. A slow poll keeps it current: at ten
+// minutes that is six requests an hour per open screen, which is nothing at
+// this scale, and it refreshes data in place rather than reloading the page,
+// so a half-entered GRN is never lost.
+//
+// refetchIntervalInBackground stays off (the default) so a phone with the tab
+// backgrounded stops polling instead of burning battery and mobile data.
+const POLL_INTERVAL_MS = 10 * 60 * 1000
+
+app.use(VueQueryPlugin, {
+  queryClientConfig: {
+    defaultOptions: {
+      queries: {
+        staleTime: 2 * 60 * 1000,
+        refetchInterval: POLL_INTERVAL_MS,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
+        retry: 1
+      }
+    }
+  }
+})
 app.use(PrimeVue, {
   theme: {
     preset: ColdStoragePreset,

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { PieChart, Download, Eye, AlertCircle } from 'lucide-vue-next'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 import { fetchReportJson, downloadReportCsv } from '../../composables/useReportExport'
 import { formatQty } from '../../utils/format'
 
@@ -30,6 +31,7 @@ interface StockSummaryData {
 }
 
 const props = defineProps<Props>()
+const { t } = useI18n()
 const toast = useToast()
 
 const loadingJson = ref(false)
@@ -53,10 +55,10 @@ async function handleViewBreakdown() {
     reportData.value = data
     showBreakdown.value = true
   } catch (err) {
-    errorDetail.value = err instanceof Error ? err.message : 'Failed to load stock summary'
+    errorDetail.value = err instanceof Error ? err.message : t('reports.failedToLoad')
     toast.add({
       severity: 'error',
-      summary: 'Report Error',
+      summary: t('common.error'),
       detail: errorDetail.value,
       life: 4000
     })
@@ -75,15 +77,15 @@ async function handleDownloadCsv() {
     )
     toast.add({
       severity: 'success',
-      summary: 'Download Started',
-      detail: 'Stock summary CSV downloaded.',
+      summary: t('reports.downloadStarted'),
+      detail: t('reports.downloadStartedDetail'),
       life: 3000
     })
   } catch (err) {
     toast.add({
       severity: 'error',
-      summary: 'Export Failed',
-      detail: err instanceof Error ? err.message : 'Failed to download stock summary CSV',
+      summary: t('common.exportFailed'),
+      detail: err instanceof Error ? err.message : t('common.exportFailed'),
       life: 4000
     })
   } finally {
@@ -99,8 +101,8 @@ async function handleDownloadCsv() {
         <PieChart :size="24" />
       </div>
       <div class="title-area">
-        <h4 class="rep-title">Stock Occupancy Summary</h4>
-        <p class="rep-desc">Overview of active commodity holdings and chamber breakdown across the facility.</p>
+        <h4 class="rep-title">{{ t('reports.stockOccupancySummary') }}</h4>
+        <p class="rep-desc">{{ t('reports.stockOccupancyDesc') }}</p>
       </div>
     </div>
 
@@ -111,21 +113,21 @@ async function handleDownloadCsv() {
 
     <div v-if="showBreakdown && reportData" class="breakdown-container">
       <div class="breakdown-section">
-        <h5 class="section-title">By Commodity</h5>
+        <h5 class="section-title">{{ t('reports.byCommodity') }}</h5>
         <div v-if="!reportData.by_commodity || reportData.by_commodity.length === 0" class="muted-text">
-          No active stock by commodity.
+          {{ t('reports.noStockByCommodity') }}
         </div>
         <table v-else class="mini-table">
           <thead>
             <tr>
-              <th>Commodity</th>
-              <th class="text-right">Total Bags</th>
-              <th class="text-right">Qty (MT)</th>
+              <th>{{ t('common.commodity') }}</th>
+              <th class="text-right">{{ t('reports.totalBags') }}</th>
+              <th class="text-right">{{ t('reports.qtyMt') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(item, i) in reportData.by_commodity" :key="i">
-              <td>{{ item.commodity_name || 'Uncategorized' }}</td>
+              <td>{{ item.commodity_name || t('common.uncategorized') }}</td>
               <td class="text-right num-val">{{ item.total_qty ?? '-' }}</td>
               <td class="text-right num-val">{{ formatQty(Number(item.total_weight_kg || 0) / 1000) }}</td>
             </tr>
@@ -134,20 +136,20 @@ async function handleDownloadCsv() {
       </div>
 
       <div class="breakdown-section">
-        <h5 class="section-title">By Chamber</h5>
+        <h5 class="section-title">{{ t('reports.byChamber') }}</h5>
         <div v-if="!reportData.by_chamber || reportData.by_chamber.length === 0" class="muted-text">
-          No active stock by chamber.
+          {{ t('reports.noStockByChamber') }}
         </div>
         <table v-else class="mini-table">
           <thead>
             <tr>
-              <th>Chamber</th>
-              <th class="text-right">Total Bags</th>
+              <th>{{ t('locations.chamber') }}</th>
+              <th class="text-right">{{ t('reports.totalBags') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(item, i) in reportData.by_chamber" :key="i">
-              <td>{{ item.chamber || 'Unassigned' }}</td>
+              <td>{{ item.chamber || t('common.unassigned') }}</td>
               <td class="text-right num-val">{{ item.total_qty ?? '-' }}</td>
             </tr>
           </tbody>
@@ -163,7 +165,7 @@ async function handleDownloadCsv() {
         :disabled="loadingJson"
       >
         <Eye :size="15" />
-        <span>{{ loadingJson ? 'Loading...' : showBreakdown ? 'Hide Preview' : 'View Preview' }}</span>
+        <span>{{ loadingJson ? t('common.loading') : showBreakdown ? t('common.hidePreview') : t('common.viewPreview') }}</span>
       </button>
 
       <button
@@ -173,7 +175,7 @@ async function handleDownloadCsv() {
         :disabled="downloadingCsv"
       >
         <Download :size="15" />
-        <span>{{ downloadingCsv ? 'Downloading...' : 'Download CSV' }}</span>
+        <span>{{ downloadingCsv ? t('common.downloading') : t('common.downloadCsv') }}</span>
       </button>
     </div>
   </div>

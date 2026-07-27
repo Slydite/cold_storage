@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 import { useFacility } from '../composables/useFacility'
 import {
   useDeliveryNoteList,
@@ -17,6 +18,7 @@ import type { DeliveryNoteOutput } from '../api/delivery'
 
 const route = useRoute()
 const toast = useToast()
+const { t } = useI18n()
 const { facilityId, isLoading: loadingFacility, isError: facilityError, refetch: refetchFacility } = useFacility()
 
 const selectedStatus = ref('all')
@@ -51,15 +53,15 @@ const handlePost = async (id: number) => {
     const updated = await postMutation.mutateAsync(id)
     toast.add({
       severity: 'success',
-      summary: 'Delivery Note Posted',
-      detail: `DN ${updated.dn_number} posted successfully and stock updated.`,
+      summary: t('delivery.postedToastSummary'),
+      detail: t('delivery.postedToastDetail', { number: updated.dn_number }),
       life: 3000
     })
   } catch (err: unknown) {
     toast.add({
       severity: 'error',
-      summary: 'Action Failed',
-      detail: err instanceof Error ? err.message : 'Failed to post Delivery Note',
+      summary: t('common.actionFailed'),
+      detail: err instanceof Error ? err.message : t('delivery.postFailed'),
       life: 5000
     })
   }
@@ -70,15 +72,15 @@ const handleCancel = async (id: number) => {
     const updated = await cancelMutation.mutateAsync(id)
     toast.add({
       severity: 'warn',
-      summary: 'Delivery Note Cancelled',
-      detail: `DN ${updated.dn_number} was cancelled.`,
+      summary: t('delivery.cancelledToastSummary'),
+      detail: t('delivery.cancelledToastDetail', { number: updated.dn_number }),
       life: 3000
     })
   } catch (err: unknown) {
     toast.add({
       severity: 'error',
-      summary: 'Action Failed',
-      detail: err instanceof Error ? err.message : 'Failed to cancel Delivery Note',
+      summary: t('common.actionFailed'),
+      detail: err instanceof Error ? err.message : t('delivery.cancelFailed'),
       life: 5000
     })
   }
@@ -94,8 +96,10 @@ const handleCreated = (dnNumber: string, status: string) => {
   const isDraft = status === 'DRAFT'
   toast.add({
     severity: isDraft ? 'info' : 'success',
-    summary: isDraft ? 'Draft Saved' : 'Delivery Note Created',
-    detail: `Delivery Note ${dnNumber} was successfully ${isDraft ? 'saved as draft' : 'posted'}.`,
+    summary: isDraft ? t('delivery.draftSavedToastSummary') : t('delivery.createdToastSummary'),
+    detail: isDraft
+      ? t('delivery.draftSavedToastDetail', { number: dnNumber })
+      : t('delivery.createdToastDetail', { number: dnNumber }),
     life: 4000
   })
 }
@@ -154,7 +158,6 @@ onMounted(() => {
 .shrink-list {
   max-width: 40%;
 }
-
 @media (max-width: 900px) {
   .delivery-page {
     flex-direction: column;

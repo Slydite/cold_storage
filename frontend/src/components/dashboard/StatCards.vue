@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Skeleton from 'primevue/skeleton'
 import { Package, Boxes, FileCheck2, Truck } from 'lucide-vue-next'
 import { formatQty } from '../../utils/format'
@@ -12,32 +13,38 @@ const props = defineProps<{
   loading: boolean
 }>()
 
+const { t } = useI18n()
+
 const stats = computed(() => [
   {
-    title: 'Total Stock (MT)',
+    id: 'totalStock',
+    title: t('dashboard.totalStock'),
     value: formatQty(props.totalStock, 2),
-    caption: 'Active inventory weight',
+    caption: t('dashboard.totalStockCaption'),
     badgeClass: 'badge-purple',
     icon: Package
   },
   {
-    title: 'Active Lots',
+    id: 'activeLots',
+    title: t('dashboard.activeLots'),
     value: props.activeLots.toString(),
-    caption: 'Lots in storage',
+    caption: t('dashboard.activeLotsCaption'),
     badgeClass: 'badge-green',
     icon: Boxes
   },
   {
-    title: 'Total GRNs',
+    id: 'totalGrns',
+    title: t('dashboard.totalGrns'),
     value: props.totalGrns.toString(),
-    caption: 'Goods Receipt Notes',
+    caption: t('dashboard.totalGrnsCaption'),
     badgeClass: 'badge-blue',
     icon: FileCheck2
   },
   {
-    title: 'Total Delivery Notes',
+    id: 'totalDeliveryNotes',
+    title: t('dashboard.totalDeliveryNotes'),
     value: props.totalDeliveryNotes.toString(),
-    caption: 'Dispatched & Draft DNs',
+    caption: t('dashboard.totalDeliveryNotesCaption'),
     badgeClass: 'badge-red',
     icon: Truck
   }
@@ -46,7 +53,7 @@ const stats = computed(() => [
 
 <template>
   <div class="stats-grid">
-    <div v-for="stat in stats" :key="stat.title" class="stat-card">
+    <div v-for="stat in stats" :key="stat.id" class="stat-card">
       <div class="stat-header">
         <span class="stat-title">{{ stat.title }}</span>
         <div class="stat-icon-circle" :class="stat.badgeClass">

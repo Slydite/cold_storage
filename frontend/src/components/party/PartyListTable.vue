@@ -5,8 +5,19 @@ import Column from 'primevue/column'
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import Skeleton from 'primevue/skeleton'
+import Tag from 'primevue/tag'
 import { FilterMatchMode } from '@primevue/core/api'
-import { Search, Filter, FilterX, Plus, Download, Phone, Mail, AlertCircle, RefreshCw, Users } from 'lucide-vue-next'
+import {
+  Search,
+  Filter,
+  FilterX,
+  Download,
+  Plus,
+  AlertCircle,
+  RefreshCw,
+  Users
+} from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters } from '../../composables/useTableFilters'
 import type { PartyOutput } from '../../api/party'
@@ -29,26 +40,23 @@ const emit = defineEmits<{
   retry: []
 }>()
 
-const typeOptions = [
-  { label: 'All Types', value: 'all' },
-  { label: 'Depositors', value: 'DEPOSITOR' },
-  { label: 'Vendors', value: 'VENDOR' },
-  { label: 'Transporters', value: 'TRANSPORTER' }
-]
+const { t } = useI18n()
 
-const typeFilterOptions = [
-  { label: 'Depositor', value: 'DEPOSITOR' },
-  { label: 'Vendor', value: 'VENDOR' },
-  { label: 'Transporter', value: 'TRANSPORTER' }
-]
+const typeFilterOptions = computed(() => [
+  { label: t('common.allTypes'), value: 'all' },
+  { label: t('parties.depositorCustomer'), value: 'DEPOSITOR' },
+  { label: t('parties.vendor'), value: 'VENDOR' },
+  { label: t('parties.transporter'), value: 'TRANSPORTER' }
+])
 
 function buildDefaultFilters() {
   return {
     code: { value: null, matchMode: FilterMatchMode.CONTAINS },
     name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    type_display: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    type: { value: null, matchMode: FilterMatchMode.EQUALS },
     phone: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    email: { value: null, matchMode: FilterMatchMode.CONTAINS }
+    email: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    gstin: { value: null, matchMode: FilterMatchMode.CONTAINS }
   }
 }
 
@@ -75,17 +83,36 @@ function handleClearAll() {
 }
 
 const handleExport = () => {
-  const headers = ['Code', 'Party Name', 'Type', 'Phone', 'Email', 'GSTIN', 'Address']
+  const headers = [
+    t('parties.code'),
+    t('parties.partyName'),
+    t('parties.partyType'),
+    t('parties.phone'),
+    t('parties.email'),
+    t('parties.gstin')
+  ]
   const rows = props.parties.map((p) => [
     p.code,
     p.name,
-    p.type_display || p.type,
+    p.type,
     p.phone || '-',
     p.email || '-',
-    p.gstin || '-',
-    p.address || '-'
+    p.gstin || '-'
   ])
   exportToCsv('parties.csv', headers, rows)
+}
+
+const getTypeSeverity = (type?: string) => {
+  switch (type) {
+    case 'DEPOSITOR':
+      return 'info'
+    case 'VENDOR':
+      return 'warn'
+    case 'TRANSPORTER':
+      return 'secondary'
+    default:
+      return 'secondary'
+  }
 }
 </script>
 
@@ -100,14 +127,15 @@ const handleExport = () => {
             :value="searchQuery"
             @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
             type="text"
-            placeholder="Search party name, code..."
+            :placeholder="t('parties.searchPlaceholder')"
             class="custom-search-input"
           />
         </div>
+
         <Select
           :modelValue="selectedType"
           @update:modelValue="emit('update:selectedType', $event)"
-          :options="typeOptions"
+          :options="typeFilterOptions"
           optionLabel="label"
           optionValue="value"
           class="toolbar-select"
@@ -124,7 +152,7 @@ const handleExport = () => {
           title="Toggle inline column filters"
         >
           <Filter :size="15" />
-          <span>Filters</span>
+          <span>{{ t('common.filter') }}</span>
           <span v-if="hasActiveFilters" class="filter-count-badge">{{ activeFilterCount }}</span>
         </button>
         <button
@@ -135,48 +163,48 @@ const handleExport = () => {
           title="Clear all active filters and search"
         >
           <FilterX :size="15" />
-          <span>Clear Filters</span>
+          <span>{{ t('common.clear') }}</span>
         </button>
         <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
-          <span>Export</span>
+          <span>{{ t('common.export') }}</span>
         </button>
         <button class="btn-primary" type="button" @click="emit('openCreate')">
           <Plus :size="16" />
-          <span>Add Party</span>
+          <span>{{ t('parties.addParty') }}</span>
         </button>
       </div>
     </div>
 
-    <!-- Explicit State 1: Error State -->
+    <!-- Error State -->
     <div v-if="props.error" class="state-card error-card">
       <AlertCircle :size="36" class="state-icon text-danger" />
-      <h4 class="state-title">Failed to load parties</h4>
-      <p class="state-desc">{{ props.errorDetail || 'There was an issue connecting to the server. Please try again.' }}</p>
+      <h4 class="state-title">{{ t('parties.failedToLoad') }}</h4>
+      <p class="state-desc">{{ props.errorDetail || t('errors.network') }}</p>
       <button class="btn-primary" type="button" @click="emit('retry')">
         <RefreshCw :size="15" />
-        <span>Retry</span>
+        <span>{{ t('common.retry') }}</span>
       </button>
     </div>
 
-    <!-- Explicit State 2: Skeleton Loading State -->
+    <!-- Skeleton Loading State -->
     <div v-else-if="props.loading" class="skeleton-container">
       <Skeleton height="42px" class="mb-3" />
       <Skeleton height="56px" class="mb-2" v-for="i in 5" :key="i" />
     </div>
 
-    <!-- Explicit State 3: Empty State -->
+    <!-- Empty State -->
     <div v-else-if="props.parties.length === 0" class="state-card empty-card">
       <Users :size="40" class="state-icon text-muted" />
-      <h4 class="state-title">No parties registered</h4>
-      <p class="state-desc">Add depositors, vendors, or transporters to manage inventory and transactions.</p>
+      <h4 class="state-title">{{ t('parties.noPartiesRegistered') }}</h4>
+      <p class="state-desc">{{ t('parties.noPartiesDesc') }}</p>
       <button class="btn-primary" type="button" @click="emit('openCreate')">
         <Plus :size="16" />
-        <span>Add New Party</span>
+        <span>{{ t('parties.addNewParty') }}</span>
       </button>
     </div>
 
-    <!-- Happy Path: DataTable View -->
+    <!-- DataTable View -->
     <div v-else class="table-card">
       <DataTable
         :value="props.parties"
@@ -193,7 +221,7 @@ const handleExport = () => {
         responsiveLayout="scroll"
         class="custom-datatable"
       >
-        <Column field="code" header="Code" sortable>
+        <Column field="code" :header="t('parties.code')" sortable>
           <template #body="{ data }">
             <span class="code-link">{{ data.code }}</span>
           </template>
@@ -202,41 +230,44 @@ const handleExport = () => {
               v-model="filterModel.value"
               type="text"
               @input="filterCallback()"
-              placeholder="Filter Code"
+              placeholder="Filter..."
               class="p-column-filter"
               size="small"
             />
           </template>
         </Column>
 
-        <Column field="name" header="Party Name" sortable>
+        <Column field="name" :header="t('parties.partyName')" sortable>
           <template #body="{ data }">
-            <span class="party-name">{{ data.name }}</span>
+            <strong class="party-name">{{ data.name }}</strong>
           </template>
           <template #filter="{ filterModel, filterCallback }">
             <InputText
               v-model="filterModel.value"
               type="text"
               @input="filterCallback()"
-              placeholder="Filter Name"
+              placeholder="Filter..."
               class="p-column-filter"
               size="small"
             />
           </template>
         </Column>
 
-        <Column field="type_display" header="Type" sortable>
+        <Column field="type" :header="t('parties.partyType')" sortable>
           <template #body="{ data }">
-            <span>{{ data.type_display || data.type }}</span>
+            <Tag
+              :value="t(`partyType.${data.type}`, data.type)"
+              :severity="getTypeSeverity(data.type)"
+            />
           </template>
           <template #filter="{ filterModel, filterCallback }">
             <Select
               v-model="filterModel.value"
               @change="filterCallback()"
-              :options="typeFilterOptions"
+              :options="typeFilterOptions.filter(o => o.value !== 'all')"
               optionLabel="label"
               optionValue="value"
-              placeholder="Type"
+              :placeholder="t('parties.partyType')"
               class="p-column-filter"
               size="small"
               showClear
@@ -244,55 +275,21 @@ const handleExport = () => {
           </template>
         </Column>
 
-        <Column field="phone" header="Phone">
+        <Column field="phone" :header="t('parties.phone')" sortable>
           <template #body="{ data }">
-            <div v-if="data.phone" class="cell-flex">
-              <Phone :size="14" class="icon-muted" />
-              <span>{{ data.phone }}</span>
-            </div>
-            <span v-else>-</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              placeholder="Filter Phone"
-              class="p-column-filter"
-              size="small"
-            />
+            <span>{{ data.phone || '—' }}</span>
           </template>
         </Column>
 
-        <Column field="email" header="Email">
+        <Column field="email" :header="t('parties.email')" sortable>
           <template #body="{ data }">
-            <div v-if="data.email" class="cell-flex">
-              <Mail :size="14" class="icon-muted" />
-              <span>{{ data.email }}</span>
-            </div>
-            <span v-else>-</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              placeholder="Filter Email"
-              class="p-column-filter"
-              size="small"
-            />
+            <span>{{ data.email || '—' }}</span>
           </template>
         </Column>
 
-        <Column field="gstin" header="GSTIN">
+        <Column field="gstin" :header="t('parties.gstin')" sortable>
           <template #body="{ data }">
-            <span>{{ data.gstin || '-' }}</span>
-          </template>
-        </Column>
-
-        <Column field="address" header="Address">
-          <template #body="{ data }">
-            <span>{{ data.address || '-' }}</span>
+            <span class="code-link">{{ data.gstin || '—' }}</span>
           </template>
         </Column>
       </DataTable>
@@ -302,22 +299,12 @@ const handleExport = () => {
 
 <style scoped>
 .master-list-container {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 100%;
 }
-
-.cell-flex {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.icon-muted {
-  color: var(--text-secondary);
-}
-
 .state-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -330,43 +317,31 @@ const handleExport = () => {
   justify-content: center;
   gap: 12px;
 }
-
-.state-icon {
-  margin-bottom: 4px;
-}
-
 .state-icon.text-danger {
   color: var(--status-danger-color);
 }
-
 .state-icon.text-muted {
   color: var(--text-secondary);
 }
-
 .state-title {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
 }
-
 .state-desc {
   font-size: 13px;
   color: var(--text-secondary);
   max-width: 380px;
-  margin-bottom: 8px;
 }
-
 .skeleton-container {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
   padding: 20px;
 }
-
 .mb-2 {
   margin-bottom: 8px;
 }
-
 .mb-3 {
   margin-bottom: 12px;
 }

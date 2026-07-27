@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import { useI18n } from 'vue-i18n'
 import { formatCurrency, formatQty } from '../../utils/format'
 import type { InvoicePreviewPartyOutput, InvoicePreviewLineOutput } from '../../api/invoicing'
 
 defineProps<{
   party: InvoicePreviewPartyOutput
 }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -23,37 +26,37 @@ defineProps<{
         stripedRows
         class="custom-datatable"
       >
-        <Column field="description" header="Description">
+        <Column field="description" :header="t('common.description')">
           <template #body="{ data }: { data: InvoicePreviewLineOutput }">
             <span class="line-description">{{ data.description }}</span>
           </template>
         </Column>
 
-        <Column field="lot_number" header="Lot">
+        <Column field="lot_number" :header="t('inventory.lotNo')">
           <template #body="{ data }: { data: InvoicePreviewLineOutput }">
             <span>{{ data.lot_number ?? '—' }}</span>
           </template>
         </Column>
 
-        <Column field="commodity_name" header="Commodity">
+        <Column field="commodity_name" :header="t('common.commodity')">
           <template #body="{ data }: { data: InvoicePreviewLineOutput }">
             <span>{{ data.commodity_name ?? '—' }}</span>
           </template>
         </Column>
 
-        <Column field="qty" header="Qty">
+        <Column field="qty" :header="t('common.quantity')">
           <template #body="{ data }: { data: InvoicePreviewLineOutput }">
             <span>{{ data.qty != null ? formatQty(data.qty, 0) : '—' }}</span>
           </template>
         </Column>
 
-        <Column field="days_stored" header="Days Stored">
+        <Column field="days_stored" :header="t('common.daysStored')">
           <template #body="{ data }: { data: InvoicePreviewLineOutput }">
             <span>{{ data.days_stored != null ? data.days_stored : '—' }}</span>
           </template>
         </Column>
 
-        <Column field="amount" header="Amount">
+        <Column field="amount" :header="t('common.amount')">
           <template #body="{ data }: { data: InvoicePreviewLineOutput }">
             <strong class="num-val">{{ formatCurrency(Number(data.amount)) }}</strong>
           </template>
@@ -63,15 +66,15 @@ defineProps<{
 
     <div class="party-totals-card">
       <div class="total-row">
-        <span class="total-label">Subtotal</span>
+        <span class="total-label">{{ t('common.subtotal') }}</span>
         <span class="total-val">{{ formatCurrency(Number(party.subtotal)) }}</span>
       </div>
       <div class="total-row">
-        <span class="total-label">GST ({{ party.gst_rate }}%)</span>
+        <span class="total-label">{{ t('common.gstAmount', { rate: party.gst_rate }) }}</span>
         <span class="total-val">{{ formatCurrency(Number(party.gst_amount)) }}</span>
       </div>
       <div class="total-row grand-total">
-        <span class="total-label">Total Amount</span>
+        <span class="total-label">{{ t('common.grandTotal') }}</span>
         <strong class="total-val text-primary-val">{{ formatCurrency(Number(party.total_amount)) }}</strong>
       </div>
     </div>

@@ -15,6 +15,7 @@ import { useToast } from 'primevue/usetoast'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
+import { useI18n } from 'vue-i18n'
 import {
   useUserList,
   useCreateUser,
@@ -26,6 +27,7 @@ import type { UserListOutput } from '../../api/user'
 
 const toast = useToast()
 const confirm = useConfirm()
+const { t } = useI18n()
 
 const { data: users, isLoading, isError, refetch } = useUserList()
 const createUserMutation = useCreateUser()
@@ -36,30 +38,22 @@ const activateUserMutation = useActivateUser()
 const isDialogOpen = ref(false)
 const editingUser = ref<UserListOutput | null>(null)
 
-const roleOptions = [
-  { label: 'Administrator', value: 'ADMIN' }
-]
+const roleOptions = computed(() => [
+  { label: t('settings.administrator'), value: 'ADMIN' }
+])
 
-// One field shape for both modes, with the requirements varying by mode.
-// Swapping between two DIFFERENT object schemas made `values` a union whose
-// branches disagreed on which keys exist, so `values.username` failed to
-// type-check on the edit branch. Keeping the keys identical and only changing
-// the validators keeps the inferred type usable while still making username
-// and password mandatory on create and optional on edit.
 const formSchema = computed(() => {
   const isEdit = editingUser.value !== null
   return z.object({
     username: isEdit
       ? z.string().optional()
-      : z.string().min(1, 'Username is required'),
-    // On edit an empty password means "leave it unchanged"; it is only sent
-    // when the user actually typed a new one.
+      : z.string().min(1, t('validation.usernameRequired')),
     password: isEdit
       ? z.string().optional()
-      : z.string().min(6, 'Password must be at least 6 characters'),
+      : z.string().min(6, t('validation.passwordMin6')),
     first_name: z.string().optional(),
     last_name: z.string().optional(),
-    email: z.string().email('Invalid email format').or(z.literal('')).optional(),
+    email: z.string().email(t('validation.invalidEmail')).or(z.literal('')).optional(),
     role: z.string()
   })
 })
@@ -116,7 +110,6 @@ const openEditDialog = (u: UserListOutput) => {
 const onSubmit = handleSubmit(async (values) => {
   try {
     if (editingUser.value) {
-      // NOTE: is_active is deliberately excluded on update per backend contract.
       await updateUserMutation.mutateAsync({
         id: editingUser.value.id,
         body: {
@@ -129,8 +122,8 @@ const onSubmit = handleSubmit(async (values) => {
       })
       toast.add({
         severity: 'success',
-        summary: 'User Updated',
-        detail: `User "${editingUser.value.username}" updated successfully`,
+        summary: t('settings.userUpdatedSummary'),
+        detail: t('settings.userUpdatedDetail', { name: editingUser.value.username }),
         life: 3000
       })
     } else {
@@ -145,17 +138,17 @@ const onSubmit = handleSubmit(async (values) => {
       })
       toast.add({
         severity: 'success',
-        summary: 'User Created',
-        detail: `User "${values.username}" created successfully`,
+        summary: t('settings.userCreatedSummary'),
+        detail: t('settings.userCreatedDetail', { name: values.username }),
         life: 3000
       })
     }
     isDialogOpen.value = false
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Operation failed'
+    const msg = err instanceof Error ? err.message : t('common.actionFailed')
     toast.add({
       severity: 'error',
-      summary: 'Error',
+      summary: t('common.error'),
       detail: msg,
       life: 5000
     })
@@ -164,8 +157,8 @@ const onSubmit = handleSubmit(async (values) => {
 
 const confirmDeactivate = (u: UserListOutput) => {
   confirm.require({
-    message: `Are you sure you want to deactivate user account "${u.username}"?`,
-    header: 'Deactivate Account',
+    message: t('settings.deactivateAccountMsg', { name: u.username }),
+    header: t('settings.deactivateAccountHeader'),
     icon: 'pi pi-exclamation-triangle',
     rejectClass: 'p-button-secondary p-button-outlined',
     acceptClass: 'p-button-danger',
@@ -174,15 +167,15 @@ const confirmDeactivate = (u: UserListOutput) => {
         await deactivateUserMutation.mutateAsync(u.id)
         toast.add({
           severity: 'success',
-          summary: 'User Deactivated',
-          detail: `User "${u.username}" has been deactivated`,
+          summary: t('settings.userDeactivatedSummary'),
+          detail: t('settings.userDeactivatedDetail', { name: u.username }),
           life: 3000
         })
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to deactivate user'
+        const msg = err instanceof Error ? err.message : t('common.actionFailed')
         toast.add({
           severity: 'error',
-          summary: 'Deactivation Refused',
+          summary: t('common.actionFailed'),
           detail: msg,
           life: 5000
         })
@@ -193,23 +186,23 @@ const confirmDeactivate = (u: UserListOutput) => {
 
 const confirmActivate = (u: UserListOutput) => {
   confirm.require({
-    message: `Are you sure you want to activate user account "${u.username}"?`,
-    header: 'Activate Account',
+    message: t('settings.activateAccountMsg', { name: u.username }),
+    header: t('settings.activateAccountHeader'),
     icon: 'pi pi-info-circle',
     accept: async () => {
       try {
         await activateUserMutation.mutateAsync(u.id)
         toast.add({
           severity: 'success',
-          summary: 'User Activated',
-          detail: `User "${u.username}" has been activated`,
+          summary: t('settings.userActivatedSummary'),
+          detail: t('settings.userActivatedDetail', { name: u.username }),
           life: 3000
         })
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to activate user'
+        const msg = err instanceof Error ? err.message : t('common.actionFailed')
         toast.add({
           severity: 'error',
-          summary: 'Activation Failed',
+          summary: t('common.actionFailed'),
           detail: msg,
           life: 5000
         })
@@ -219,7 +212,7 @@ const confirmActivate = (u: UserListOutput) => {
 }
 
 function formatDate(d?: string | null): string {
-  if (!d) return 'Never'
+  if (!d) return t('common.never')
   try {
     return new Date(d).toLocaleString()
   } catch {
@@ -234,13 +227,13 @@ function formatDate(d?: string | null): string {
 
     <div class="list-toolbar">
       <div>
-        <h3 class="toolbar-title">User Accounts & Access</h3>
-        <p class="toolbar-desc">Manage system users, login credentials, and account statuses.</p>
+        <h3 class="toolbar-title">{{ t('settings.userAccountsAccess') }}</h3>
+        <p class="toolbar-desc">{{ t('settings.userAccountsAccessDesc') }}</p>
       </div>
 
       <button type="button" class="btn-primary" @click="openCreateDialog">
         <Plus :size="16" />
-        <span>Add User</span>
+        <span>{{ t('settings.addUser') }}</span>
       </button>
     </div>
 
@@ -254,21 +247,21 @@ function formatDate(d?: string | null): string {
 
       <!-- Error State -->
       <div v-else-if="isError" class="error-state">
-        <p>Failed to load users list.</p>
+        <p>{{ t('grn.failedToLoad') }}</p>
         <button type="button" class="btn-outlined" @click="refetch()">
           <RefreshCw :size="14" />
-          <span>Retry</span>
+          <span>{{ t('common.retry') }}</span>
         </button>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="!users || users.length === 0" class="empty-state">
         <Users :size="36" class="empty-icon" />
-        <h3>No Users Found</h3>
-        <p>Click "Add User" to create user accounts.</p>
+        <h3>{{ t('settings.noUsersFound') }}</h3>
+        <p>{{ t('settings.noUsersDesc') }}</p>
         <button type="button" class="btn-primary" @click="openCreateDialog">
           <Plus :size="16" />
-          <span>Add User</span>
+          <span>{{ t('settings.addUser') }}</span>
         </button>
       </div>
 
@@ -280,52 +273,52 @@ function formatDate(d?: string | null): string {
         responsiveLayout="scroll"
         class="p-datatable-sm"
       >
-        <Column field="username" header="Username">
+        <Column field="username" :header="t('auth.username')">
           <template #body="{ data }">
             <strong class="user-name">{{ data.username }}</strong>
           </template>
         </Column>
 
-        <Column header="Full Name">
+        <Column :header="t('common.name')">
           <template #body="{ data }">
             {{ [data.first_name, data.last_name].filter(Boolean).join(' ') || '-' }}
           </template>
         </Column>
 
-        <Column field="email" header="Email">
+        <Column field="email" :header="t('common.email')">
           <template #body="{ data }">
             {{ data.email || '-' }}
           </template>
         </Column>
 
-        <Column field="role" header="Role">
+        <Column field="role" :header="t('common.type')">
           <template #body="{ data }">
             <Tag :value="data.role || 'ADMIN'" severity="info" />
           </template>
         </Column>
 
-        <Column field="is_active" header="Status">
+        <Column field="is_active" :header="t('common.status')">
           <template #body="{ data }">
             <Tag
-              :value="data.is_active !== false ? 'Active' : 'Inactive'"
+              :value="data.is_active !== false ? t('status.active') : t('status.inactive')"
               :severity="data.is_active !== false ? 'success' : 'danger'"
             />
           </template>
         </Column>
 
-        <Column field="last_login" header="Last Login">
+        <Column field="last_login" :header="t('settings.lastLogin')">
           <template #body="{ data }">
             <span class="muted-text">{{ formatDate(data.last_login) }}</span>
           </template>
         </Column>
 
-        <Column header="Actions" alignFrozen="right" style="width: 120px">
+        <Column :header="t('common.actions')" alignFrozen="right" style="width: 120px">
           <template #body="{ data }">
             <div class="row-actions">
               <button
                 type="button"
                 class="icon-btn"
-                title="Edit User"
+                :title="t('settings.editUser')"
                 @click="openEditDialog(data)"
               >
                 <Edit2 :size="16" />
@@ -335,7 +328,7 @@ function formatDate(d?: string | null): string {
                 v-if="data.is_active !== false"
                 type="button"
                 class="icon-btn danger-hover"
-                title="Deactivate User"
+                :title="t('settings.deactivateAccountHeader')"
                 @click="confirmDeactivate(data)"
               >
                 <UserX :size="16" />
@@ -345,7 +338,7 @@ function formatDate(d?: string | null): string {
                 v-else
                 type="button"
                 class="icon-btn success-hover"
-                title="Activate User"
+                :title="t('settings.activateAccountHeader')"
                 @click="confirmActivate(data)"
               >
                 <UserCheck :size="16" />
@@ -360,12 +353,12 @@ function formatDate(d?: string | null): string {
     <Dialog
       v-model:visible="isDialogOpen"
       modal
-      :header="editingUser ? `Edit User: ${editingUser.username}` : 'Add New System User'"
-      :style="{ width: '480px' }"
+      :header="editingUser ? `${t('settings.editUser')}: ${editingUser.username}` : t('settings.addUser')"
+      :style="{ width: '480px', maxWidth: '95vw' }"
     >
       <form @submit.prevent="onSubmit" class="dialog-form">
         <div v-if="!editingUser" class="form-group">
-          <label for="usr-username">Username <span class="required">*</span></label>
+          <label for="usr-username" class="form-label">{{ t('auth.username') }} <span class="req">*</span></label>
           <InputText
             id="usr-username"
             v-model="username"
@@ -379,7 +372,7 @@ function formatDate(d?: string | null): string {
 
         <div class="form-grid">
           <div class="form-group">
-            <label for="usr-fname">First Name</label>
+            <label for="usr-fname" class="form-label">First Name</label>
             <InputText
               id="usr-fname"
               v-model="first_name"
@@ -390,7 +383,7 @@ function formatDate(d?: string | null): string {
           </div>
 
           <div class="form-group">
-            <label for="usr-lname">Last Name</label>
+            <label for="usr-lname" class="form-label">Last Name</label>
             <InputText
               id="usr-lname"
               v-model="last_name"
@@ -402,7 +395,7 @@ function formatDate(d?: string | null): string {
         </div>
 
         <div class="form-group">
-          <label for="usr-email">Email Address</label>
+          <label for="usr-email" class="form-label">{{ t('common.email') }}</label>
           <InputText
             id="usr-email"
             v-model="email"
@@ -416,7 +409,7 @@ function formatDate(d?: string | null): string {
         </div>
 
         <div class="form-group">
-          <label for="usr-role">User Role</label>
+          <label for="usr-role" class="form-label">User Role</label>
           <Select
             id="usr-role"
             v-model="role"
@@ -428,8 +421,8 @@ function formatDate(d?: string | null): string {
         </div>
 
         <div class="form-group">
-          <label for="usr-password">
-            {{ editingUser ? 'New Password (leave blank to keep unchanged)' : 'Password *' }}
+          <label for="usr-password" class="form-label">
+            {{ editingUser ? 'New Password (leave blank to keep unchanged)' : t('auth.password') + ' *' }}
           </label>
           <Password
             id="usr-password"
@@ -451,14 +444,14 @@ function formatDate(d?: string | null): string {
             class="btn-outlined"
             @click="isDialogOpen = false"
           >
-            Cancel
+            {{ t('common.cancel') }}
           </button>
           <button
             type="submit"
             class="btn-primary"
             :disabled="createUserMutation.isPending.value || updateUserMutation.isPending.value"
           >
-            {{ editingUser ? 'Update User' : 'Create User' }}
+            {{ editingUser ? t('common.save') : t('common.add') }}
           </button>
         </div>
       </form>
@@ -520,13 +513,13 @@ function formatDate(d?: string | null): string {
   gap: 5px;
 }
 
-.form-group label {
+.form-label {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.required {
+.req {
   color: var(--status-danger-color);
 }
 

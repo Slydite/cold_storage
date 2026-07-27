@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { AlertTriangle, RefreshCw } from 'lucide-vue-next'
 
 defineProps<{
@@ -8,6 +9,8 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'retry'): void
 }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -16,9 +19,9 @@ const emit = defineEmits<{
       <AlertTriangle :size="20" class="error-icon" />
       <span>{{ message }}</span>
     </div>
-    <button class="btn-retry" @click="emit('retry')">
+    <button class="btn-retry" @click="emit('retry')" type="button">
       <RefreshCw :size="14" />
-      <span>Retry</span>
+      <span>{{ t('common.retry') }}</span>
     </button>
   </div>
 </template>

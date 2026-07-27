@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 import { useFacility } from '../composables/useFacility'
 import { usePartyList, useCreateParty } from '../composables/useParties'
 import { useSearchFilter } from '../composables/useSearchFilter'
@@ -9,6 +10,7 @@ import PartyCreateDialog from '../components/party/PartyCreateDialog.vue'
 import type { PartyOutput, TypeEnum } from '../api/party'
 
 const toast = useToast()
+const { t } = useI18n()
 const { facilityId, isLoading: loadingFacility, isError: facilityError, refetch: refetchFacility } = useFacility()
 
 const selectedType = ref('all')
@@ -57,16 +59,16 @@ const handleCreateParty = async (values: {
     })
     toast.add({
       severity: 'success',
-      summary: 'Party Created',
-      detail: `Party "${created.name}" (${created.code}) created successfully.`,
+      summary: t('parties.partyCreatedSummary'),
+      detail: t('parties.partyCreatedDetail', { name: created.name, code: created.code }),
       life: 3000
     })
     isDialogOpen.value = false
   } catch (err: unknown) {
     toast.add({
       severity: 'error',
-      summary: 'Action Failed',
-      detail: err instanceof Error ? err.message : 'Failed to create party',
+      summary: t('common.actionFailed'),
+      detail: err instanceof Error ? err.message : t('parties.createFailed'),
       life: 5000
     })
   }

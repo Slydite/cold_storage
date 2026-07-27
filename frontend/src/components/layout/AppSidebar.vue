@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import Select from 'primevue/select'
 import { useSidebar } from '../../composables/useSidebar'
 import { useFacility } from '../../composables/useFacility'
@@ -22,21 +23,22 @@ import {
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const { isOpen, close } = useSidebar()
 const { facilities, selectedFacilityId, setSelectedFacilityId } = useFacility()
 const authStore = useAuthStore()
 
-const navItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-  { label: 'GRN / Inward', icon: PackagePlus, path: '/grn' },
-  { label: 'Delivery / Outward', icon: Truck, path: '/delivery' },
-  { label: 'Inventory', icon: Boxes, path: '/inventory' },
-  { label: 'Billing', icon: Receipt, path: '/billing' },
-  { label: 'Invoicing', icon: FileText, path: '/invoicing' },
-  { label: 'Parties', icon: Users, path: '/parties' },
-  { label: 'Reports', icon: BarChart3, path: '/reports' },
-  { label: 'Settings', icon: Settings, path: '/settings' }
-]
+const navItems = computed(() => [
+  { label: t('nav.dashboard'), icon: LayoutDashboard, path: '/' },
+  { label: t('nav.grn'), icon: PackagePlus, path: '/grn' },
+  { label: t('nav.delivery'), icon: Truck, path: '/delivery' },
+  { label: t('nav.inventory'), icon: Boxes, path: '/inventory' },
+  { label: t('nav.billing'), icon: Receipt, path: '/billing' },
+  { label: t('nav.invoicing'), icon: FileText, path: '/invoicing' },
+  { label: t('nav.parties'), icon: Users, path: '/parties' },
+  { label: t('nav.reports'), icon: BarChart3, path: '/reports' },
+  { label: t('nav.settings'), icon: Settings, path: '/settings' }
+])
 
 const facilityOptions = computed(() =>
   facilities.value.map((f) => ({ label: f.name, value: f.id }))
@@ -97,8 +99,8 @@ const navigate = (path: string) => {
         <Snowflake class="logo-icon" :size="24" />
       </div>
       <div class="brand-details">
-        <h1 class="brand-name">Cold Storage</h1>
-        <span class="brand-subtitle">Management System</span>
+        <h1 class="brand-name">{{ t('auth.title') }}</h1>
+        <span class="brand-subtitle">{{ t('auth.subtitle') }}</span>
       </div>
     </div>
 
@@ -110,6 +112,7 @@ const navigate = (path: string) => {
         class="nav-item"
         :class="{ active: isActive(item.path) }"
         @click="navigate(item.path)"
+        type="button"
       >
         <component :is="item.icon" class="nav-icon" :size="18" />
         <span class="nav-label">{{ item.label }}</span>
@@ -119,7 +122,7 @@ const navigate = (path: string) => {
     <!-- Pinned Bottom Footer Section -->
     <div class="sidebar-footer">
       <div class="facility-switcher">
-        <label class="facility-label">Working Facility</label>
+        <label class="facility-label">{{ t('nav.workingFacility') }}</label>
         <Select
           v-model="activeFacilityId"
           :options="facilityOptions"
@@ -139,7 +142,7 @@ const navigate = (path: string) => {
           <div class="user-name">{{ userNameDisplay }}</div>
           <div class="user-email">{{ userEmailDisplay }}</div>
         </div>
-        <button class="user-menu-btn" title="User Settings">
+        <button class="user-menu-btn" :title="t('nav.userSettings')" type="button">
           <MoreVertical :size="16" />
         </button>
       </div>

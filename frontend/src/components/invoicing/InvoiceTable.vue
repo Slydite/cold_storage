@@ -7,7 +7,6 @@ import InputText from 'primevue/inputtext'
 import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
-import { useToast } from 'primevue/usetoast'
 import { FilterMatchMode } from '@primevue/core/api'
 import {
   Search,
@@ -15,15 +14,17 @@ import {
   FilterX,
   Download,
   Plus,
+  Eye,
   AlertCircle,
   RefreshCw,
-  FileText,
+  Receipt,
   FileCheck,
   XCircle,
-  Printer,
   CreditCard,
-  Eye
+  Printer
 } from 'lucide-vue-next'
+import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 import { formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
@@ -54,21 +55,12 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
-const downloadingId = ref<number | null>(null)
+const { t } = useI18n()
 const selectedInvoiceForDetail = ref<InvoiceOutput | null>(null)
-const showDetailDialog = ref(false)
 const selectedInvoiceForPayment = ref<InvoiceOutput | null>(null)
+const showDetailDialog = ref(false)
 const showPaymentDialog = ref(false)
-
-const openDetail = (inv: InvoiceOutput) => {
-  selectedInvoiceForDetail.value = inv
-  showDetailDialog.value = true
-}
-
-const openPayment = (inv: InvoiceOutput) => {
-  selectedInvoiceForPayment.value = inv
-  showPaymentDialog.value = true
-}
+const downloadingId = ref<number | null>(null)
 
 async function handleDownloadPdf(id: number, docNumber: string) {
   downloadingId.value = id
@@ -77,8 +69,8 @@ async function handleDownloadPdf(id: number, docNumber: string) {
   } catch (err) {
     toast.add({
       severity: 'error',
-      summary: 'PDF Failed',
-      detail: err instanceof Error ? err.message : 'Could not generate PDF',
+      summary: t('common.pdfFailed'),
+      detail: err instanceof Error ? err.message : t('common.pdfFailed'),
       life: 5000
     })
   } finally {
@@ -86,37 +78,20 @@ async function handleDownloadPdf(id: number, docNumber: string) {
   }
 }
 
-const statusOptions = [
-  { label: 'All Statuses', value: '' },
-  { label: 'Draft', value: 'DRAFT' },
-  { label: 'Posted', value: 'POSTED' },
-  { label: 'Cancelled', value: 'CANCELLED' }
-]
-
-const statusFilterOptions = [
-  { label: 'DRAFT', value: 'DRAFT' },
-  { label: 'POSTED', value: 'POSTED' },
-  { label: 'CANCELLED', value: 'CANCELLED' }
-]
-
-const getPaymentSeverity = (status?: string) => {
-  switch (status) {
-    case 'PAID':
-      return 'success'
-    case 'PARTIAL':
-      return 'warn'
-    case 'UNPAID':
-    default:
-      return 'danger'
-  }
-}
+const statusOptions = computed(() => [
+  { label: t('common.allStatuses'), value: '' },
+  { label: t('status.posted'), value: 'POSTED' },
+  { label: t('status.draft'), value: 'DRAFT' },
+  { label: t('status.cancelled'), value: 'CANCELLED' }
+])
 
 function buildDefaultFilters() {
   return {
     invoice_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
     invoice_date: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    status: { value: null, matchMode: FilterMatchMode.EQUALS }
+    party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
+    status: { value: null, matchMode: FilterMatchMode.EQUALS },
+    payment_status: { value: null, matchMode: FilterMatchMode.EQUALS }
   }
 }
 
@@ -142,20 +117,54 @@ function handleClearAll() {
   emit('update:selectedStatus', '')
 }
 
+function handleOpenDetail(inv: InvoiceOutput) {
+  selectedInvoiceForDetail.value = inv
+  showDetailDialog.value = true
+}
+
+function handleOpenPayment(inv: InvoiceOutput) {
+  selectedInvoiceForPayment.value = inv
+  showPaymentDialog.value = true
+}
+
+function handlePaymentSuccess() {
+  emit('refresh')
+}
+
 const handleExport = () => {
-  const headers = ['Invoice No.', 'Invoice Date', 'Party', 'GSTIN', 'Total', 'Paid', 'Due', 'Doc Status', 'Payment Status']
+  const headers = [
+    t('invoicing.invoiceNumber'),
+    t('invoicing.invoiceDate'),
+    t('grn.party'),
+    t('invoicing.total'),
+    t('invoicing.paid'),
+    t('invoicing.due'),
+    t('invoicing.docStatus'),
+    t('invoicing.paymentStatus')
+  ]
   const rows = props.invoices.map((inv) => [
     inv.invoice_number,
     inv.invoice_date,
     inv.party_name,
-    inv.party_gstin_snapshot || '—',
     formatCurrency(Number(inv.total_amount || 0)),
     formatCurrency(Number(inv.amount_paid || 0)),
     formatCurrency(Number(inv.amount_due || 0)),
     inv.status || '-',
-    inv.payment_status || 'UNPAID'
+    inv.payment_status || '-'
   ])
   exportToCsv('invoices.csv', headers, rows)
+}
+
+const getPaymentSeverity = (status?: string) => {
+  switch (status) {
+    case 'PAID':
+      return 'success'
+    case 'PARTIAL':
+      return 'warn'
+    case 'UNPAID':
+    default:
+      return 'danger'
+  }
 }
 </script>
 
@@ -170,10 +179,11 @@ const handleExport = () => {
             :value="searchQuery"
             @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
             type="text"
-            placeholder="Search invoice no., party..."
+            :placeholder="t('invoicing.searchPlaceholder')"
             class="custom-search-input"
           />
         </div>
+
         <Select
           :modelValue="selectedStatus"
           @update:modelValue="emit('update:selectedStatus', $event)"
@@ -194,7 +204,7 @@ const handleExport = () => {
           title="Toggle inline column filters"
         >
           <Filter :size="15" />
-          <span>Filters</span>
+          <span>{{ t('common.filter') }}</span>
           <span v-if="hasActiveFilters" class="filter-count-badge">{{ activeFilterCount }}</span>
         </button>
         <button
@@ -205,48 +215,48 @@ const handleExport = () => {
           title="Clear all active filters and search"
         >
           <FilterX :size="15" />
-          <span>Clear Filters</span>
+          <span>{{ t('common.clear') }}</span>
         </button>
         <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
-          <span>Export CSV</span>
+          <span>{{ t('common.export') }}</span>
         </button>
         <button class="btn-primary" type="button" @click="emit('openGenerate')">
           <Plus :size="16" />
-          <span>Generate Invoices</span>
+          <span>{{ t('invoicing.generateInvoices') }}</span>
         </button>
       </div>
     </div>
 
-    <!-- Explicit State 1: Error State -->
+    <!-- Error State -->
     <div v-if="props.error" class="state-card error-card">
       <AlertCircle :size="36" class="state-icon text-danger" />
-      <h4 class="state-title">Failed to load invoices</h4>
-      <p class="state-desc">{{ props.errorDetail || 'There was an issue connecting to the server. Please try again.' }}</p>
+      <h4 class="state-title">{{ t('invoicing.failedToLoad') }}</h4>
+      <p class="state-desc">{{ props.errorDetail || t('errors.network') }}</p>
       <button class="btn-primary" type="button" @click="emit('retry')">
         <RefreshCw :size="15" />
-        <span>Retry</span>
+        <span>{{ t('common.retry') }}</span>
       </button>
     </div>
 
-    <!-- Explicit State 2: Skeleton Loading State -->
+    <!-- Skeleton Loading State -->
     <div v-else-if="props.loading" class="skeleton-container">
       <Skeleton height="42px" class="mb-3" />
       <Skeleton height="56px" class="mb-2" v-for="i in 5" :key="i" />
     </div>
 
-    <!-- Explicit State 3: Empty State -->
+    <!-- Empty State -->
     <div v-else-if="props.invoices.length === 0" class="state-card empty-card">
-      <FileText :size="40" class="state-icon text-muted" />
-      <h4 class="state-title">No Invoice records found</h4>
-      <p class="state-desc">Generate tax invoices from uninvoiced stock withdrawals.</p>
+      <Receipt :size="40" class="state-icon text-muted" />
+      <h4 class="state-title">{{ t('invoicing.noInvoicesFound') }}</h4>
+      <p class="state-desc">{{ t('invoicing.noInvoicesDesc') }}</p>
       <button class="btn-primary" type="button" @click="emit('openGenerate')">
         <Plus :size="16" />
-        <span>Generate Invoices</span>
+        <span>{{ t('invoicing.generateInvoices') }}</span>
       </button>
     </div>
 
-    <!-- Happy Path: DataTable View -->
+    <!-- DataTable View -->
     <div v-else class="table-card">
       <DataTable
         :value="props.invoices"
@@ -263,23 +273,23 @@ const handleExport = () => {
         responsiveLayout="scroll"
         class="custom-datatable"
       >
-        <Column field="invoice_number" header="Invoice No." sortable>
+        <Column field="invoice_number" :header="t('invoicing.invoiceNumber')" sortable>
           <template #body="{ data }">
-            <span class="code-link cursor-pointer" @click="openDetail(data)">{{ data.invoice_number }}</span>
+            <span class="code-link clickable" @click="handleOpenDetail(data)">{{ data.invoice_number }}</span>
           </template>
           <template #filter="{ filterModel, filterCallback }">
             <InputText
               v-model="filterModel.value"
               type="text"
               @input="filterCallback()"
-              placeholder="Filter Invoice No."
+              placeholder="Filter..."
               class="p-column-filter"
               size="small"
             />
           </template>
         </Column>
 
-        <Column field="invoice_date" header="Date" sortable>
+        <Column field="invoice_date" :header="t('invoicing.invoiceDate')" sortable>
           <template #filter="{ filterModel, filterCallback }">
             <DatePicker
               v-model="filterModel.value"
@@ -293,97 +303,63 @@ const handleExport = () => {
           </template>
         </Column>
 
-        <Column field="party_name" header="Party" sortable>
+        <Column field="party_name" :header="t('grn.party')" sortable>
           <template #body="{ data }">
-            <span class="party-name">{{ data.party_name }}</span>
+            <strong class="party-name">{{ data.party_name }}</strong>
           </template>
           <template #filter="{ filterModel, filterCallback }">
             <InputText
               v-model="filterModel.value"
               type="text"
               @input="filterCallback()"
-              placeholder="Filter party..."
+              placeholder="Filter..."
               class="p-column-filter"
               size="small"
             />
           </template>
         </Column>
 
-        <Column header="Total (₹)" sortable field="total_amount">
+        <Column field="total_amount" :header="t('invoicing.total')" sortable>
           <template #body="{ data }">
-            <span class="num-val font-bold">{{ formatCurrency(Number(data.total_amount || 0)) }}</span>
+            <span class="num-val">{{ formatCurrency(Number(data.total_amount || 0)) }}</span>
           </template>
         </Column>
 
-        <Column header="Paid (₹)">
+        <Column field="amount_paid" :header="t('invoicing.paid')">
           <template #body="{ data }">
             <span class="num-val text-success">{{ formatCurrency(Number(data.amount_paid || 0)) }}</span>
           </template>
         </Column>
 
-        <Column header="Amount Due (₹)">
+        <Column field="amount_due" :header="t('invoicing.due')">
           <template #body="{ data }">
             <strong class="num-val text-danger">{{ formatCurrency(Number(data.amount_due || 0)) }}</strong>
           </template>
         </Column>
 
-        <Column field="payment_status" header="Payment Status" sortable>
+        <Column field="status" :header="t('invoicing.docStatus')" sortable>
           <template #body="{ data }">
             <Tag
-              :value="data.payment_status || 'UNPAID'"
+              :value="t(`status.${(data.status || 'draft').toLowerCase()}`)"
+              :severity="data.status === 'POSTED' ? 'success' : data.status === 'CANCELLED' ? 'secondary' : 'warn'"
+            />
+          </template>
+        </Column>
+
+        <Column field="payment_status" :header="t('invoicing.paymentStatus')" sortable>
+          <template #body="{ data }">
+            <Tag
+              :value="t(`status.${(data.payment_status || 'UNPAID').toLowerCase()}`)"
               :severity="getPaymentSeverity(data.payment_status)"
             />
           </template>
         </Column>
 
-        <Column field="status" header="Doc Status" sortable>
-          <template #body="{ data }">
-            <span
-              class="status-pill"
-              :class="{
-                success: data.status === 'POSTED',
-                warning: data.status === 'DRAFT',
-                danger: data.status === 'CANCELLED'
-              }"
-            >
-              {{ data.status }}
-            </span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <Select
-              v-model="filterModel.value"
-              @change="filterCallback()"
-              :options="statusFilterOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Status"
-              class="p-column-filter"
-              size="small"
-              showClear
-            />
-          </template>
-        </Column>
-
-        <Column header="Actions">
+        <Column :header="t('common.actions')">
           <template #body="{ data }">
             <div class="row-actions">
-              <button
-                class="icon-btn"
-                title="View Invoice Detail"
-                type="button"
-                @click="openDetail(data)"
-              >
+              <button class="icon-btn" :title="t('common.details')" type="button" @click="handleOpenDetail(data)">
                 <Eye :size="16" />
-              </button>
-
-              <button
-                v-if="data.payment_status !== 'PAID'"
-                class="icon-btn highlight-hover"
-                title="Record Payment"
-                type="button"
-                @click="openPayment(data)"
-              >
-                <CreditCard :size="16" />
               </button>
 
               <button
@@ -407,6 +383,16 @@ const handleExport = () => {
               </button>
 
               <button
+                v-if="data.status === 'POSTED' && data.payment_status !== 'PAID'"
+                class="icon-btn success-hover"
+                :title="t('invoicing.recordPayment')"
+                type="button"
+                @click="handleOpenPayment(data)"
+              >
+                <CreditCard :size="16" />
+              </button>
+
+              <button
                 class="icon-btn"
                 title="PDF"
                 aria-label="PDF"
@@ -426,54 +412,29 @@ const handleExport = () => {
     <InvoiceDetailDialog
       v-model:visible="showDetailDialog"
       :invoice="selectedInvoiceForDetail"
-      @refresh="emit('refresh')"
+      @recordPayment="handleOpenPayment"
     />
 
     <!-- Record Payment Dialog -->
     <RecordPaymentDialog
       v-model:visible="showPaymentDialog"
       :invoice="selectedInvoiceForPayment"
-      @success="emit('refresh')"
+      @success="handlePaymentSuccess"
     />
   </div>
 </template>
 
 <style scoped>
+.code-link.clickable {
+  cursor: pointer;
+}
 .master-list-container {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  transition: all 0.25s ease;
 }
-
-.font-bold {
-  font-weight: 700;
-}
-
-.cursor-pointer {
-  cursor: pointer;
-}
-
-.text-success {
-  color: var(--status-success-color);
-}
-
-.text-danger {
-  color: var(--status-danger-color);
-}
-
-.highlight-hover:hover {
-  color: var(--accent-primary);
-}
-
-.row-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 .state-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -486,44 +447,41 @@ const handleExport = () => {
   justify-content: center;
   gap: 12px;
 }
-
-.state-icon {
-  margin-bottom: 4px;
-}
-
 .state-icon.text-danger {
   color: var(--status-danger-color);
 }
-
 .state-icon.text-muted {
   color: var(--text-secondary);
 }
-
 .state-title {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
 }
-
 .state-desc {
   font-size: 13px;
   color: var(--text-secondary);
   max-width: 380px;
-  margin-bottom: 8px;
 }
-
 .skeleton-container {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
   padding: 20px;
 }
-
 .mb-2 {
   margin-bottom: 8px;
 }
-
 .mb-3 {
   margin-bottom: 12px;
+}
+.text-danger {
+  color: var(--status-danger-color);
+}
+.text-success {
+  color: var(--status-success-color);
+}
+.icon-btn.success-hover:hover {
+  color: var(--status-success-color);
 }
 </style>

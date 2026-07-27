@@ -4,6 +4,7 @@ import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 import { Download, Printer } from 'lucide-vue-next'
 import { formatQty, formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
@@ -25,6 +26,7 @@ const handleClose = () => {
   emit('update:visible', false)
 }
 
+const { t } = useI18n()
 const toast = useToast()
 const downloadingId = ref<number | null>(null)
 
@@ -35,8 +37,8 @@ async function handleDownloadPdf(id: number, docNumber: string) {
   } catch (err) {
     toast.add({
       severity: 'error',
-      summary: 'PDF Failed',
-      detail: err instanceof Error ? err.message : 'Could not generate PDF',
+      summary: t('common.pdfFailed'),
+      detail: err instanceof Error ? err.message : t('delivery.couldNotGeneratePdf'),
       life: 5000
     })
   } finally {
@@ -51,7 +53,7 @@ const totalQty = computed(() => {
 
 const handleExportLines = () => {
   if (!props.deliveryNote || !props.deliveryNote.lines) return
-  const headers = ['Lot No.', 'Commodity', 'Qty', 'Balance After']
+  const headers = [t('inventory.lotNo'), t('common.commodity'), t('common.quantity'), t('delivery.balanceAfter')]
   const rows = props.deliveryNote.lines.map((line) => [
     line.lot_number || '—',
     line.commodity_name || '—',
@@ -67,7 +69,7 @@ const handleExportLines = () => {
     :visible="props.visible"
     @update:visible="emit('update:visible', $event)"
     modal
-    :header="props.deliveryNote ? `Delivery Note Details - ${props.deliveryNote.dn_number}` : 'Delivery Note Details'"
+    :header="props.deliveryNote ? t('delivery.detailsHeader', { number: props.deliveryNote.dn_number }) : t('delivery.details')"
     :style="{ width: '820px', maxWidth: '95vw' }"
     :dismissableMask="true"
     @hide="handleClose"
@@ -76,15 +78,15 @@ const handleExportLines = () => {
       <!-- Summary / Header Grid -->
       <div class="info-card">
         <div class="info-item">
-          <span class="info-label">DN Number</span>
+          <span class="info-label">{{ t('delivery.dnNumber') }}</span>
           <span class="info-val code-link">{{ props.deliveryNote.dn_number }}</span>
         </div>
         <div class="info-item">
-          <span class="info-label">Dispatch Date</span>
+          <span class="info-label">{{ t('delivery.dispatchDate') }}</span>
           <span class="info-val">{{ props.deliveryNote.dispatch_date || '—' }}</span>
         </div>
         <div class="info-item">
-          <span class="info-label">Status</span>
+          <span class="info-label">{{ t('common.status') }}</span>
           <div>
             <span
               class="status-pill"
@@ -94,58 +96,58 @@ const handleExportLines = () => {
                 danger: props.deliveryNote.status === 'CANCELLED'
               }"
             >
-              {{ props.deliveryNote.status || '—' }}
+              {{ props.deliveryNote.status ? t(`status.${props.deliveryNote.status}`) : '—' }}
             </span>
           </div>
         </div>
         <div class="info-item">
-          <span class="info-label">Party</span>
+          <span class="info-label">{{ t('grn.party') }}</span>
           <span class="info-val party-name">
             {{ props.deliveryNote.party_name ? `${props.deliveryNote.party_name}${props.deliveryNote.party_code ? ` (${props.deliveryNote.party_code})` : ''}` : '—' }}
           </span>
         </div>
         <div class="info-item">
-          <span class="info-label">Vehicle No.</span>
+          <span class="info-label">{{ t('delivery.vehicleNo') }}</span>
           <span class="info-val">{{ props.deliveryNote.vehicle_number || '—' }}</span>
         </div>
         <div class="info-item">
-          <span class="info-label">Driver Name</span>
+          <span class="info-label">{{ t('delivery.driverName') }}</span>
           <span class="info-val">{{ props.deliveryNote.driver_name || '—' }}</span>
         </div>
         <div class="info-item">
-          <span class="info-label">Transporter</span>
+          <span class="info-label">{{ t('delivery.transporter') }}</span>
           <span class="info-val">{{ props.deliveryNote.transporter || '—' }}</span>
         </div>
         <div class="info-item highlight-summary">
-          <span class="info-label">Total Qty</span>
+          <span class="info-label">{{ t('delivery.totalQty') }}</span>
           <span class="info-val total-val num-val">{{ formatQty(totalQty, 0) }}</span>
         </div>
       </div>
 
       <!-- Charges Block -->
       <div class="charges-card">
-        <h4 class="section-subtitle">Delivery Charges</h4>
+        <h4 class="section-subtitle">{{ t('delivery.deliveryCharge') }}</h4>
         <div class="charges-grid">
           <div class="info-item">
-            <span class="info-label">Charge Mode</span>
+            <span class="info-label">{{ t('delivery.chargeMode') }}</span>
             <span class="info-val">
-              {{ props.deliveryNote.loading_charge_mode === 'PER_UNIT' ? 'Per Unit Rate' : 'Flat Amount' }}
+              {{ props.deliveryNote.loading_charge_mode === 'PER_UNIT' ? t('chargeMode.perUnit') : t('chargeMode.flat') }}
             </span>
           </div>
           <div v-if="props.deliveryNote.loading_charge_mode === 'PER_UNIT'" class="info-item">
-            <span class="info-label">Delivery Rate / Unit</span>
+            <span class="info-label">{{ t('delivery.deliveryRatePerUnit') }}</span>
             <span class="info-val num-val">
-              {{ props.deliveryNote.loading_unloading_rate_per_unit ? formatCurrency(Number(props.deliveryNote.loading_unloading_rate_per_unit)) + ' / unit' : '—' }}
+              {{ props.deliveryNote.loading_unloading_rate_per_unit ? `${formatCurrency(Number(props.deliveryNote.loading_unloading_rate_per_unit))} / ${t('common.unit').toLowerCase()}` : '—' }}
             </span>
           </div>
           <div v-else class="info-item">
-            <span class="info-label">Flat Delivery Charge</span>
+            <span class="info-label">{{ t('delivery.flatDeliveryCharge') }}</span>
             <span class="info-val num-val">
               {{ props.deliveryNote.loading_charge ? formatCurrency(Number(props.deliveryNote.loading_charge)) : '—' }}
             </span>
           </div>
           <div class="info-item">
-            <span class="info-label">Computed Delivery Charge</span>
+            <span class="info-label">{{ t('delivery.computedDeliveryCharge') }}</span>
             <span class="info-val num-val highlight-val">
               {{ props.deliveryNote.computed_loading_charge ? formatCurrency(Number(props.deliveryNote.computed_loading_charge)) : '—' }}
             </span>
@@ -155,16 +157,16 @@ const handleExportLines = () => {
 
       <!-- Remarks if present -->
       <div v-if="props.deliveryNote.remarks" class="remarks-box">
-        <span class="info-label">Remarks:</span>
+        <span class="info-label">{{ t('delivery.remarks') }}:</span>
         <span class="remarks-text">{{ props.deliveryNote.remarks }}</span>
       </div>
 
       <!-- Line Items Section -->
       <div class="lines-header">
-        <h4 class="lines-title">Dispatched Items ({{ props.deliveryNote.lines ? props.deliveryNote.lines.length : 0 }})</h4>
+        <h4 class="lines-title">{{ t('delivery.dispatchedItems', { count: props.deliveryNote.lines ? props.deliveryNote.lines.length : 0 }) }}</h4>
         <button class="btn-outlined btn-sm" type="button" @click="handleExportLines">
           <Download :size="14" />
-          <span>Export CSV</span>
+          <span>{{ t('delivery.exportLinesCsv') }}</span>
         </button>
       </div>
 
@@ -177,25 +179,25 @@ const handleExportLines = () => {
           paginator
           :rows="8"
         >
-          <Column field="lot_number" header="Lot No.">
+          <Column field="lot_number" :header="t('inventory.lotNo')">
             <template #body="{ data }">
               <span class="code-link">{{ data.lot_number || '—' }}</span>
             </template>
           </Column>
 
-          <Column field="commodity_name" header="Commodity">
+          <Column field="commodity_name" :header="t('common.commodity')">
             <template #body="{ data }">
               <span>{{ data.commodity_name || '—' }}</span>
             </template>
           </Column>
 
-          <Column field="qty" header="Qty">
+          <Column field="qty" :header="t('common.quantity')">
             <template #body="{ data }">
               <span class="num-val">{{ formatQty(data.qty, 0) }}</span>
             </template>
           </Column>
 
-          <Column header="Balance After">
+          <Column :header="t('delivery.balanceAfter')">
             <template #body="{ data }">
               <span class="num-val">
                 {{ data.balance_after !== null && data.balance_after !== undefined ? formatQty(data.balance_after, 0) : '—' }}
@@ -222,7 +224,7 @@ const handleExportLines = () => {
             <span>PDF</span>
           </button>
         </div>
-        <button class="btn-outlined" type="button" @click="handleClose">Close</button>
+        <button class="btn-outlined" type="button" @click="handleClose">{{ t('common.close') }}</button>
       </div>
     </template>
   </Dialog>

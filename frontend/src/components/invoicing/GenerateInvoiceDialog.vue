@@ -3,6 +3,7 @@ import { ref, watch, computed } from 'vue'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
+import { useI18n } from 'vue-i18n'
 import { FileCheck, AlertCircle, RefreshCw, Inbox, Loader2 } from 'lucide-vue-next'
 import { useQuery } from '@tanstack/vue-query'
 import { fetchParties } from '../../api/party'
@@ -23,6 +24,7 @@ const emit = defineEmits<{
   error: [message: string]
 }>()
 
+const { t } = useI18n()
 const selectedPartyId = ref<number | null>(null)
 
 const facilityIdRef = computed(() => props.facilityId)
@@ -38,7 +40,7 @@ const partiesQuery = useQuery({
 
 const partyOptions = computed(() => {
   const options: Array<{ label: string; value: number | null }> = [
-    { label: 'All Parties (With Uninvoiced Withdrawals)', value: null }
+    { label: t('invoicing.allPartiesUninvoiced'), value: null }
   ]
   if (partiesQuery.data.value) {
     options.push(
@@ -60,7 +62,7 @@ const errorMessage = computed(() => {
   if (previewQuery.error.value instanceof Error) {
     return previewQuery.error.value.message
   }
-  return 'Failed to load invoice preview'
+  return t('invoicing.failedToLoadPreview')
 })
 const isEmptyPreview = computed(
   () => !isLoadingPreview.value && !isErrorPreview.value && previewData.value.length === 0
@@ -79,12 +81,12 @@ const isGenerateDisabled = computed(() => {
 
 const generateButtonLabel = computed(() => {
   if (generateMutation.isPending.value) {
-    return 'Generating...'
+    return t('invoicing.generating')
   }
   if (partyCount.value > 0) {
-    return `Generate ${partyCount.value} Invoice(s)`
+    return t('invoicing.generateCountInvoices', { count: partyCount.value })
   }
-  return 'Generate Invoices'
+  return t('invoicing.generateInvoices')
 })
 
 watch(
@@ -107,7 +109,7 @@ async function handleSubmit() {
     emit('success', createdInvoices)
     emit('update:visible', false)
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to generate invoices'
+    const message = err instanceof Error ? err.message : t('invoicing.generationError')
     emit('error', message)
   }
 }
@@ -118,24 +120,24 @@ async function handleSubmit() {
     :visible="visible"
     @update:visible="emit('update:visible', $event)"
     modal
-    header="Generate Invoices from Uninvoiced Withdrawals"
+    :header="t('invoicing.generateDialogHeader')"
     :style="{ width: '850px', maxWidth: '95vw' }"
   >
     <div class="generate-dialog-body">
       <p class="dialog-desc">
-        Only stock that has actually left on a posted Delivery Note is billable. Select a party to generate tax invoices for their uninvoiced delivery lines, or select All Parties to generate invoices across all clients. Review the charges below before generating.
+        {{ t('invoicing.generateDialogDesc') }}
       </p>
 
       <form @submit.prevent="handleSubmit" class="generate-form">
         <div class="form-field">
-          <label for="party-select">Select Client / Party</label>
+          <label for="party-select">{{ t('invoicing.selectClientParty') }}</label>
           <Select
             id="party-select"
             v-model="selectedPartyId"
             :options="partyOptions"
             optionLabel="label"
             optionValue="value"
-            placeholder="Select a party or generate for all"
+            :placeholder="t('invoicing.selectPartyOrAll')"
             :loading="partiesQuery.isLoading.value"
             class="w-full"
           />
@@ -143,17 +145,17 @@ async function handleSubmit() {
 
         <div class="info-callout">
           <FileCheck :size="16" class="callout-icon" />
-          <span>Invoices will be calculated using agreed rent rates and delivery charges for uninvoiced items.</span>
+          <span>{{ t('invoicing.uninvoicedNotice') }}</span>
         </div>
 
         <!-- Preview Section with Explicit States -->
         <div class="preview-container">
-          <h4 class="preview-heading">Invoice Charges Preview</h4>
+          <h4 class="preview-heading">{{ t('invoicing.invoiceChargesPreview') }}</h4>
 
           <!-- State 1: Loading State -->
           <div v-if="isLoadingPreview" class="preview-state loading-state">
             <Loader2 :size="24" class="spin-icon text-accent" />
-            <span>Calculating uninvoiced charges preview...</span>
+            <span>{{ t('invoicing.calculatingPreview') }}</span>
             <div class="skeleton-box">
               <Skeleton height="32px" class="mb-2" />
               <Skeleton height="80px" />
@@ -164,20 +166,20 @@ async function handleSubmit() {
           <div v-else-if="isErrorPreview" class="preview-state error-state">
             <AlertCircle :size="32" class="text-danger" />
             <div class="error-content">
-              <h5 class="error-title">Failed to load charges preview</h5>
+              <h5 class="error-title">{{ t('invoicing.failedToLoadPreview') }}</h5>
               <p class="error-message">{{ errorMessage }}</p>
             </div>
             <button type="button" class="btn-outlined btn-sm" @click="previewQuery.refetch()">
               <RefreshCw :size="14" />
-              <span>Retry</span>
+              <span>{{ t('common.retry') }}</span>
             </button>
           </div>
 
           <!-- State 3: Empty State -->
           <div v-else-if="isEmptyPreview" class="preview-state empty-state">
             <Inbox :size="36" class="text-muted" />
-            <h5 class="empty-title">Nothing to invoice</h5>
-            <p class="empty-desc">No uninvoiced withdrawals for this selection.</p>
+            <h5 class="empty-title">{{ t('invoicing.nothingToInvoice') }}</h5>
+            <p class="empty-desc">{{ t('invoicing.nothingToInvoiceDesc') }}</p>
           </div>
 
           <!-- State 4: Loaded State -->
@@ -197,7 +199,7 @@ async function handleSubmit() {
             @click="emit('update:visible', false)"
             :disabled="generateMutation.isPending.value"
           >
-            Cancel
+            {{ t('common.cancel') }}
           </button>
           <button
             type="submit"

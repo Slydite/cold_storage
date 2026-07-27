@@ -1,77 +1,73 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { computed } from 'vue'
 import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
+import Textarea from 'primevue/textarea'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
+import { useI18n } from 'vue-i18n'
 import type { TypeEnum } from '../../api/party'
 
 interface Props {
   visible: boolean
-  loading: boolean
+  loading?: boolean
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
-  submit: [values: { name: string; type: TypeEnum; phone?: string; email?: string; address?: string; gstin?: string }]
+  submit: [
+    values: {
+      name: string
+      type: TypeEnum
+      phone?: string
+      email?: string
+      address?: string
+      gstin?: string
+    }
+  ]
 }>()
 
-const partySchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  type: z.enum(['DEPOSITOR', 'VENDOR', 'TRANSPORTER'], {
-    message: 'Type is required'
-  }),
-  phone: z.string().optional(),
-  email: z.string().email('Invalid email address').or(z.literal('')).optional(),
-  gstin: z.string().optional(),
-  address: z.string().optional()
-})
+const { t } = useI18n()
+
+const typeOptions = computed(() => [
+  { label: t('parties.depositorCustomer'), value: 'DEPOSITOR' },
+  { label: t('parties.vendor'), value: 'VENDOR' },
+  { label: t('parties.transporter'), value: 'TRANSPORTER' }
+])
+
+const partySchema = computed(() =>
+  z.object({
+    name: z.string().min(1, t('validation.nameRequired')),
+    type: z.enum(['DEPOSITOR', 'VENDOR', 'TRANSPORTER']),
+    phone: z.string().optional(),
+    email: z.string().email(t('validation.invalidEmail')).or(z.literal('')).optional(),
+    address: z.string().optional(),
+    gstin: z.string().optional()
+  })
+)
 
 const { handleSubmit, errors, defineField, resetForm } = useForm({
-  validationSchema: toTypedSchema(partySchema),
+  validationSchema: computed(() => toTypedSchema(partySchema.value)),
   initialValues: {
     name: '',
     type: 'DEPOSITOR' as TypeEnum,
     phone: '',
     email: '',
-    gstin: '',
-    address: ''
+    address: '',
+    gstin: ''
   }
 })
 
-const [name, nameAttrs] = defineField('name')
+const [name, nameProps] = defineField('name')
 const [type] = defineField('type')
-const [phone, phoneAttrs] = defineField('phone')
-const [email, emailAttrs] = defineField('email')
-const [gstin, gstinAttrs] = defineField('gstin')
-const [address, addressAttrs] = defineField('address')
-
-const typeOptions = [
-  { label: 'Depositor / Customer', value: 'DEPOSITOR' },
-  { label: 'Vendor', value: 'VENDOR' },
-  { label: 'Transporter', value: 'TRANSPORTER' }
-]
-
-watch(
-  () => props.visible,
-  (newVal) => {
-    if (newVal) {
-      resetForm({
-        values: {
-          name: '',
-          type: 'DEPOSITOR',
-          phone: '',
-          email: '',
-          gstin: '',
-          address: ''
-        }
-      })
-    }
-  }
-)
+const [phone, phoneProps] = defineField('phone')
+const [email, emailProps] = defineField('email')
+const [address, addressProps] = defineField('address')
+const [gstin, gstinProps] = defineField('gstin')
 
 const onSubmit = handleSubmit((values) => {
   emit('submit', {
@@ -79,37 +75,42 @@ const onSubmit = handleSubmit((values) => {
     type: values.type,
     phone: values.phone || undefined,
     email: values.email || undefined,
-    gstin: values.gstin || undefined,
-    address: values.address || undefined
+    address: values.address || undefined,
+    gstin: values.gstin || undefined
   })
+  resetForm()
 })
+
+const handleCancel = () => {
+  resetForm()
+  emit('update:visible', false)
+}
 </script>
 
 <template>
   <Dialog
-    :visible="visible"
-    @update:visible="emit('update:visible', $event)"
+    :visible="props.visible"
+    @update:visible="(val) => emit('update:visible', val)"
     modal
-    header="Add New Party"
-    :style="{ width: '450px' }"
+    :header="t('parties.addNewParty')"
+    :style="{ width: '500px', maxWidth: '95vw' }"
   >
-    <form @submit.prevent="onSubmit" class="party-form">
-      <div class="form-field">
-        <label for="party-name">Party Name <span class="required">*</span></label>
-        <input
+    <form @submit.prevent="onSubmit" class="dialog-form">
+      <div class="form-group">
+        <label for="party-name" class="form-label">{{ t('parties.partyName') }} <span class="req">*</span></label>
+        <InputText
           id="party-name"
           v-model="name"
-          v-bind="nameAttrs"
-          type="text"
-          placeholder="e.g. Shree Traders"
-          class="form-input"
-          :class="{ 'has-error': errors.name }"
+          v-bind="nameProps"
+          placeholder="e.g. Ramesh Traders"
+          class="w-full"
+          :class="{ 'p-invalid': errors.name }"
         />
-        <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
+        <small v-if="errors.name" class="field-error">{{ errors.name }}</small>
       </div>
 
-      <div class="form-field">
-        <label for="party-type">Party Type <span class="required">*</span></label>
+      <div class="form-group">
+        <label for="party-type" class="form-label">{{ t('parties.partyType') }} <span class="req">*</span></label>
         <Select
           id="party-type"
           v-model="type"
@@ -118,76 +119,64 @@ const onSubmit = handleSubmit((values) => {
           optionValue="value"
           class="w-full"
         />
-        <span v-if="errors.type" class="field-error">{{ errors.type }}</span>
       </div>
 
-      <div class="form-field">
-        <label for="party-phone">Phone Number</label>
-        <input
-          id="party-phone"
-          v-model="phone"
-          v-bind="phoneAttrs"
-          type="text"
-          placeholder="e.g. +91 98250 12345"
-          class="form-input"
-          :class="{ 'has-error': errors.phone }"
-        />
-        <span v-if="errors.phone" class="field-error">{{ errors.phone }}</span>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="party-phone" class="form-label">{{ t('parties.phone') }}</label>
+          <InputText
+            id="party-phone"
+            v-model="phone"
+            v-bind="phoneProps"
+            placeholder="e.g. 9876543210"
+            class="w-full"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="party-email" class="form-label">{{ t('parties.email') }}</label>
+          <InputText
+            id="party-email"
+            v-model="email"
+            v-bind="emailProps"
+            type="email"
+            placeholder="e.g. ramesh@traders.com"
+            class="w-full"
+            :class="{ 'p-invalid': errors.email }"
+          />
+          <small v-if="errors.email" class="field-error">{{ errors.email }}</small>
+        </div>
       </div>
 
-      <div class="form-field">
-        <label for="party-email">Email Address</label>
-        <input
-          id="party-email"
-          v-model="email"
-          v-bind="emailAttrs"
-          type="email"
-          placeholder="e.g. info@shreetraders.com"
-          class="form-input"
-          :class="{ 'has-error': errors.email }"
-        />
-        <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
-      </div>
-
-      <div class="form-field">
-        <label for="party-gstin">GSTIN</label>
-        <input
+      <div class="form-group">
+        <label for="party-gstin" class="form-label">{{ t('parties.gstin') }}</label>
+        <InputText
           id="party-gstin"
           v-model="gstin"
-          v-bind="gstinAttrs"
-          type="text"
+          v-bind="gstinProps"
           placeholder="e.g. 24AAAAA0000A1Z5"
-          class="form-input"
-          :class="{ 'has-error': errors.gstin }"
+          class="w-full"
         />
-        <span v-if="errors.gstin" class="field-error">{{ errors.gstin }}</span>
       </div>
 
-      <div class="form-field">
-        <label for="party-address">Address</label>
-        <input
+      <div class="form-group">
+        <label for="party-address" class="form-label">{{ t('parties.address') }}</label>
+        <Textarea
           id="party-address"
           v-model="address"
-          v-bind="addressAttrs"
-          type="text"
-          placeholder="e.g. Plot 12, GIDC Industrial Estate"
-          class="form-input"
-          :class="{ 'has-error': errors.address }"
+          v-bind="addressProps"
+          rows="2"
+          placeholder="Full address details..."
+          class="w-full"
         />
-        <span v-if="errors.address" class="field-error">{{ errors.address }}</span>
       </div>
 
       <div class="dialog-actions">
-        <button
-          type="button"
-          class="btn-outlined"
-          @click="emit('update:visible', false)"
-          :disabled="loading"
-        >
-          Cancel
+        <button type="button" class="btn-outlined" @click="handleCancel">
+          {{ t('common.cancel') }}
         </button>
-        <button type="submit" class="btn-primary" :disabled="loading">
-          {{ loading ? 'Saving...' : 'Save Party' }}
+        <button type="submit" class="btn-primary" :disabled="props.loading">
+          {{ t('parties.addParty') }}
         </button>
       </div>
     </form>
@@ -195,50 +184,37 @@ const onSubmit = handleSubmit((values) => {
 </template>
 
 <style scoped>
-.party-form {
+.dialog-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding-top: 8px;
 }
 
-.form-field {
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.form-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.form-field label {
-  font-size: 13px;
+.form-label {
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.required {
+.req {
   color: var(--status-danger-color);
 }
 
-.form-input {
-  width: 100%;
-  padding: 9px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-page);
-  color: var(--text-primary);
-  font-size: 13px;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--accent-primary);
-}
-
-.form-input.has-error {
-  border-color: var(--status-danger-color);
-}
-
 .field-error {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--status-danger-color);
 }
 
@@ -250,6 +226,12 @@ const onSubmit = handleSubmit((values) => {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 12px;
+  margin-top: 8px;
+}
+
+@media (max-width: 500px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

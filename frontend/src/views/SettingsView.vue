@@ -5,6 +5,7 @@ import Tab from 'primevue/tab'
 import TabPanels from 'primevue/tabpanels'
 import TabPanel from 'primevue/tabpanel'
 import { Building, Layers, Package, Users } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 
 import FacilityForm from '../components/settings/FacilityForm.vue'
 import FacilityListTable from '../components/settings/FacilityListTable.vue'
@@ -13,32 +14,34 @@ import FloorManager from '../components/settings/FloorManager.vue'
 import BlockManager from '../components/settings/BlockManager.vue'
 import CommodityManager from '../components/settings/CommodityManager.vue'
 import UserManager from '../components/settings/UserManager.vue'
+
+const { t } = useI18n()
 </script>
 
 <template>
   <div class="page-container settings-page">
     <header class="settings-header">
-      <h2 class="page-title">Settings & System Management</h2>
-      <p class="page-subtitle">Configure working facilities, chambers, floors, blocks, commodities, and user accounts.</p>
+      <h2 class="page-title">{{ t('settings.settingsTitle') }}</h2>
+      <p class="page-subtitle">{{ t('settings.settingsSubtitle') }}</p>
     </header>
 
     <Tabs value="facility" class="settings-tabs">
       <TabList class="custom-tab-list">
         <Tab value="facility" class="tab-item">
           <Building :size="16" />
-          <span>Facility Management</span>
+          <span>{{ t('settings.facilityManagement') }}</span>
         </Tab>
         <Tab value="locations" class="tab-item">
           <Layers :size="16" />
-          <span>Chambers, Floors & Blocks</span>
+          <span>{{ t('settings.locationsTab') }}</span>
         </Tab>
         <Tab value="commodities" class="tab-item">
           <Package :size="16" />
-          <span>Commodities</span>
+          <span>{{ t('settings.commoditiesTab') }}</span>
         </Tab>
         <Tab value="users" class="tab-item">
           <Users :size="16" />
-          <span>User Accounts</span>
+          <span>{{ t('settings.userAccountsTab') }}</span>
         </Tab>
       </TabList>
 

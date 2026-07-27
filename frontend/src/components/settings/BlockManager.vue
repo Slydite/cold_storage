@@ -14,6 +14,7 @@ import { useToast } from 'primevue/usetoast'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
+import { useI18n } from 'vue-i18n'
 import { useFacility } from '../../composables/useFacility'
 import {
   useChamberList,
@@ -25,6 +26,7 @@ import {
 import type { BlockOutput } from '../../api/location'
 
 const toast = useToast()
+const { t } = useI18n()
 const { facilityId } = useFacility()
 
 const selectedChamberFilter = ref<number | undefined>(undefined)
@@ -78,19 +80,21 @@ const dialogFloorOptions = computed(() => {
   return dialogFloors.value.map((f) => ({ label: f.name, value: f.id }))
 })
 
-const blockSchema = z.object({
-  floor_id: z
-    .number()
-    .nullable()
-    .refine((v): v is number => v != null && v > 0, { message: 'Floor selection is required' }),
-  name: z.string().min(1, 'Block name is required'),
-  capacity_bags: z.number().nullable().optional(),
-  sort_order: z.number(),
-  is_active: z.boolean()
-})
+const blockSchema = computed(() =>
+  z.object({
+    floor_id: z
+      .number()
+      .nullable()
+      .refine((v): v is number => v != null && v > 0, { message: t('validation.floorSelectionRequired') }),
+    name: z.string().min(1, t('validation.blockNameRequired')),
+    capacity_bags: z.number().nullable().optional(),
+    sort_order: z.number(),
+    is_active: z.boolean()
+  })
+)
 
 const { handleSubmit, errors, defineField, resetForm } = useForm({
-  validationSchema: toTypedSchema(blockSchema),
+  validationSchema: computed(() => toTypedSchema(blockSchema.value)),
   initialValues: {
     floor_id: null as number | null,
     name: '',
@@ -107,7 +111,6 @@ const [sort_order] = defineField('sort_order')
 const [is_active] = defineField('is_active')
 
 watch(formChamberId, () => {
-  // Clear floor_id if it's not valid under new chamber
   if (floor_id.value && !dialogFloorOptions.value.some((f) => f.value === floor_id.value)) {
     floor_id.value = null
   }
@@ -161,8 +164,8 @@ const onSubmit = handleSubmit(async (values) => {
       })
       toast.add({
         severity: 'success',
-        summary: 'Block Updated',
-        detail: `Block "${values.name}" updated successfully`,
+        summary: t('settings.blockUpdatedSummary'),
+        detail: t('settings.blockUpdatedDetail', { name: values.name }),
         life: 3000
       })
     } else {
@@ -177,17 +180,17 @@ const onSubmit = handleSubmit(async (values) => {
       })
       toast.add({
         severity: 'success',
-        summary: 'Block Created',
-        detail: `Block "${values.name}" created successfully`,
+        summary: t('settings.blockCreatedSummary'),
+        detail: t('settings.blockCreatedDetail', { name: values.name }),
         life: 3000
       })
     }
     isDialogOpen.value = false
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Operation failed'
+    const msg = err instanceof Error ? err.message : t('common.actionFailed')
     toast.add({
       severity: 'error',
-      summary: 'Error',
+      summary: t('common.error'),
       detail: msg,
       life: 5000
     })
@@ -199,32 +202,32 @@ const onSubmit = handleSubmit(async (values) => {
   <div class="block-manager-wrapper">
     <div class="list-toolbar">
       <div class="toolbar-left">
-        <h3 class="toolbar-title">Block Management</h3>
-        <p class="toolbar-desc">Configure storage blocks belonging to floor and chamber levels.</p>
+        <h3 class="toolbar-title">{{ t('settings.blockManagement') }}</h3>
+        <p class="toolbar-desc">{{ t('settings.blockManagementDesc') }}</p>
       </div>
 
       <div class="toolbar-right">
         <Select
           v-model="selectedChamberFilter"
-          :options="[{ label: 'All Chambers', value: undefined }, ...chamberOptions]"
+          :options="[{ label: t('common.allChambers'), value: undefined }, ...chamberOptions]"
           optionLabel="label"
           optionValue="value"
-          placeholder="Filter by Chamber"
+          :placeholder="t('grn.chamber')"
           class="filter-select"
         />
 
         <Select
           v-model="selectedFloorFilter"
-          :options="[{ label: 'All Floors', value: undefined }, ...filterFloorOptions]"
+          :options="[{ label: t('common.allFloors'), value: undefined }, ...filterFloorOptions]"
           optionLabel="label"
           optionValue="value"
-          placeholder="Filter by Floor"
+          :placeholder="t('grn.floor')"
           class="filter-select"
         />
 
         <button type="button" class="btn-primary" @click="openCreateDialog">
           <Plus :size="16" />
-          <span>Add Block</span>
+          <span>{{ t('settings.addBlock') }}</span>
         </button>
       </div>
     </div>
@@ -237,22 +240,20 @@ const onSubmit = handleSubmit(async (values) => {
       </div>
 
       <div v-else-if="isError" class="error-state">
-        <p>Failed to load blocks list.</p>
+        <p>{{ t('grn.failedToLoad') }}</p>
         <button type="button" class="btn-outlined" @click="refetch()">
           <RefreshCw :size="14" />
-          <span>Retry</span>
+          <span>{{ t('common.retry') }}</span>
         </button>
       </div>
 
       <div v-else-if="!blocks || blocks.length === 0" class="empty-state">
         <Grid :size="36" class="empty-icon" />
-        <h3>No Blocks Found</h3>
-        <p>
-          {{ selectedChamberFilter || selectedFloorFilter ? 'No blocks found for the selected filters.' : 'Add your first block to start organizing lot storage locations.' }}
-        </p>
+        <h3>{{ t('settings.noBlocksFound') }}</h3>
+        <p>{{ selectedChamberFilter || selectedFloorFilter ? t('common.noRecordsFound') : t('settings.noBlocksDesc') }}</p>
         <button type="button" class="btn-primary" @click="openCreateDialog">
           <Plus :size="16" />
-          <span>Add Block</span>
+          <span>{{ t('settings.addBlock') }}</span>
         </button>
       </div>
 
@@ -263,33 +264,33 @@ const onSubmit = handleSubmit(async (values) => {
         responsiveLayout="scroll"
         class="p-datatable-sm"
       >
-        <Column field="code" header="Code">
+        <Column field="code" :header="t('common.code')">
           <template #body="{ data }">
             <span class="code-link">{{ data.code }}</span>
           </template>
         </Column>
 
-        <Column field="name" header="Block Name">
+        <Column field="name" :header="t('locations.block') + ' ' + t('common.name')">
           <template #body="{ data }">
             <strong class="block-name">{{ data.name }}</strong>
           </template>
         </Column>
 
-        <Column field="chamber_name" header="Chamber">
+        <Column field="chamber_name" :header="t('locations.chamber')">
           <template #body="{ data }">
-            <span class="badge-subtle">{{ data.chamber_name || 'Chamber ' + data.chamber_id }}</span>
+            <span class="badge-subtle">{{ data.chamber_name || t('locations.chamber') + ' ' + data.chamber_id }}</span>
           </template>
         </Column>
 
-        <Column field="floor_name" header="Floor">
+        <Column field="floor_name" :header="t('locations.floor')">
           <template #body="{ data }">
-            <span class="badge-subtle">{{ data.floor_name || 'Floor ' + data.floor_id }}</span>
+            <span class="badge-subtle">{{ data.floor_name || t('locations.floor') + ' ' + data.floor_id }}</span>
           </template>
         </Column>
 
-        <Column field="capacity_bags" header="Capacity (Bags)">
+        <Column field="capacity_bags" :header="t('settings.capacityBags')">
           <template #body="{ data }">
-            <span class="num-val">{{ data.capacity_bags ? data.capacity_bags.toLocaleString() : 'Unspecified' }}</span>
+            <span class="num-val">{{ data.capacity_bags ? data.capacity_bags.toLocaleString() : t('common.unspecified') }}</span>
           </template>
         </Column>
 
@@ -299,21 +300,21 @@ const onSubmit = handleSubmit(async (values) => {
           </template>
         </Column>
 
-        <Column field="is_active" header="Status">
+        <Column field="is_active" :header="t('common.status')">
           <template #body="{ data }">
             <Tag
-              :value="data.is_active !== false ? 'Active' : 'Inactive'"
+              :value="data.is_active !== false ? t('status.active') : t('status.inactive')"
               :severity="data.is_active !== false ? 'success' : 'secondary'"
             />
           </template>
         </Column>
 
-        <Column header="Actions" alignFrozen="right" style="width: 100px">
+        <Column :header="t('common.actions')" alignFrozen="right" style="width: 100px">
           <template #body="{ data }">
             <button
               type="button"
               class="icon-btn"
-              title="Edit Block"
+              :title="t('settings.editBlock')"
               @click="openEditDialog(data)"
             >
               <Edit2 :size="16" />
@@ -326,25 +327,25 @@ const onSubmit = handleSubmit(async (values) => {
     <Dialog
       v-model:visible="isDialogOpen"
       modal
-      :header="editingBlock ? 'Edit Block' : 'Add New Block'"
-      :style="{ width: '450px' }"
+      :header="editingBlock ? t('settings.editBlock') : t('settings.addBlock')"
+      :style="{ width: '450px', maxWidth: '95vw' }"
     >
       <form @submit.prevent="onSubmit" class="dialog-form">
         <div class="form-group">
-          <label for="block-chamber">Belongs to Chamber</label>
+          <label for="block-chamber" class="form-label">{{ t('settings.belongsToChamber') }}</label>
           <Select
             id="block-chamber"
             v-model="formChamberId"
             :options="chamberOptions"
             optionLabel="label"
             optionValue="value"
-            placeholder="Select Chamber"
+            :placeholder="t('grn.chamber')"
             class="w-full"
           />
         </div>
 
         <div class="form-group">
-          <label for="block-floor">Belongs to Floor <span class="required">*</span></label>
+          <label for="block-floor" class="form-label">{{ t('settings.belongsToFloor') }} <span class="req">*</span></label>
           <Select
             id="block-floor"
             v-model="floor_id"
@@ -352,7 +353,7 @@ const onSubmit = handleSubmit(async (values) => {
             :options="dialogFloorOptions"
             optionLabel="label"
             optionValue="value"
-            placeholder="Select Floor"
+            :placeholder="t('grn.floor')"
             class="w-full"
             :class="{ 'p-invalid': errors.floor_id }"
           />
@@ -360,7 +361,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group">
-          <label for="block-name">Block Name <span class="required">*</span></label>
+          <label for="block-name" class="form-label">{{ t('locations.block') }} {{ t('common.name') }} <span class="req">*</span></label>
           <InputText
             id="block-name"
             v-model="name"
@@ -373,7 +374,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group">
-          <label for="block-capacity">Capacity (Bags)</label>
+          <label for="block-capacity" class="form-label">{{ t('settings.capacityBags') }}</label>
           <InputNumber
             id="block-capacity"
             v-model="capacity_bags"
@@ -384,7 +385,7 @@ const onSubmit = handleSubmit(async (values) => {
         </div>
 
         <div class="form-group">
-          <label for="block-sort">Sort Order</label>
+          <label for="block-sort" class="form-label">Sort Order</label>
           <InputNumber
             id="block-sort"
             v-model="sort_order"
@@ -395,7 +396,7 @@ const onSubmit = handleSubmit(async (values) => {
 
         <div class="checkbox-group">
           <Checkbox id="block-active" v-model="is_active" :binary="true" />
-          <label for="block-active" class="cursor-pointer">Active Status</label>
+          <label for="block-active" class="cursor-pointer">{{ t('settings.activeStatus') }}</label>
         </div>
 
         <div class="dialog-actions">
@@ -404,14 +405,14 @@ const onSubmit = handleSubmit(async (values) => {
             class="btn-outlined"
             @click="isDialogOpen = false"
           >
-            Cancel
+            {{ t('common.cancel') }}
           </button>
           <button
             type="submit"
             class="btn-primary"
             :disabled="createBlockMutation.isPending.value || updateBlockMutation.isPending.value"
           >
-            {{ editingBlock ? 'Update Block' : 'Save Block' }}
+            {{ editingBlock ? t('common.save') : t('common.add') }}
           </button>
         </div>
       </form>
@@ -475,7 +476,7 @@ const onSubmit = handleSubmit(async (values) => {
   gap: 6px;
 }
 
-.form-group label {
+.form-label {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
@@ -492,7 +493,7 @@ const onSubmit = handleSubmit(async (values) => {
   cursor: pointer;
 }
 
-.required {
+.req {
   color: var(--status-danger-color);
 }
 

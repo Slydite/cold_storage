@@ -4,10 +4,12 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
+import { useI18n } from 'vue-i18n'
 import { Plus, RefreshCw, CheckCircle2 } from 'lucide-vue-next'
 import { useFacility } from '../../composables/useFacility'
 import FacilityCreateDialog from './FacilityCreateDialog.vue'
 
+const { t } = useI18n()
 const { facilities, selectedFacilityId, setSelectedFacilityId, isLoading, isError, refetch } =
   useFacility()
 
@@ -18,13 +20,13 @@ const isCreateDialogOpen = ref(false)
   <div class="facility-list-wrapper">
     <div class="list-toolbar">
       <div>
-        <h3 class="toolbar-title">Cold Storage Facilities</h3>
-        <p class="toolbar-desc">Manage all registered facility locations and switch active working facility.</p>
+        <h3 class="toolbar-title">{{ t('settings.coldStorageFacilities') }}</h3>
+        <p class="toolbar-desc">{{ t('settings.coldStorageFacilitiesDesc') }}</p>
       </div>
 
       <button type="button" class="btn-primary" @click="isCreateDialogOpen = true">
         <Plus :size="16" />
-        <span>Add Facility</span>
+        <span>{{ t('settings.addFacility') }}</span>
       </button>
     </div>
 
@@ -38,20 +40,20 @@ const isCreateDialogOpen = ref(false)
 
       <!-- Error State -->
       <div v-else-if="isError" class="error-state">
-        <p>Failed to load facilities list.</p>
+        <p>{{ t('errors.failedToLoadFacility') }}</p>
         <button type="button" class="btn-outlined" @click="refetch()">
           <RefreshCw :size="14" />
-          <span>Retry</span>
+          <span>{{ t('common.retry') }}</span>
         </button>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="facilities.length === 0" class="empty-state">
-        <h3>No Facilities Registered</h3>
-        <p>Click "Add Facility" to register your cold storage location.</p>
+        <h3>{{ t('settings.noFacilitiesRegistered') }}</h3>
+        <p>{{ t('settings.noFacilitiesDesc') }}</p>
         <button type="button" class="btn-primary" @click="isCreateDialogOpen = true">
           <Plus :size="16" />
-          <span>Add Facility</span>
+          <span>{{ t('settings.addFacility') }}</span>
         </button>
       </div>
 
@@ -63,19 +65,19 @@ const isCreateDialogOpen = ref(false)
         responsiveLayout="scroll"
         class="p-datatable-sm"
       >
-        <Column field="code" header="Code">
+        <Column field="code" :header="t('common.code')">
           <template #body="{ data }">
             <span class="code-link">{{ data.code }}</span>
           </template>
         </Column>
 
-        <Column field="name" header="Facility Name">
+        <Column field="name" :header="t('locations.facility') + ' ' + t('common.name')">
           <template #body="{ data }">
             <div class="facility-name-cell">
               <span class="name-text">{{ data.name }}</span>
               <Tag
                 v-if="data.id === selectedFacilityId"
-                value="Active Working Facility"
+                :value="t('common.activeWorkingFacility')"
                 severity="success"
                 class="ml-2"
               />
@@ -83,19 +85,19 @@ const isCreateDialogOpen = ref(false)
           </template>
         </Column>
 
-        <Column field="phone" header="Phone">
+        <Column field="phone" :header="t('common.phone')">
           <template #body="{ data }">
             {{ data.phone || data.factory_phone || '-' }}
           </template>
         </Column>
 
-        <Column field="gstin" header="GSTIN">
+        <Column field="gstin" :header="t('common.gstin')">
           <template #body="{ data }">
             {{ data.gstin || '-' }}
           </template>
         </Column>
 
-        <Column header="Action" alignFrozen="right">
+        <Column :header="t('common.actions')" alignFrozen="right">
           <template #body="{ data }">
             <button
               v-if="data.id !== selectedFacilityId"
@@ -104,9 +106,9 @@ const isCreateDialogOpen = ref(false)
               @click="setSelectedFacilityId(data.id)"
             >
               <CheckCircle2 :size="14" />
-              <span>Set Working</span>
+              <span>{{ t('common.setWorking') }}</span>
             </button>
-            <span v-else class="working-badge">Currently Selected</span>
+            <span v-else class="working-badge">{{ t('common.currentlySelected') }}</span>
           </template>
         </Column>
       </DataTable>

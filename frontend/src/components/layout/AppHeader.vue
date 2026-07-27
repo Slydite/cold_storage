@@ -1,38 +1,58 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useThemeStore } from '../../stores/theme'
+import { useLocaleStore } from '../../stores/locale'
 import { useAuthStore } from '../../stores/auth'
 import { useSidebar } from '../../composables/useSidebar'
 import { useToast } from 'primevue/usetoast'
-import OverlayBadge from 'primevue/overlaybadge'
 import Menu from 'primevue/menu'
-import { Calendar, Bell, Sun, Moon, Menu as MenuIcon } from 'lucide-vue-next'
+import { Calendar, Sun, Moon, Menu as MenuIcon } from 'lucide-vue-next'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { t, te } = useI18n()
 const themeStore = useThemeStore()
+const localeStore = useLocaleStore()
 const authStore = useAuthStore()
 const { toggle: toggleSidebar } = useSidebar()
 
-const pageMeta = computed(() => ({
-  title: (route.meta.title as string) ?? 'Dashboard',
-  subtitle: (route.meta.subtitle as string) ?? ''
-}))
+const pageMeta = computed(() => {
+  const routeName = route.name as string
+  let title = ''
+  let subtitle = ''
 
-const dateFormatOptions: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric', weekday: 'short' }
-const currentDateFormatted = ref(new Date().toLocaleDateString('en-GB', dateFormatOptions))
-let dateRefreshInterval: ReturnType<typeof setInterval> | undefined
+  if (routeName && te(`nav.${routeName}`)) {
+    title = t(`nav.${routeName}`)
+  } else if (typeof route.meta.title === 'string' && te(route.meta.title)) {
+    title = t(route.meta.title)
+  } else {
+    title = (route.meta.title as string) ?? t('nav.dashboard')
+  }
 
-onMounted(() => {
-  dateRefreshInterval = setInterval(() => {
-    currentDateFormatted.value = new Date().toLocaleDateString('en-GB', dateFormatOptions)
-  }, 60_000)
+  if (routeName && te(`${routeName}.subtitle`)) {
+    subtitle = t(`${routeName}.subtitle`)
+  } else if (typeof route.meta.subtitle === 'string' && te(route.meta.subtitle)) {
+    subtitle = t(route.meta.subtitle)
+  } else {
+    subtitle = (route.meta.subtitle as string) ?? ''
+  }
+
+  return { title, subtitle }
 })
 
-onUnmounted(() => {
-  clearInterval(dateRefreshInterval)
+const dateFormatOptions: Intl.DateTimeFormatOptions = {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  weekday: 'short'
+}
+
+const currentDateFormatted = computed(() => {
+  const loc = localeStore.locale === 'hi' ? 'hi-IN' : 'en-GB'
+  return new Date().toLocaleDateString(loc, dateFormatOptions)
 })
 
 const menu = ref()
@@ -62,17 +82,17 @@ const usernameDisplay = computed(() => authStore.user?.username ?? 'Admin User')
 
 const menuItems = computed(() => [
   {
-    label: authStore.user?.username ? `@${authStore.user.username}` : 'Account',
+    label: authStore.user?.username ? `@${authStore.user.username}` : t('nav.userProfile'),
     items: [
       {
-        label: 'Sign out',
+        label: t('nav.signOut'),
         icon: 'pi pi-sign-out',
         command: async () => {
           await authStore.logout()
           toast.add({
             severity: 'info',
-            summary: 'Signed out',
-            detail: 'You have been logged out successfully.',
+            summary: t('auth.signedOut'),
+            detail: t('auth.loggedOutSuccess'),
             life: 3000
           })
           router.push({ name: 'login' })
@@ -90,8 +110,8 @@ const menuItems = computed(() => [
       <button
         class="hamburger-btn"
         type="button"
-        title="Toggle Navigation Menu"
-        aria-label="Toggle navigation menu"
+        :title="t('nav.toggleMenu')"
+        :aria-label="t('nav.toggleMenu')"
         @click="toggleSidebar"
       >
         <MenuIcon :size="20" />
@@ -113,21 +133,25 @@ const menuItems = computed(() => [
       <!-- Theme Switcher Toggle -->
       <button
         class="icon-action-btn"
-        :title="themeStore.theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+        :title="themeStore.theme === 'dark' ? t('nav.switchToLight') : t('nav.switchToDark')"
+        :aria-label="themeStore.theme === 'dark' ? t('nav.switchToLight') : t('nav.switchToDark')"
         @click="themeStore.toggleTheme"
+        type="button"
       >
         <Sun v-if="themeStore.theme === 'dark'" :size="18" />
         <Moon v-else :size="18" />
       </button>
 
-      <!-- Notification Bell -->
-      <div class="notification-wrapper">
-        <OverlayBadge value="3" severity="danger">
-          <button class="icon-action-btn" title="Notifications">
-            <Bell :size="18" />
-          </button>
-        </OverlayBadge>
-      </div>
+      <!-- Language Toggle Button -->
+      <button
+        class="icon-action-btn lang-toggle-btn"
+        :title="localeStore.locale === 'en' ? t('nav.switchToHindi') : t('nav.switchToEnglish')"
+        :aria-label="localeStore.locale === 'en' ? t('nav.switchToHindi') : t('nav.switchToEnglish')"
+        @click="localeStore.toggleLocale"
+        type="button"
+      >
+        <span class="lang-text">{{ localeStore.locale === 'en' ? 'हि' : 'EN' }}</span>
+      </button>
 
       <!-- Avatar Pill & Menu -->
       <Menu ref="menu" :model="menuItems" popup />
@@ -252,9 +276,10 @@ const menuItems = computed(() => [
   color: var(--accent-primary);
 }
 
-.notification-wrapper {
-  display: flex;
-  align-items: center;
+.lang-text {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .header-avatar {

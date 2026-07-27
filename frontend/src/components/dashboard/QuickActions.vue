@@ -1,40 +1,47 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { Plus, Truck, FileCheck2, Calculator } from 'lucide-vue-next'
 
 const router = useRouter()
+const { t } = useI18n()
 
-const quickActions = [
+const quickActions = computed(() => [
   {
-    title: 'New GRN',
-    subtitle: 'Record Inward',
+    id: 'newGrn',
+    title: t('dashboard.newGrn'),
+    subtitle: t('dashboard.recordInward'),
     icon: Plus,
     path: '/grn?action=create',
     badgeClass: 'badge-purple'
   },
   {
-    title: 'New Delivery',
-    subtitle: 'Record Outward',
+    id: 'newDelivery',
+    title: t('dashboard.newDelivery'),
+    subtitle: t('dashboard.recordOutward'),
     icon: Truck,
     path: '/delivery?action=create',
     badgeClass: 'badge-green'
   },
   {
-    title: 'Generate Invoice',
-    subtitle: 'Create GST Invoice',
+    id: 'generateInvoice',
+    title: t('dashboard.generateInvoice'),
+    subtitle: t('dashboard.createGstInvoice'),
     icon: FileCheck2,
     path: '/invoicing?action=create',
     badgeClass: 'badge-blue'
   },
   {
-    title: 'Billing Overview',
-    subtitle: 'Rent Accrual & Due',
+    id: 'billingOverview',
+    title: t('dashboard.billingOverview'),
+    subtitle: t('dashboard.rentAccrualAndDue'),
     icon: Calculator,
     path: '/billing',
     badgeClass: 'badge-gold',
     hasArtwork: true
   }
-]
+])
 
 const triggerQuickAction = (path: string) => {
   router.push(path)
@@ -43,14 +50,15 @@ const triggerQuickAction = (path: string) => {
 
 <template>
   <div class="quick-actions-section">
-    <h3 class="section-title">Quick Actions</h3>
+    <h3 class="section-title">{{ t('dashboard.quickActions') }}</h3>
     <div class="actions-grid">
       <button
         v-for="action in quickActions"
-        :key="action.title"
+        :key="action.id"
         class="action-card-btn"
         :class="{ 'has-art-bg': action.hasArtwork }"
         @click="triggerQuickAction(action.path)"
+        type="button"
       >
         <div class="action-icon-box" :class="action.badgeClass">
           <component :is="action.icon" :size="20" />
@@ -61,7 +69,7 @@ const triggerQuickAction = (path: string) => {
         </div>
 
         <div v-if="action.hasArtwork" class="art-overlay-image">
-          <img src="/warehouse_art.png" alt="Warehouse Artwork" class="art-img" />
+          <img src="/warehouse_art.png" :alt="t('dashboard.warehouseArtwork')" class="art-img" />
         </div>
       </button>
     </div>

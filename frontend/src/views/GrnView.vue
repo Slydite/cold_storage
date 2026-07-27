@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { useToast } from 'primevue/usetoast'
+import { useI18n } from 'vue-i18n'
 import { useFacility } from '../composables/useFacility'
 import { useGrnList, usePostGrn, useCancelGrn } from '../composables/useGrns'
 import { useChamberList } from '../composables/useLocations'
@@ -16,6 +17,7 @@ import type { GrnOutput } from '../api/grn'
 
 const route = useRoute()
 const toast = useToast()
+const { t } = useI18n()
 
 const { facilityId, isLoading: loadingFacility, isError: facilityError, refetch: refetchFacility } = useFacility()
 
@@ -66,18 +68,38 @@ const errorMessage = computed(() => (grnsQuery.error.value instanceof Error ? gr
 const handlePost = async (id: number) => {
   try {
     const updated = await postMutation.mutateAsync(id)
-    toast.add({ severity: 'success', summary: 'GRN Posted', detail: `GRN ${updated.grn_number} posted successfully.`, life: 3000 })
+    toast.add({
+      severity: 'success',
+      summary: t('grn.postedToastSummary'),
+      detail: t('grn.postedToastDetail', { number: updated.grn_number }),
+      life: 3000
+    })
   } catch (err: unknown) {
-    toast.add({ severity: 'error', summary: 'Action Failed', detail: err instanceof Error ? err.message : 'Failed to post GRN', life: 5000 })
+    toast.add({
+      severity: 'error',
+      summary: t('common.actionFailed'),
+      detail: err instanceof Error ? err.message : t('grn.postFailed'),
+      life: 5000
+    })
   }
 }
 
 const handleCancel = async (id: number) => {
   try {
     const updated = await cancelMutation.mutateAsync(id)
-    toast.add({ severity: 'warn', summary: 'GRN Cancelled', detail: `GRN ${updated.grn_number} was cancelled.`, life: 3000 })
+    toast.add({
+      severity: 'warn',
+      summary: t('grn.cancelledToastSummary'),
+      detail: t('grn.cancelledToastDetail', { number: updated.grn_number }),
+      life: 3000
+    })
   } catch (err: unknown) {
-    toast.add({ severity: 'error', summary: 'Action Failed', detail: err instanceof Error ? err.message : 'Failed to cancel GRN', life: 5000 })
+    toast.add({
+      severity: 'error',
+      summary: t('common.actionFailed'),
+      detail: err instanceof Error ? err.message : t('grn.cancelFailed'),
+      life: 5000
+    })
   }
 }
 
@@ -142,7 +164,6 @@ onMounted(() => {
 .shrink-list {
   max-width: 40%;
 }
-
 @media (max-width: 900px) {
   .grn-page {
     flex-direction: column;

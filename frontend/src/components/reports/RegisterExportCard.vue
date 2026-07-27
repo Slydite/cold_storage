@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import Select from 'primevue/select'
+import { useI18n } from 'vue-i18n'
 import { FileText, Download, Eye, AlertCircle, Truck, PackageCheck, Receipt } from 'lucide-vue-next'
 import { useToast } from 'primevue/usetoast'
 import { fetchReportJson, downloadReportCsv } from '../../composables/useReportExport'
@@ -15,6 +16,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { t } = useI18n()
 const toast = useToast()
 
 const dateFrom = ref('')
@@ -27,12 +29,12 @@ const showPreview = ref(false)
 const previewRows = ref<Record<string, unknown>[] | null>(null)
 const errorDetail = ref<string | null>(null)
 
-const statusOptions = [
-  { label: 'All Statuses', value: '' },
-  { label: 'Draft', value: 'DRAFT' },
-  { label: 'Posted', value: 'POSTED' },
-  { label: 'Cancelled', value: 'CANCELLED' }
-]
+const statusOptions = computed(() => [
+  { label: t('common.allStatuses'), value: '' },
+  { label: t('status.DRAFT'), value: 'DRAFT' },
+  { label: t('status.POSTED'), value: 'POSTED' },
+  { label: t('status.CANCELLED'), value: 'CANCELLED' }
+])
 
 function getIconComponent() {
   switch (props.reportType) {
@@ -78,10 +80,10 @@ async function handlePreview() {
     previewRows.value = Array.isArray(data) ? data : []
     showPreview.value = true
   } catch (err) {
-    errorDetail.value = err instanceof Error ? err.message : 'Failed to load preview'
+    errorDetail.value = err instanceof Error ? err.message : t('reports.failedToLoadPreview')
     toast.add({
       severity: 'error',
-      summary: 'Preview Error',
+      summary: t('common.error'),
       detail: errorDetail.value,
       life: 4000
     })
@@ -105,15 +107,15 @@ async function handleDownloadCsv() {
     )
     toast.add({
       severity: 'success',
-      summary: 'Export Started',
-      detail: `${props.title} CSV downloaded.`,
+      summary: t('reports.exportStarted'),
+      detail: t('reports.exportStartedDetail', { title: props.title }),
       life: 3000
     })
   } catch (err) {
     toast.add({
       severity: 'error',
-      summary: 'Export Failed',
-      detail: err instanceof Error ? err.message : 'Failed to download report CSV',
+      summary: t('common.exportFailed'),
+      detail: err instanceof Error ? err.message : t('common.exportFailed'),
       life: 4000
     })
   } finally {
@@ -137,17 +139,17 @@ async function handleDownloadCsv() {
     <!-- Filters Row -->
     <div class="filters-row">
       <div class="filter-field">
-        <label>Date From</label>
+        <label>{{ t('reports.dateFrom') }}</label>
         <input type="date" v-model="dateFrom" class="date-input" />
       </div>
 
       <div class="filter-field">
-        <label>Date To</label>
+        <label>{{ t('reports.dateTo') }}</label>
         <input type="date" v-model="dateTo" class="date-input" />
       </div>
 
       <div class="filter-field">
-        <label>Status</label>
+        <label>{{ t('common.status') }}</label>
         <Select
           v-model="selectedStatus"
           :options="statusOptions"
@@ -166,34 +168,34 @@ async function handleDownloadCsv() {
     <!-- Inline Preview Table -->
     <div v-if="showPreview && previewRows" class="preview-container">
       <div class="preview-header">
-        <span>Found <strong>{{ previewRows.length }}</strong> record(s)</span>
+        <span>{{ t('reports.foundRecords', { count: previewRows.length }) }}</span>
       </div>
 
       <div v-if="previewRows.length === 0" class="muted-text">
-        No records matching selected criteria.
+        {{ t('reports.noRecordsMatching') }}
       </div>
 
       <table v-else class="mini-table">
         <thead>
           <tr v-if="reportType === 'grn'">
-            <th>GRN No.</th>
-            <th>Date</th>
-            <th>Party</th>
-            <th>Status</th>
+            <th>{{ t('grn.grnNumber') }}</th>
+            <th>{{ t('common.date') }}</th>
+            <th>{{ t('grn.party') }}</th>
+            <th>{{ t('common.status') }}</th>
           </tr>
           <tr v-else-if="reportType === 'dn'">
-            <th>DN No.</th>
-            <th>Date</th>
-            <th>Party</th>
-            <th>Status</th>
+            <th>{{ t('delivery.deliveryNumber') }}</th>
+            <th>{{ t('common.date') }}</th>
+            <th>{{ t('grn.party') }}</th>
+            <th>{{ t('common.status') }}</th>
           </tr>
           <tr v-else-if="reportType === 'invoice'">
-            <th>Invoice No.</th>
-            <th>Date</th>
-            <th>Party</th>
-            <th>GSTIN</th>
-            <th class="text-right">Total (₹)</th>
-            <th>Status</th>
+            <th>{{ t('invoicing.invoiceNumber') }}</th>
+            <th>{{ t('common.date') }}</th>
+            <th>{{ t('grn.party') }}</th>
+            <th>{{ t('parties.gstin') }}</th>
+            <th class="text-right">{{ t('common.totalAmount') }}</th>
+            <th>{{ t('common.status') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -204,7 +206,7 @@ async function handleDownloadCsv() {
               <td>{{ String(row.party_name || '-') }}</td>
               <td>
                 <span class="status-pill" :class="{ success: row.status === 'POSTED', warning: row.status === 'DRAFT', danger: row.status === 'CANCELLED' }">
-                  {{ String(row.status || '-') }}
+                  {{ row.status ? t(`status.${row.status}`) : '-' }}
                 </span>
               </td>
             </template>
@@ -215,7 +217,7 @@ async function handleDownloadCsv() {
               <td>{{ String(row.party_name || '-') }}</td>
               <td>
                 <span class="status-pill" :class="{ success: row.status === 'POSTED', warning: row.status === 'DRAFT', danger: row.status === 'CANCELLED' }">
-                  {{ String(row.status || '-') }}
+                  {{ row.status ? t(`status.${row.status}`) : '-' }}
                 </span>
               </td>
             </template>
@@ -228,7 +230,7 @@ async function handleDownloadCsv() {
               <td class="text-right num-val">{{ formatCurrency(Number(row.total_amount || 0)) }}</td>
               <td>
                 <span class="status-pill" :class="{ success: row.status === 'POSTED', warning: row.status === 'DRAFT', danger: row.status === 'CANCELLED' }">
-                  {{ String(row.status || '-') }}
+                  {{ row.status ? t(`status.${row.status}`) : '-' }}
                 </span>
               </td>
             </template>
@@ -236,7 +238,7 @@ async function handleDownloadCsv() {
         </tbody>
       </table>
       <div v-if="previewRows.length > 5" class="preview-more">
-        + {{ previewRows.length - 5 }} more records (download CSV for full register)
+        {{ t('reports.moreRecords', { count: previewRows.length - 5 }) }}
       </div>
     </div>
 
@@ -248,7 +250,7 @@ async function handleDownloadCsv() {
         :disabled="loadingJson"
       >
         <Eye :size="15" />
-        <span>{{ loadingJson ? 'Loading...' : showPreview ? 'Hide Preview' : 'Preview' }}</span>
+        <span>{{ loadingJson ? t('common.loading') : showPreview ? t('common.hidePreview') : t('common.preview') }}</span>
       </button>
 
       <button
@@ -258,7 +260,7 @@ async function handleDownloadCsv() {
         :disabled="downloadingCsv"
       >
         <Download :size="15" />
-        <span>{{ downloadingCsv ? 'Exporting...' : 'Download CSV' }}</span>
+        <span>{{ downloadingCsv ? t('common.exporting') : t('common.downloadCsv') }}</span>
       </button>
     </div>
   </div>
