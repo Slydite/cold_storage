@@ -292,3 +292,57 @@ def test_grn_pdf_rendering_locations(default_facility, test_party, test_commodit
     pdf_bytes = build_grn_pdf(grn_id=grn.id)
     assert isinstance(pdf_bytes, bytes)
     assert pdf_bytes.startswith(b'%PDF')
+
+
+@pytest.mark.django_db
+def test_pdf_endpoints_accept_application_pdf_header(
+    auth_client, default_facility, test_party, test_commodity
+):
+    """
+    Browsers request PDFs with `Accept: application/pdf`. DRF negotiates the
+    renderer in initial(), before the handler runs, so without a renderer
+    advertising that media type every PDF endpoint returned 406 and the view
+    body never executed.
+
+    A request with no Accept header succeeds either way, so this must assert
+    the header explicitly or it will not catch the regression.
+    """
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 1),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+            "rent_rate_per_unit": Decimal('12.00'),
+        }],
+    )
+    lot = Lot.objects.filter(grn=grn).first()
+
+    dn = create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        dispatch_date=date(2026, 8, 15),
+        lines=[{"lot_id": lot.id, "qty": 40}],
+    )
+    post_delivery_note(delivery_note_id=dn.id)
+
+    invoices = generate_invoices_for_uninvoiced_deliveries(
+        facility_id=default_facility.id, party_id=test_party.id
+    )
+    invoice = invoices[0]
+
+    for url in (
+        f'/api/grns/{grn.id}/pdf/',
+        f'/api/delivery-notes/{dn.id}/pdf/',
+        f'/api/invoices/{invoice.id}/pdf/',
+    ):
+        res = auth_client.get(url, HTTP_ACCEPT='application/pdf')
+        assert res.status_code == 200, f"{url} returned {res.status_code}"
+        assert res['Content-Type'] == 'application/pdf'
+        assert res.content.startswith(b'%PDF')
+
+        # A wildcard Accept (what <a download> and some browsers send) too.
+        res_any = auth_client.get(url, HTTP_ACCEPT='*/*')
+        assert res_any.status_code == 200, f"{url} (*/*) returned {res_any.status_code}"

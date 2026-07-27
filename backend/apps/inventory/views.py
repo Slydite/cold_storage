@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
+from libs.renderers import PDFRenderer
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
@@ -234,7 +235,7 @@ class GRNViewSet(ViewSet):
         responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 400: None, 404: None},
         summary="Stream PDF for a GRN"
     )
-    @action(detail=True, methods=['get'], url_path='pdf')
+    @action(detail=True, methods=['get'], url_path='pdf', renderer_classes=[PDFRenderer])
     def pdf(self, request, pk=None):
         try:
             grn = get_grn_by_id(pk)
