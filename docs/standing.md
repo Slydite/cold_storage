@@ -17,29 +17,34 @@ Answers to design questions the agent should not need to re-ask. If a genuinely 
 ## 3. Weight shrinkage / loss tracking
 - **Not implemented in v1.** `remaining_qty` reflects only GRN-in minus DN-out, no automatic decay model. This is a known limitation, not an oversight — flag it in the reports module so a manual "adjustment" entry type can be added later without restructuring the ledger.
 
-## 4. Chambers / floors / racks
-- **SUPERSEDED (2026-07-25).** The original v1 decision was a flat chamber field with no floor level. The owner has since confirmed the real hierarchy is **Cold Storage (building) → Floor → Chamber**, with room left for multi-tenancy and richer accounts later. The business's own paper GRN confirms it — its remarks field reads "मंजिल-2 कक्ष-4" (Floor 2, Chamber 4).
-- `Floor` and `Chamber` are now real master tables in `apps.locations`: `Floor` belongs to a Facility, `Chamber` belongs to a Floor. Both are managed from the Settings page.
-- `Lot` carries `floor_ref`/`chamber_ref` FKs **alongside** the legacy free-text `floor`/`chamber`/`rack` columns. This is a deliberate two-phase migration: the text columns stay until every row is verified backfilled, then a later change drops them. Lots that had a chamber but no floor (from the flat era) were parented to a per-facility "Ground Floor" placeholder rather than losing their location.
-- Racks remain unmodelled. Add a `Rack` under `Chamber` when the business actually needs it.
+## 4. Location hierarchy
+- **CORRECTED (2026-07-27), supersedes all earlier versions of this section.** The owner (who runs the business) confirmed the real hierarchy is **Facility → Chamber → Floor → Block**. Two earlier readings were wrong: v1 had a flat chamber field, and the 2026-07-25 revision had Floor above Chamber. What the code previously called a "Chamber" is in fact a **Block**; a Chamber is the level *above* Floor.
+- `Chamber`, `Floor` and `Block` are real master tables in `apps.locations`: `Chamber` belongs to a Facility, `Floor` to a Chamber, `Block` to a Floor. All three are managed from the Settings page, and pickers cascade (choosing a chamber narrows floors, choosing a floor narrows blocks).
+- The rename was done with a hand-written migration (`locations/0002_restructure_hierarchy`) rather than the autodetector's diff, which emitted a destructive drop/recreate. On SQLite, `AlterUniqueTogether(→ set())` must come **before** the `RemoveField` or the table remake fails — check ordering by hand whenever this hierarchy changes again.
+- `Lot` carries `chamber_ref`/`floor_ref`/`block_ref` FKs **alongside** the legacy free-text `floor`/`chamber`/`rack` columns. The text columns are retained only until every row is verified backfilled, then a later change drops them. **Nothing may filter or match on them** — new code reads the FKs, and reads `location_display` for presentation. A filter comparing against the free-text column silently returns nothing, which is how a dead chamber filter survived unnoticed on the GRN list.
+- Racks remain unmodelled. Add a `Rack` under `Block` when the business actually needs it.
 
 ## 5. Items / products
-- Items are a **master table** (`Item`: name, category, default packaging, default unit), referenced by FK from GRN/DN lines — not free-text per line. This is what makes stock reporting and rent-rate lookup by item category actually work. Seed it with the items visible in the reference documents (peas, sweet corn, cauliflower, etc.) plus an "add new item" flow for others.
+- Items are a **master table** — the model is called **`Commodity`** (in `apps.commodities`), not `Item`; earlier drafts of this doc used the wrong name. Referenced by FK from GRN/DN lines, never free-text per line. Carries a default unit, which pre-fills the GRN line's `unit` but can be overridden per line.
+- Seeded with the produce visible in the reference documents (potato, peas, sweet corn, cauliflower, carrot, chilli, ginger, garlic…), plus an "add new commodity" flow from Settings.
 
 ## 6. Party model
 - Single `Party` model serves both GRN suppliers and DN customers (same entity in practice — a party stores goods, then later withdraws them). GSTIN and mobile are **optional** fields (confirmed from the paper GRN — often left blank for small farmers).
 
 ## 7. Billing / rent calculation
-- Rate card keyed by **item category × bag weight category** (20kg/50kg, per the paper GRN's rate table), rate expressed as ₹ per bag per month.
-- Billing cycle: **monthly**, triggered manually via the "Rent Run" quick action (matches dashboard mockup) rather than fully automated on a cron — keep a human in the loop for v1 since rent runs touch money.
-- Partial months: **prorate by days stored** (days_in_storage / days_in_month × monthly_rate) rather than rounding to full months — simpler to explain to customers and matches how the paper form's "per nag/maah" rate implies daily granularity is expected.
-- Loading/unloading labor charge is a **one-time charge at GRN time**, separate line item from recurring rent — not folded into the monthly rate.
-- **Rates are per-party, not just per-commodity (added 2026-07-25).** `RateCard` carries an optional `party`: a card with no party is the default/list rate for everyone; a card with a party is a negotiated override. Resolution is **specificity over recency** — a party's rate wins even when a newer default exists. Both dimensions still respect `effective_from`, so a party's own newer rate supersedes their older one.
-- A GRN also records the preservation rate agreed at intake (it is written on the paper receipt). That field is **documentary only** — billing always resolves rates from `RateCard`, so there is never a second source of truth for money.
-- Rent runs take more than a date range: optional party / commodity / chamber narrowing, a `min_billing_days` floor for minimum-stay terms, and free-text notes. A **preview** endpoint dry-runs a period without persisting, reporting which rate applied to each line (`PARTY` vs `DEFAULT`) and listing lots with no applicable rate card instead of failing — the operator sees what is blocking the run and can fix it before committing.
+- **REWRITTEN (2026-07-27), supersedes all earlier versions of this section.** Rate Cards and Rent Runs were **deleted outright** — models, endpoints, UI and the periodic-billing concept. Do not reintroduce them. Everything below came directly from the owner.
+- **The GRN line is the only source of rate truth.** Each lot line carries `rent_rate_per_unit`, the negotiated ₹ per unit per month, entered at intake. Rates are negotiated per customer and per commodity, so there is no list rate to resolve against and no rate table to look up.
+- **Unit is per line** (BAGS / BOXES / CRATES …), defaulted from the commodity but overridable — the business stores different packagings of the same commodity.
+- **Slab billing, not proration.** Minimum 30 days from GRN creation, then 15-day slabs: 30, 45, 60, 75 … The multiplier is `1.0` for `days ≤ 30`, else `1 + 0.5 × ceil((days − 30) / 15)`. The owner's worked example is binding: 100 bags at ₹12 for 34 days = `100 × 12 × 1.5 = ₹1800.00`. Verified multipliers: 30→1.0, 31→1.5, 45→1.5, 46→2.0, 60→2.0, 61→2.5. This replaces the old prorate-by-days rule entirely.
+- **Only withdrawn stock is billable.** Goods still in storage simply accrue; rent is charged when stock leaves on a posted Delivery Note. Each delivery line is billed exactly once, enforced by `DeliveryLine.invoiced_at` + the `invoice_line` FK.
+- **Both documents carry a labour/transport charge**, each with a `FLAT` / `PER_UNIT` mode and a server-computed `computed_loading_charge`. Call it a **Receiving Charge** on a GRN and a **Delivery Charge** on a DN — never "loading/unloading", which is ambiguous because both events physically involve both. Each is billed once, on the first invoice that includes any withdrawal from that document.
+- **A GRN must never display a rent total or any computed amount.** The owner is explicit: a GRN is an intake record and cannot know the amount beyond the agreed rate and the charge. Quantity subtotals are fine; money totals are not.
+- `apps.billing.services` is now a **pure calculator with no models** — `billable_multiplier`, `days_stored`, `compute_line_rent`, `compute_delivery_line_rent`. Money is Decimal-only with `ROUND_HALF_UP`.
 
 ## 8. GST invoicing
-- Triggered manually via "Generate Invoice" quick action, typically after a Rent Run — not auto-generated on every DN (matches the earlier finding that "only an invoice is created," separate from GRN/DN, which don't themselves carry GST).
+- **UPDATED (2026-07-27).** Triggered manually via "Generate Invoice", scoped to a **party's uninvoiced withdrawals** — there is no Rent Run to follow any more. Typically raised when a lot runs out, but the owner can raise one earlier for partial completeness, so partial invoicing of a lot must always work.
+- **Always preview before generating.** `GET /api/invoices/preview/` returns the per-party line breakdown and server-computed totals without writing anything: it creates no rows, never sets `invoiced_at`, and must never consume an invoice sequence number. Preview and generation share one pure `build_invoice_items()` so the two cannot drift — if you change the calculation, change it there and nowhere else. The UI disables Generate while the preview is loading, errored or empty.
+- **Payments are tracked.** `Payment` rows hang off an invoice (FK `PROTECT`); `amount_paid` / `amount_due` / `payment_status` (`UNPAID` / `PARTIAL` / `PAID`) are **derived server-side** and clamp at zero on overpayment. Clients display these values and never compute money themselves.
 - Invoice numbering is its own sequential, gapless-per-financial-year counter, independent of GRN/DN numbering (per §2.4 of the main spec).
 - E-invoicing (IRN/GSP integration) stays out of scope until turnover threshold makes it mandatory — do not build this speculatively.
 
@@ -50,14 +55,17 @@ Answers to design questions the agent should not need to re-ask. If a genuinely 
 - **Open caveat:** user-management endpoints sit behind plain `IsAuthenticated`, like everything else. That is acceptable while `admin` is the only role, but must be revisited the moment a second role exists.
 
 ## 10. Facility / multi-tenancy
-- **UPDATED (2026-07-25).** Multiple facilities are now supported and manageable from Settings. The sidebar switcher picks the *working* facility used for creating GRNs/DNs/parties/rate cards; Inventory has its own independent filter that can additionally show stock **across all cold storages** at once. The two are deliberately separate — viewing everything shouldn't change what you're currently working in.
+- **UPDATED (2026-07-25).** Multiple facilities are now supported and manageable from Settings. The sidebar switcher picks the *working* facility used for creating GRNs/DNs/parties/locations; Inventory has its own independent filter that can additionally show stock **across all cold storages** at once. The two are deliberately separate — viewing everything shouldn't change what you're currently working in.
 - Facility carries the identity data its printed documents need: GSTIN, office and factory phones, bank account + IFSC, and editable terms text (taken from the real receipt letterhead).
 
 ## 11. File storage (PDFs, exports)
 - Local filesystem (Django `MEDIA_ROOT`) is sufficient for v1, no S3/object storage needed at in-house scale. Revisit only if deployment moves off a single VPS.
 
-## 12. Numbering formats (to match the mockups exactly)
-- GRN: `GRN-000123` · DN: `DN-000089` · Invoice: `INV-000256` · Lot: `LOT-000086` — zero-padded 6-digit sequential, prefix per document type, each its own counter.
+## 12. Identifiers, numbering and input sanitisation
+- Zero-padded 6-digit sequential, one counter per type: GRN `GRN-000123` · DN `DN-000089` · Invoice `INV-000256` · Lot `LOT-000086` · Party `PRT-000001` · Commodity `CMD-…` · Chamber `CHM-…` · Floor `FLR-…` · Block `BLK-…` · Facility `FAC-…`.
+- **Every identifier is generated server-side, on every entity that can be created (2026-07-27, owner's instruction: "auto generation should be on every field that involves creating a new thing").** Input serializers do **not** accept a `code`/number — a client-supplied one is ignored, not honoured. Create forms must therefore show no code input; the generated value appears read-only in tables and detail views afterwards.
+- Sequences are allocated under `select_for_update()` inside the creating transaction. Read-only paths must never call `get_next_sequence_number` — doing so burns numbers (this is why invoice preview is strictly read-only).
+- **All free text is sanitised in the service layer**, never in views or serializers: `libs/sanitizers.py` provides `clean_text`, `title_name`, `upper_code`, `clean_gstin`, `clean_phone`, `clean_email`. `title_name` deliberately preserves existing intra-word capitalisation ("GD Foods" stays "GD Foods", "o'brien" → "O'Brien"); `clean_phone` must not merge separate digit groups.
 
 ## 13. What "done" looks like per module
 For each module (GRN, Delivery, Billing, Invoicing), autonomous build should include: model + migration, service functions, serializers, ViewSet + routes registered, Django admin registration, tests covering the service layer (especially anything touching stock or money), and the corresponding Vue list view + create/edit split-panel per the UI spec. A module isn't complete until all of these exist — not just the API.
