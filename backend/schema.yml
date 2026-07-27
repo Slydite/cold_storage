@@ -1278,6 +1278,36 @@ paths:
           description: ''
         '400':
           description: No response body
+  /api/invoices/preview/:
+    get:
+      operationId: invoices_preview_list
+      summary: Preview uninvoiced charges for a facility
+      parameters:
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: party_id
+        schema:
+          type: integer
+        description: Filter by Party ID
+      tags:
+      - invoices
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvoicePreviewPartyOutput'
+          description: ''
   /api/lots/:
     get:
       operationId: lots_list
@@ -2773,6 +2803,76 @@ components:
       - payment_status
       - payments
       - updated_at
+    InvoicePreviewLineOutput:
+      type: object
+      properties:
+        description:
+          type: string
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        lot_number:
+          type: string
+          nullable: true
+        commodity_name:
+          type: string
+          nullable: true
+        qty:
+          type: integer
+          nullable: true
+        inward_date:
+          type: string
+          format: date
+          nullable: true
+        dispatch_date:
+          type: string
+          format: date
+          nullable: true
+        days_stored:
+          type: integer
+          nullable: true
+      required:
+      - amount
+      - description
+    InvoicePreviewPartyOutput:
+      type: object
+      properties:
+        party_id:
+          type: integer
+        party_name:
+          type: string
+        party_code:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoicePreviewLineOutput'
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+        gst_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - gst_amount
+      - gst_rate
+      - lines
+      - party_code
+      - party_id
+      - party_name
+      - subtotal
+      - total_amount
     LoadingChargeModeEnum:
       enum:
       - FLAT

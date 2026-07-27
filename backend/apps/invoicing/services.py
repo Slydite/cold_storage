@@ -13,6 +13,138 @@ from .models import Invoice, InvoiceLine, Payment
 from .selectors import get_invoice_by_id
 
 
+def build_invoice_items(*, party, line_list: list) -> dict:
+    """
+    Build invoice line items, subtotal, GST rate, GST amount, and total amount
+    for a list of delivery lines belonging to a party.
+
+    Pure and side-effect free: does NOT write to database or mutate any model.
+    """
+    invoice_items = []
+
+    # 1. Rent for each delivery line
+    for line in line_list:
+        rent_amount = compute_delivery_line_rent(line)
+        d_count = days_stored(line.lot.inward_date, line.delivery_note.dispatch_date)
+        desc = f"Rent - Lot {line.lot.lot_number} ({line.lot.commodity.name}) - Qty: {line.qty} ({d_count} days)"
+        invoice_items.append({
+            'description': desc,
+            'amount': rent_amount,
+            'delivery_line': line,
+            'lot_number': line.lot.lot_number,
+            'commodity_name': line.lot.commodity.name,
+            'qty': line.qty,
+            'inward_date': line.lot.inward_date,
+            'dispatch_date': line.delivery_note.dispatch_date,
+            'days_stored': d_count,
+        })
+
+    # 2. GRN receiving charges (billed once on first withdrawal)
+    processed_grns = set()
+    for line in line_list:
+        grn = line.lot.grn
+        if grn.id not in processed_grns and grn.loading_charge_invoiced_at is None:
+            processed_grns.add(grn.id)
+            charge = grn.computed_loading_charge()
+            if charge > Decimal('0.00'):
+                invoice_items.append({
+                    'description': f"Receiving Charge - GRN #{grn.grn_number}",
+                    'amount': charge,
+                    'grn': grn,
+                    'lot_number': None,
+                    'commodity_name': None,
+                    'qty': None,
+                    'inward_date': None,
+                    'dispatch_date': None,
+                    'days_stored': None,
+                })
+
+    # 3. DN loading charges (billed once on invoice containing DN's lines)
+    processed_dns = set()
+    for line in line_list:
+        dn = line.delivery_note
+        if dn.id not in processed_dns and dn.loading_charge_invoiced_at is None:
+            processed_dns.add(dn.id)
+            charge = dn.computed_loading_charge()
+            if charge > Decimal('0.00'):
+                invoice_items.append({
+                    'description': f"Delivery Charge - DN #{dn.dn_number}",
+                    'amount': charge,
+                    'dn': dn,
+                    'lot_number': None,
+                    'commodity_name': None,
+                    'qty': None,
+                    'inward_date': None,
+                    'dispatch_date': None,
+                    'days_stored': None,
+                })
+
+    subtotal = sum((item['amount'] for item in invoice_items), Decimal('0.00')).quantize(Decimal('0.01'))
+    gst_rate = Decimal('18.00')
+    gst_amount = (subtotal * gst_rate / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total_amount = subtotal + gst_amount
+
+    return {
+        'items': invoice_items,
+        'subtotal': subtotal,
+        'gst_rate': gst_rate,
+        'gst_amount': gst_amount,
+        'total_amount': total_amount,
+    }
+
+
+def preview_uninvoiced_charges(
+    *,
+    facility_id: int,
+    party_id: int | None = None
+) -> list[dict]:
+    """
+    Preview pending charges for uninvoiced delivery lines grouped by party without creating invoices.
+    
+    Strictly read-only: does NOT write to database, does NOT set DeliveryLine.invoiced_at,
+    and does NOT consume invoice sequence numbers.
+    """
+    facility = get_facility_or_raise(facility_id)
+    lines = list(get_uninvoiced_delivery_lines(facility_id=facility_id, party_id=party_id))
+    if not lines:
+        return []
+
+    party_lines_map = {}
+    for line in lines:
+        party = line.delivery_note.party
+        party_lines_map.setdefault(party, []).append(line)
+
+    previews = []
+    for party, line_list in sorted(party_lines_map.items(), key=lambda item: item[0].id):
+        items_data = build_invoice_items(party=party, line_list=line_list)
+
+        line_breakdown = []
+        for item in items_data['items']:
+            line_breakdown.append({
+                'description': item['description'],
+                'amount': item['amount'],
+                'lot_number': item['lot_number'],
+                'commodity_name': item['commodity_name'],
+                'qty': item['qty'],
+                'inward_date': item['inward_date'],
+                'dispatch_date': item['dispatch_date'],
+                'days_stored': item['days_stored'],
+            })
+
+        previews.append({
+            'party_id': party.id,
+            'party_name': party.name,
+            'party_code': party.code,
+            'lines': line_breakdown,
+            'subtotal': items_data['subtotal'],
+            'gst_rate': items_data['gst_rate'],
+            'gst_amount': items_data['gst_amount'],
+            'total_amount': items_data['total_amount'],
+        })
+
+    return previews
+
+
 @transaction.atomic
 def generate_invoices_for_uninvoiced_deliveries(
     *,
@@ -24,10 +156,7 @@ def generate_invoices_for_uninvoiced_deliveries(
     
     Implements Rule 3 (Only withdrawn stock is invoiced) and Anti-double-billing Invariant:
     - Queries uninvoiced delivery lines from POSTED delivery notes via get_uninvoiced_delivery_lines.
-    - Computes rent using compute_delivery_line_rent pure calculator.
-    - Bills GRN one-time receiving charge IN FULL on the FIRST invoice that includes any withdrawal
-      from that GRN (if loading_charge_invoiced_at IS NULL).
-    - Bills DN one-time loading charge on the invoice that includes that DN's lines (if loading_charge_invoiced_at IS NULL).
+    - Uses build_invoice_items to compute rent, receiving charges, loading charges, subtotals, and GST.
     - Marks DeliveryLine.invoiced_at and links DeliveryLine.invoice_line.
     """
     facility = get_facility_or_raise(facility_id)
@@ -45,54 +174,14 @@ def generate_invoices_for_uninvoiced_deliveries(
 
     created_invoices = []
     for party, line_list in sorted(party_lines_map.items(), key=lambda item: item[0].id):
+        items_data = build_invoice_items(party=party, line_list=line_list)
+        invoice_items = items_data['items']
+        subtotal = items_data['subtotal']
+        gst_rate = items_data['gst_rate']
+        gst_amount = items_data['gst_amount']
+        total_amount = items_data['total_amount']
+
         inv_number = get_next_sequence_number(facility=facility, sequence_type='INV')
-        
-        # Prepare invoice items: list of tuples (description, amount, delivery_line_ref, grn_ref, dn_ref)
-        invoice_items = []
-
-        # 1. Rent for each delivery line
-        for line in line_list:
-            rent_amount = compute_delivery_line_rent(line)
-            d_count = days_stored(line.lot.inward_date, line.delivery_note.dispatch_date)
-            desc = f"Rent - Lot {line.lot.lot_number} ({line.lot.commodity.name}) - Qty: {line.qty} ({d_count} days)"
-            invoice_items.append({
-                'description': desc,
-                'amount': rent_amount,
-                'delivery_line': line
-            })
-
-        # 2. GRN receiving charges (billed once on first withdrawal)
-        processed_grns = set()
-        for line in line_list:
-            grn = line.lot.grn
-            if grn.id not in processed_grns and grn.loading_charge_invoiced_at is None:
-                processed_grns.add(grn.id)
-                charge = grn.computed_loading_charge()
-                if charge > Decimal('0.00'):
-                    invoice_items.append({
-                        'description': f"Receiving Charge - GRN #{grn.grn_number}",
-                        'amount': charge,
-                        'grn': grn
-                    })
-
-        # 3. DN loading charges (billed once on invoice containing DN's lines)
-        processed_dns = set()
-        for line in line_list:
-            dn = line.delivery_note
-            if dn.id not in processed_dns and dn.loading_charge_invoiced_at is None:
-                processed_dns.add(dn.id)
-                charge = dn.computed_loading_charge()
-                if charge > Decimal('0.00'):
-                    invoice_items.append({
-                        'description': f"Delivery Charge - DN #{dn.dn_number}",
-                        'amount': charge,
-                        'dn': dn
-                    })
-
-        subtotal = sum((item['amount'] for item in invoice_items), Decimal('0.00')).quantize(Decimal('0.01'))
-        gst_rate = Decimal('18.00')
-        gst_amount = (subtotal * gst_rate / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        total_amount = subtotal + gst_amount
 
         party_gstin_snapshot = party.gstin if party.gstin else ''
         party_name_snapshot = party.name if party.name else ''
@@ -131,18 +220,18 @@ def generate_invoices_for_uninvoiced_deliveries(
             inv_line.full_clean()
             inv_line.save()
 
-            if 'delivery_line' in item:
+            if item.get('delivery_line'):
                 dl = item['delivery_line']
                 dl.invoiced_at = now
                 dl.invoice_line = inv_line
                 dl.save(update_fields=['invoiced_at', 'invoice_line'])
 
-            if 'grn' in item:
+            if item.get('grn'):
                 g = item['grn']
                 g.loading_charge_invoiced_at = now
                 g.save(update_fields=['loading_charge_invoiced_at'])
 
-            if 'dn' in item:
+            if item.get('dn'):
                 d = item['dn']
                 d.loading_charge_invoiced_at = now
                 d.save(update_fields=['loading_charge_invoiced_at'])

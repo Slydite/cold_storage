@@ -7,9 +7,10 @@ from apps.inventory.services import create_commodity, create_grn
 from apps.inventory.models import GRN
 from apps.delivery.services import create_delivery_note
 from apps.delivery.models import DeliveryNote
-from apps.invoicing.models import Invoice, Payment, PaymentStatus
+from apps.invoicing.models import Invoice, InvoiceLine, Payment, PaymentStatus
 from apps.invoicing.services import (
     generate_invoices_for_uninvoiced_deliveries,
+    preview_uninvoiced_charges,
     post_invoice,
     cancel_invoice,
     record_payment,
@@ -491,4 +492,290 @@ def test_delete_payment_service(default_facility, test_party):
     inv.refresh_from_db()
     assert inv.amount_paid == Decimal('0.00')
     assert inv.payments.count() == 0
+
+
+@pytest.mark.django_db
+def test_preview_uninvoiced_charges_totals_identical_to_generation(default_facility, test_party, test_commodity):
+    """
+    Assert preview returns totals IDENTICAL to what generation then actually produces for the same data.
+    """
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 1),
+        loading_charge=Decimal('100.00'),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+            "unit_weight": Decimal('50.00'),
+            "rent_rate_per_unit": Decimal('50.00')
+        }]
+    )
+    lot = grn.lots.first()
+
+    create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        dispatch_date=date(2026, 7, 31),
+        loading_charge=Decimal('50.00'),
+        status=DeliveryNote.Status.POSTED,
+        lines=[{"lot_id": lot.id, "qty": 100}]
+    )
+
+    preview_list = preview_uninvoiced_charges(
+        facility_id=default_facility.id,
+        party_id=test_party.id
+    )
+    assert len(preview_list) == 1
+    prev = preview_list[0]
+    assert prev['party_id'] == test_party.id
+    assert prev['party_name'] == test_party.name
+    assert prev['party_code'] == test_party.code
+
+    # Generate invoices
+    invoices = generate_invoices_for_uninvoiced_deliveries(
+        facility_id=default_facility.id,
+        party_id=test_party.id
+    )
+    assert len(invoices) == 1
+    inv = invoices[0]
+
+    # Assert Decimals match exactly
+    assert prev['subtotal'] == inv.subtotal
+    assert prev['gst_rate'] == inv.gst_rate
+    assert prev['gst_amount'] == inv.gst_amount
+    assert prev['total_amount'] == inv.total_amount
+
+    # Assert line breakdowns match
+    inv_lines = list(inv.lines.all())
+    assert len(prev['lines']) == len(inv_lines)
+    for p_line, i_line in zip(prev['lines'], inv_lines):
+        assert p_line['description'] == i_line.description
+        assert p_line['amount'] == i_line.amount
+
+
+@pytest.mark.django_db
+def test_preview_uninvoiced_charges_does_not_create_records_or_mark_invoiced(default_facility, test_party, test_commodity):
+    """
+    Assert preview does NOT create Invoice/InvoiceLine rows and does NOT set DeliveryLine.invoiced_at.
+    """
+    from apps.delivery.selectors import get_uninvoiced_delivery_lines
+
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 1),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+            "unit_weight": Decimal('50.00'),
+            "rent_rate_per_unit": Decimal('50.00')
+        }]
+    )
+    lot = grn.lots.first()
+
+    create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        dispatch_date=date(2026, 7, 31),
+        status=DeliveryNote.Status.POSTED,
+        lines=[{"lot_id": lot.id, "qty": 100}]
+    )
+
+    inv_count_before = Invoice.objects.count()
+    inv_line_count_before = InvoiceLine.objects.count()
+
+    preview_list = preview_uninvoiced_charges(facility_id=default_facility.id)
+    assert len(preview_list) == 1
+
+    assert Invoice.objects.count() == inv_count_before
+    assert InvoiceLine.objects.count() == inv_line_count_before
+
+    uninvoiced_lines = get_uninvoiced_delivery_lines(facility_id=default_facility.id)
+    assert uninvoiced_lines.count() == 1
+
+
+@pytest.mark.django_db
+def test_preview_uninvoiced_charges_does_not_consume_sequence_number(default_facility, test_party, test_commodity):
+    """
+    Assert preview does not consume an invoice sequence number.
+    """
+    from libs.sequences import Sequence
+
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 1),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+            "unit_weight": Decimal('50.00'),
+            "rent_rate_per_unit": Decimal('50.00')
+        }]
+    )
+    lot = grn.lots.first()
+
+    create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        dispatch_date=date(2026, 7, 31),
+        status=DeliveryNote.Status.POSTED,
+        lines=[{"lot_id": lot.id, "qty": 100}]
+    )
+
+    seq_before = Sequence.objects.filter(facility=default_facility, sequence_type='INV').first()
+    val_before = seq_before.current_value if seq_before else 0
+
+    # Call preview twice
+    preview_uninvoiced_charges(facility_id=default_facility.id)
+    preview_uninvoiced_charges(facility_id=default_facility.id)
+
+    seq_after = Sequence.objects.filter(facility=default_facility, sequence_type='INV').first()
+    val_after = seq_after.current_value if seq_after else 0
+
+    assert val_before == val_after
+
+    # Generate invoice afterwards and check sequence number
+    invoices = generate_invoices_for_uninvoiced_deliveries(facility_id=default_facility.id)
+    assert len(invoices) == 1
+    assert invoices[0].invoice_number.endswith(f"{val_before + 1:06d}")
+
+
+@pytest.mark.django_db
+def test_preview_already_invoiced_delivery_lines_never_appear(default_facility, test_party, test_commodity):
+    """
+    Assert already-invoiced delivery lines never appear in a preview.
+    """
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 1),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+            "unit_weight": Decimal('50.00'),
+            "rent_rate_per_unit": Decimal('50.00')
+        }]
+    )
+    lot = grn.lots.first()
+
+    create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        dispatch_date=date(2026, 7, 31),
+        status=DeliveryNote.Status.POSTED,
+        lines=[{"lot_id": lot.id, "qty": 100}]
+    )
+
+    # Generate invoice
+    generate_invoices_for_uninvoiced_deliveries(facility_id=default_facility.id)
+
+    # Preview now returns empty list
+    preview_list = preview_uninvoiced_charges(facility_id=default_facility.id)
+    assert len(preview_list) == 0
+
+
+@pytest.mark.django_db
+def test_preview_already_billed_grn_charge_does_not_reappear(default_facility, test_party, test_commodity):
+    """
+    Assert a GRN receiving charge already billed on an earlier invoice does not reappear in a later preview.
+    """
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 1),
+        loading_charge=Decimal('200.00'),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+            "unit_weight": Decimal('50.00'),
+            "rent_rate_per_unit": Decimal('50.00')
+        }]
+    )
+    lot = grn.lots.first()
+
+    # Withdrawal 1
+    create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        dispatch_date=date(2026, 7, 15),
+        status=DeliveryNote.Status.POSTED,
+        lines=[{"lot_id": lot.id, "qty": 40}]
+    )
+
+    # Generate invoice for 1st withdrawal -> GRN receiving charge gets billed
+    generate_invoices_for_uninvoiced_deliveries(facility_id=default_facility.id)
+
+    # Withdrawal 2
+    create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        dispatch_date=date(2026, 7, 31),
+        status=DeliveryNote.Status.POSTED,
+        lines=[{"lot_id": lot.id, "qty": 60}]
+    )
+
+    # Preview for withdrawal 2
+    preview_list = preview_uninvoiced_charges(facility_id=default_facility.id)
+    assert len(preview_list) == 1
+    prev = preview_list[0]
+
+    descriptions = [line['description'] for line in prev['lines']]
+    assert not any("Receiving Charge" in desc for desc in descriptions)
+
+
+@pytest.mark.django_db
+def test_preview_party_id_filtering(default_facility, test_party, test_party2, test_commodity):
+    """
+    Assert party_id filtering returns only that party.
+    """
+    grn1 = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 1),
+        status=GRN.Status.POSTED,
+        items=[{"commodity_id": test_commodity.id, "initial_qty": 50, "unit_weight": Decimal('50.00'), "rent_rate_per_unit": Decimal('50.00')}]
+    )
+    create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        dispatch_date=date(2026, 7, 10),
+        status=DeliveryNote.Status.POSTED,
+        lines=[{"lot_id": grn1.lots.first().id, "qty": 50}]
+    )
+
+    grn2 = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party2.id,
+        receipt_date=date(2026, 7, 1),
+        status=GRN.Status.POSTED,
+        items=[{"commodity_id": test_commodity.id, "initial_qty": 30, "unit_weight": Decimal('50.00'), "rent_rate_per_unit": Decimal('50.00')}]
+    )
+    create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party2.id,
+        dispatch_date=date(2026, 7, 12),
+        status=DeliveryNote.Status.POSTED,
+        lines=[{"lot_id": grn2.lots.first().id, "qty": 30}]
+    )
+
+    # Preview all
+    preview_all = preview_uninvoiced_charges(facility_id=default_facility.id)
+    assert len(preview_all) == 2
+
+    # Preview party 1 only
+    preview_p1 = preview_uninvoiced_charges(facility_id=default_facility.id, party_id=test_party.id)
+    assert len(preview_p1) == 1
+    assert preview_p1[0]['party_id'] == test_party.id
+
+    # Preview party 2 only
+    preview_p2 = preview_uninvoiced_charges(facility_id=default_facility.id, party_id=test_party2.id)
+    assert len(preview_p2) == 1
+    assert preview_p2[0]['party_id'] == test_party2.id
+
 

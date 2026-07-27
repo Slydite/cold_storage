@@ -89,3 +89,26 @@ class GenerateInvoicesInputSerializer(serializers.Serializer):
     facility_id = serializers.IntegerField()
     party_id = serializers.IntegerField(required=False, allow_null=True, default=None)
 
+
+class InvoicePreviewLineOutputSerializer(serializers.Serializer):
+    description = serializers.CharField()
+    amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    lot_number = serializers.CharField(allow_null=True, required=False, default=None)
+    commodity_name = serializers.CharField(allow_null=True, required=False, default=None)
+    qty = serializers.IntegerField(allow_null=True, required=False, default=None)
+    inward_date = serializers.DateField(allow_null=True, required=False, default=None)
+    dispatch_date = serializers.DateField(allow_null=True, required=False, default=None)
+    days_stored = serializers.IntegerField(allow_null=True, required=False, default=None)
+
+
+class InvoicePreviewPartyOutputSerializer(serializers.Serializer):
+    party_id = serializers.IntegerField()
+    party_name = serializers.CharField()
+    party_code = serializers.CharField()
+    lines = InvoicePreviewLineOutputSerializer(many=True)
+    subtotal = serializers.DecimalField(max_digits=12, decimal_places=2)
+    gst_rate = serializers.DecimalField(max_digits=5, decimal_places=2)
+    gst_amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+    total_amount = serializers.DecimalField(max_digits=12, decimal_places=2)
+
+

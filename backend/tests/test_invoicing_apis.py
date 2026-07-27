@@ -40,6 +40,7 @@ def test_commodity(default_facility):
 @pytest.mark.django_db
 def test_unauthenticated_invoicing_apis_denied(api_client):
     assert api_client.get('/api/invoices/').status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+    assert api_client.get('/api/invoices/preview/').status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
     assert api_client.post('/api/invoices/', {}).status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
     assert api_client.get('/api/invoices/1/pdf/').status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
     assert api_client.get('/api/invoices/1/payments/').status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
@@ -178,4 +179,63 @@ def test_payment_api_workflow_and_filtering(auth_client, default_facility, test_
     assert res_del.data['amount_paid'] == "400.00"
     assert res_del.data['amount_due'] == "600.00"
     assert len(res_del.data['payments']) == 1
+
+
+@pytest.mark.django_db
+def test_invoice_preview_api_endpoint(auth_client, default_facility, test_party, test_commodity):
+    """
+    Test GET /api/invoices/preview/?facility_id=<int>&party_id=<int optional>
+    """
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 1),
+        loading_charge=Decimal('100.00'),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+            "unit_weight": Decimal('50.00'),
+            "rent_rate_per_unit": Decimal('50.00')
+        }]
+    )
+    lot = grn.lots.first()
+
+    create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        dispatch_date=date(2026, 7, 31),
+        loading_charge=Decimal('50.00'),
+        status=DeliveryNote.Status.POSTED,
+        lines=[{"lot_id": lot.id, "qty": 100}]
+    )
+
+    # Missing facility_id -> 400 Bad Request
+    res_missing = auth_client.get('/api/invoices/preview/')
+    assert res_missing.status_code == status.HTTP_400_BAD_REQUEST
+    assert "facility_id" in res_missing.data
+
+    # Valid preview request
+    res = auth_client.get(f'/api/invoices/preview/?facility_id={default_facility.id}&party_id={test_party.id}')
+    assert res.status_code == status.HTTP_200_OK
+    assert len(res.data) == 1
+
+    entry = res.data[0]
+    assert entry['party_id'] == test_party.id
+    assert entry['party_name'] == test_party.name
+    assert entry['party_code'] == test_party.code
+    assert entry['subtotal'] == "7650.00"
+    assert entry['gst_rate'] == "18.00"
+    assert entry['gst_amount'] == "1377.00"
+    assert entry['total_amount'] == "9027.00"
+    assert len(entry['lines']) == 3
+
+    rent_line = entry['lines'][0]
+    assert rent_line['lot_number'] == lot.lot_number
+    assert rent_line['commodity_name'] == test_commodity.name
+    assert rent_line['qty'] == 100
+    assert rent_line['inward_date'] == "2026-07-01"
+    assert rent_line['dispatch_date'] == "2026-07-31"
+    assert rent_line['days_stored'] == 31
+
 

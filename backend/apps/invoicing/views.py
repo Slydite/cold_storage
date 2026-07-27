@@ -15,6 +15,7 @@ from .selectors import (
 )
 from .services import (
     generate_invoices_for_uninvoiced_deliveries,
+    preview_uninvoiced_charges,
     post_invoice,
     cancel_invoice,
     record_payment,
@@ -24,6 +25,7 @@ from .services import (
 from .serializers import (
     GenerateInvoicesInputSerializer,
     InvoiceOutputSerializer,
+    InvoicePreviewPartyOutputSerializer,
     PaymentInputSerializer,
     PaymentOutputSerializer,
 )
@@ -76,6 +78,39 @@ class InvoiceViewSet(ViewSet):
         except (Invoice.DoesNotExist, ValueError):
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         serializer = InvoiceOutputSerializer(invoice)
+        return Response(serializer.data)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('facility_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="Filter by Facility ID"),
+            OpenApiParameter('party_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Party ID"),
+        ],
+        responses={200: InvoicePreviewPartyOutputSerializer(many=True)},
+        summary="Preview uninvoiced charges for a facility"
+    )
+    @action(detail=False, methods=['get'], url_path='preview')
+    def preview(self, request):
+        facility_id = request.query_params.get('facility_id')
+        if not facility_id:
+            raise ValidationError({"facility_id": "This query parameter is required."})
+
+        party_id = request.query_params.get('party_id')
+
+        try:
+            facility_id_int = int(facility_id)
+            party_id_int = int(party_id) if party_id else None
+        except ValueError:
+            raise ValidationError({"facility_id": "Must be an integer."})
+
+        try:
+            previews = preview_uninvoiced_charges(
+                facility_id=facility_id_int,
+                party_id=party_id_int
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = InvoicePreviewPartyOutputSerializer(previews, many=True)
         return Response(serializer.data)
 
     @extend_schema(
