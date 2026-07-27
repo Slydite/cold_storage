@@ -2,10 +2,12 @@
 import { computed } from 'vue'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
+import SelectButton from 'primevue/selectbutton'
 import DatePicker from 'primevue/datepicker'
 import { Plus, Trash2, FileCheck } from 'lucide-vue-next'
 import { formatQty, formatCurrency } from '../../utils/format'
 import { useGrnForm } from '../../composables/useGrnForm'
+import { useChamberList, useFloorList, useBlockList } from '../../composables/useLocations'
 import type { PartyOutput } from '../../api/party'
 import type { CommodityOutput } from '../../api/commodity'
 
@@ -24,13 +26,36 @@ const emit = defineEmits<{
   created: [grnNumber: string, status: string]
 }>()
 
-const chamberSelectOptions = [
-  { label: 'Chamber A', value: 'Chamber A' },
-  { label: 'Chamber B', value: 'Chamber B' },
-  { label: 'Chamber C', value: 'Chamber C' }
-]
-
 const facilityIdRef = computed(() => props.facilityId)
+
+// Fetch locations for cascading dropdowns
+const { data: chambers } = useChamberList({ facilityId: facilityIdRef })
+const { data: floors } = useFloorList({ facilityId: facilityIdRef })
+const { data: blocks } = useBlockList({ facilityId: facilityIdRef })
+
+const chamberOptions = computed(() => {
+  if (!chambers.value) return []
+  return chambers.value.map((c) => ({ label: c.name, value: c.id }))
+})
+
+const getFloorsForChamber = (chamberId: number | null | undefined) => {
+  if (!floors.value) return []
+  if (!chamberId) return floors.value.map((f) => ({ label: f.name, value: f.id }))
+  return floors.value.filter((f) => f.chamber_id === chamberId).map((f) => ({ label: f.name, value: f.id }))
+}
+
+const getBlocksForFloor = (floorId: number | null | undefined, chamberId: number | null | undefined) => {
+  if (!blocks.value) return []
+  let res = blocks.value
+  if (chamberId) res = res.filter((b) => b.chamber_id === chamberId)
+  if (floorId) res = res.filter((b) => b.floor_id === floorId)
+  return res.map((b) => ({ label: b.name, value: b.id }))
+}
+
+const chargeModeOptions = [
+  { label: 'Flat Total', value: 'FLAT' },
+  { label: 'Per Unit Rate', value: 'PER_UNIT' }
+]
 
 const {
   party_id,
@@ -43,15 +68,30 @@ const {
   driverNameProps,
   remarks,
   remarksProps,
+  loading_charge_mode,
+  loading_charge,
+  loadingChargeProps,
+  loading_unloading_rate_per_bag,
+  loadingRateProps,
   items,
   errors,
   addItemRow,
   removeItemRow,
   totalNetWeight,
-  totalAmount,
+  totalQty,
+  computedReceivingChargeEstimate,
   submitForm,
   isSubmitting
 } = useGrnForm(facilityIdRef, (grnNumber, status) => emit('created', grnNumber, status))
+
+const onCommodityChange = (itemIdx: number, commId: number | null) => {
+  if (!commId) return
+  const comm = props.commodities.find((c) => c.id === commId)
+  const item = items.value[itemIdx]
+  if (item && comm && comm.unit) {
+    item.unit = comm.unit
+  }
+}
 </script>
 
 <template>
@@ -159,6 +199,53 @@ const {
         </div>
       </div>
 
+      <!-- Receiving Charge Section -->
+      <div class="charge-section-card">
+        <div class="charge-header">
+          <h4 class="section-subtitle">Receiving Charge</h4>
+          <span class="charge-help">Receiving labour and transport charges</span>
+        </div>
+
+        <div class="charge-controls">
+          <div class="form-group">
+            <label class="form-label">Charge Mode</label>
+            <SelectButton
+              v-model="loading_charge_mode"
+              :options="chargeModeOptions"
+              optionLabel="label"
+              optionValue="value"
+              :allowEmpty="false"
+              class="w-full"
+            />
+          </div>
+
+          <div v-if="loading_charge_mode === 'FLAT'" class="form-group">
+            <label class="form-label">Flat Receiving Charge (₹)</label>
+            <InputText
+              v-model="loading_charge"
+              v-bind="loadingChargeProps"
+              placeholder="e.g. 500.00"
+              class="w-full"
+            />
+          </div>
+
+          <div v-else class="form-group">
+            <label class="form-label">Receiving Rate / Unit (₹)</label>
+            <InputText
+              v-model="loading_unloading_rate_per_bag"
+              v-bind="loadingRateProps"
+              placeholder="e.g. 5.00"
+              class="w-full"
+            />
+          </div>
+
+          <div class="form-group est-display">
+            <label class="form-label">Estimated Receiving Charge</label>
+            <span class="est-value">{{ formatCurrency(computedReceivingChargeEstimate) }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Items Editable Section -->
       <div class="items-section">
         <h4 class="section-subtitle">Items / Products Inward</h4>
@@ -167,14 +254,16 @@ const {
           <table class="items-table">
             <thead>
               <tr>
-                <th width="40">#</th>
+                <th width="35">#</th>
                 <th>Commodity / Product <span class="req">*</span></th>
-                <th width="140">Chamber</th>
-                <th width="100">Qty (Units) <span class="req">*</span></th>
-                <th width="120">Unit Wt (MT)</th>
-                <th width="120">Rate / Unit (₹)</th>
-                <th width="110">Amount (₹)</th>
-                <th width="50"></th>
+                <th width="120">Chamber</th>
+                <th width="120">Floor</th>
+                <th width="120">Block</th>
+                <th width="90">Qty <span class="req">*</span></th>
+                <th width="80">Unit</th>
+                <th width="110">Unit Wt (MT)</th>
+                <th width="140">Rate / unit / month (₹)</th>
+                <th width="45"></th>
               </tr>
             </thead>
             <tbody>
@@ -183,6 +272,7 @@ const {
                 <td>
                   <Select
                     v-model="item.commodity_id"
+                    @change="onCommodityChange(idx, item.commodity_id)"
                     :options="props.commodities"
                     optionLabel="name"
                     optionValue="id"
@@ -193,10 +283,34 @@ const {
                 </td>
                 <td>
                   <Select
-                    v-model="item.chamber"
-                    :options="chamberSelectOptions"
+                    v-model="item.chamber_id"
+                    :options="chamberOptions"
                     optionLabel="label"
                     optionValue="value"
+                    placeholder="Chamber"
+                    showClear
+                    class="w-full input-sm-select"
+                  />
+                </td>
+                <td>
+                  <Select
+                    v-model="item.floor_id"
+                    :options="getFloorsForChamber(item.chamber_id)"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Floor"
+                    showClear
+                    class="w-full input-sm-select"
+                  />
+                </td>
+                <td>
+                  <Select
+                    v-model="item.block_id"
+                    :options="getBlocksForFloor(item.floor_id, item.chamber_id)"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Block"
+                    showClear
                     class="w-full input-sm-select"
                   />
                 </td>
@@ -206,6 +320,14 @@ const {
                     min="1"
                     v-model.number="item.initial_qty"
                     class="p-inputtext p-component w-full input-sm num-align"
+                  />
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    v-model="item.unit"
+                    placeholder="BAGS"
+                    class="p-inputtext p-component w-full input-sm"
                   />
                 </td>
                 <td>
@@ -223,11 +345,9 @@ const {
                     step="0.01"
                     min="0"
                     v-model.number="item.rent_rate_per_unit"
+                    placeholder="Rate/unit/mo"
                     class="p-inputtext p-component w-full input-sm num-align"
                   />
-                </td>
-                <td class="amount-cell">
-                  {{ formatCurrency((item.initial_qty || 0) * (item.rent_rate_per_unit || 0)) }}
                 </td>
                 <td>
                   <button
@@ -254,13 +374,13 @@ const {
     <!-- Pinned Totals Summary Bar at Bottom -->
     <div class="panel-totals-bar">
       <div class="total-metric">
-        <span class="metric-label">Total Net Weight (MT)</span>
-        <span class="metric-value">{{ formatQty(totalNetWeight) }}</span>
+        <span class="metric-label">Total Quantity (Units)</span>
+        <span class="metric-value">{{ formatQty(totalQty, 0) }}</span>
       </div>
 
       <div class="total-metric highlight-metric">
-        <span class="metric-label">Total Amount (₹)</span>
-        <span class="metric-value">{{ formatCurrency(totalAmount) }}</span>
+        <span class="metric-label">Total Net Weight (MT)</span>
+        <span class="metric-value">{{ formatQty(totalNetWeight) }}</span>
       </div>
     </div>
   </div>
@@ -323,7 +443,7 @@ const {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .form-grid {
@@ -357,6 +477,47 @@ const {
   font-size: 11.5px;
 }
 
+.charge-section-card {
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.charge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.charge-help {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.charge-controls {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 16px;
+  align-items: end;
+}
+
+.est-display {
+  background: var(--bg-page);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.est-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
 .items-section {
   display: flex;
   flex-direction: column;
@@ -379,12 +540,12 @@ const {
   width: 100%;
   border-collapse: collapse;
   font-size: 12.5px;
-  min-width: 600px;
+  min-width: 800px;
 }
 
 .items-table th {
   background: var(--bg-page);
-  padding: 10px 12px;
+  padding: 10px 8px;
   text-align: left;
   font-weight: 600;
   color: var(--text-secondary);
@@ -392,7 +553,7 @@ const {
 }
 
 .items-table td {
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -408,13 +569,6 @@ const {
 
 .num-align {
   text-align: right;
-}
-
-.amount-cell {
-  font-weight: 700;
-  color: var(--text-primary);
-  text-align: right;
-  font-feature-settings: "tnum";
 }
 
 .add-item-btn {
@@ -459,15 +613,6 @@ const {
 }
 
 @media (max-width: 900px) {
-  /*
-   * On narrow screens the panel used to stack BELOW the list, so tapping
-   * "New GRN" appeared to do nothing until you scrolled to the bottom of the
-   * page. Promote it to a full-screen overlay instead: it covers the list, is
-   * visible the instant it opens, and matches how a mobile app presents a
-   * create flow. z-index sits above the sidebar (100) and header (90) but
-   * below PrimeVue's dialogs/toasts (~1100) so the "Save & Post" confirm and
-   * any error toast still layer on top of it.
-   */
   .detail-split-panel {
     position: fixed;
     inset: 0;
@@ -482,6 +627,9 @@ const {
 
 @media (max-width: 768px) {
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .charge-controls {
     grid-template-columns: 1fr;
   }
   .panel-topbar {

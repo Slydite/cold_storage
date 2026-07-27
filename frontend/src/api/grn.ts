@@ -10,10 +10,18 @@ import type {
   GrnCreateInput,
   LotItemInput,
   LotOutput,
+  LoadingChargeModeEnum,
   StatusEnum
 } from './generated/types.gen'
 
-export type { GrnOutput, GrnCreateInput, LotItemInput, LotOutput, StatusEnum }
+export type {
+  GrnOutput,
+  GrnCreateInput,
+  LotItemInput,
+  LotOutput,
+  LoadingChargeModeEnum,
+  StatusEnum
+}
 
 function extractErrorMessage(error: unknown, fallback: string): string {
   if (typeof error === 'object' && error !== null) {

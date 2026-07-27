@@ -22,20 +22,21 @@ import {
   XCircle,
   Printer
 } from 'lucide-vue-next'
-import { chamberOptions } from '../../constants/chambers'
 import { formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
 import { downloadPdf } from '../../utils/downloadPdf'
 import type { GrnOutput } from '../../api/grn'
+import type { ChamberOutput } from '../../api/location'
 
 interface Props {
   grns: GrnOutput[]
+  chambers: ChamberOutput[]
   loading: boolean
   error: boolean
   errorDetail?: string
   searchQuery: string
-  selectedChamber: string
+  selectedChamberId?: number
   selectedPeriod: string
 }
 
@@ -43,7 +44,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:searchQuery': [query: string]
-  'update:selectedChamber': [chamber: string]
+  'update:selectedChamberId': [chamberId: number | undefined]
   'update:selectedPeriod': [period: string]
   openCreate: []
   retry: []
@@ -92,10 +93,15 @@ function buildDefaultFilters() {
   }
 }
 
+const chamberFilterOptions = computed(() => [
+  { label: 'All Chambers', value: undefined as number | undefined },
+  ...props.chambers.map((c) => ({ label: c.name, value: c.id as number | undefined }))
+])
+
 const extraActiveCount = computed(() => {
   let count = 0
   if (props.searchQuery && props.searchQuery.trim() !== '') count++
-  if (props.selectedChamber && props.selectedChamber !== 'all') count++
+  if (props.selectedChamberId !== undefined) count++
   if (props.selectedPeriod && props.selectedPeriod !== 'this_month') count++
   return count
 })
@@ -112,7 +118,7 @@ const {
 function handleClearAll() {
   clearFilters()
   emit('update:searchQuery', '')
-  emit('update:selectedChamber', 'all')
+  emit('update:selectedChamberId', undefined)
   emit('update:selectedPeriod', 'this_month')
 }
 
@@ -154,9 +160,9 @@ const handleExport = () => {
           />
         </div>
         <Select
-          :modelValue="selectedChamber"
-          @update:modelValue="emit('update:selectedChamber', $event)"
-          :options="chamberOptions"
+          :modelValue="selectedChamberId"
+          @update:modelValue="emit('update:selectedChamberId', $event ?? undefined)"
+          :options="chamberFilterOptions"
           optionLabel="label"
           optionValue="value"
           class="toolbar-select"

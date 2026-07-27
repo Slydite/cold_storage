@@ -4,7 +4,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
 import { useCreateDeliveryNote } from './useDeliveryNotes'
 import { useToast } from 'primevue/usetoast'
-import type { DeliveryNoteCreateInput, DeliveryLineInput } from '../api/delivery'
+import type { DeliveryNoteCreateInput, DeliveryLineInput, LoadingChargeModeEnum } from '../api/delivery'
 import type { LotOutput } from '../api/lot'
 
 const lineItemSchema = z.object({
@@ -29,7 +29,10 @@ const deliveryNoteFormSchema = z.object({
     .refine((v): v is Date => v != null, { message: 'Dispatch date is required' }),
   vehicle_number: z.string().optional(),
   driver_name: z.string().optional(),
-  remarks: z.string().optional()
+  remarks: z.string().optional(),
+  loading_charge_mode: z.enum(['FLAT', 'PER_UNIT']),
+  loading_charge: z.string().optional(),
+  loading_unloading_rate_per_unit: z.string().optional()
 })
 
 const createDefaultLine = (): FormDeliveryLine => ({
@@ -48,11 +51,14 @@ export function useDeliveryNoteForm(
   const { handleSubmit, errors, defineField, resetForm } = useForm({
     validationSchema: toTypedSchema(deliveryNoteFormSchema),
     initialValues: {
-      party_id: null,
+      party_id: null as number | null,
       dispatch_date: new Date(),
       vehicle_number: '',
       driver_name: '',
-      remarks: ''
+      remarks: '',
+      loading_charge_mode: 'FLAT' as LoadingChargeModeEnum,
+      loading_charge: '',
+      loading_unloading_rate_per_unit: ''
     }
   })
 
@@ -61,6 +67,9 @@ export function useDeliveryNoteForm(
   const [vehicle_number, vehicleNoProps] = defineField('vehicle_number')
   const [driver_name, driverNameProps] = defineField('driver_name')
   const [remarks, remarksProps] = defineField('remarks')
+  const [loading_charge_mode] = defineField('loading_charge_mode')
+  const [loading_charge, loadingChargeProps] = defineField('loading_charge')
+  const [loading_unloading_rate_per_unit, loadingRateProps] = defineField('loading_unloading_rate_per_unit')
 
   const lines = ref<FormDeliveryLine[]>([createDefaultLine()])
 
@@ -78,6 +87,15 @@ export function useDeliveryNoteForm(
 
   const totalQty = computed(() => {
     return lines.value.reduce((sum, line) => sum + (line?.qty || 0), 0)
+  })
+
+  const computedDeliveryChargeEstimate = computed(() => {
+    if (loading_charge_mode.value === 'FLAT') {
+      return Number(loading_charge.value || 0)
+    } else {
+      const rate = Number(loading_unloading_rate_per_unit.value || 0)
+      return totalQty.value * rate
+    }
   })
 
   const getLotAvailable = (lotId: number | null): number | null => {
@@ -172,6 +190,9 @@ export function useDeliveryNoteForm(
         vehicle_number: formValues.vehicle_number || undefined,
         driver_name: formValues.driver_name || undefined,
         remarks: formValues.remarks || undefined,
+        loading_charge_mode: formValues.loading_charge_mode,
+        loading_charge: formValues.loading_charge_mode === 'FLAT' ? formValues.loading_charge || '0' : undefined,
+        loading_unloading_rate_per_unit: formValues.loading_charge_mode === 'PER_UNIT' ? formValues.loading_unloading_rate_per_unit || '0' : undefined,
         status: targetStatus,
         lines: formattedLines
       }
@@ -206,11 +227,17 @@ export function useDeliveryNoteForm(
     driverNameProps,
     remarks,
     remarksProps,
+    loading_charge_mode,
+    loading_charge,
+    loadingChargeProps,
+    loading_unloading_rate_per_unit,
+    loadingRateProps,
     lines,
     errors,
     addLineRow,
     removeLineRow,
     totalQty,
+    computedDeliveryChargeEstimate,
     getLotAvailable,
     getLineQtyError,
     hasQtyExceeded,
@@ -219,3 +246,4 @@ export function useDeliveryNoteForm(
     resetForm: handleResetForm
   }
 }
+

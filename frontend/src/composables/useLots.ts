@@ -6,17 +6,19 @@ export function useLotList(
   facilityId: Ref<number | undefined> | ComputedRef<number | undefined>,
   filters?:
     | Ref<{
-        floor?: string
+        chamberId?: number
+        floorId?: number
+        blockId?: number
         partyId?: number
         commodityId?: number
-        chamber?: string
         inStockOnly?: boolean
       }>
     | ComputedRef<{
-        floor?: string
+        chamberId?: number
+        floorId?: number
+        blockId?: number
         partyId?: number
         commodityId?: number
-        chamber?: string
         inStockOnly?: boolean
       }>
 ) {
@@ -24,19 +26,21 @@ export function useLotList(
     queryKey: computed(() => [
       'lots',
       facilityId.value,
-      filters?.value?.floor,
+      filters?.value?.chamberId,
+      filters?.value?.floorId,
+      filters?.value?.blockId,
       filters?.value?.partyId,
       filters?.value?.commodityId,
-      filters?.value?.chamber,
       filters?.value?.inStockOnly
     ]),
     queryFn: () =>
       fetchLots({
         facilityId: facilityId.value,
-        floor: filters?.value?.floor === 'all' ? undefined : filters?.value?.floor,
+        chamberId: filters?.value?.chamberId,
+        floorId: filters?.value?.floorId,
+        blockId: filters?.value?.blockId,
         partyId: filters?.value?.partyId,
         commodityId: filters?.value?.commodityId,
-        chamber: filters?.value?.chamber === 'all' ? undefined : filters?.value?.chamber,
         inStockOnly: filters?.value?.inStockOnly
       })
   })

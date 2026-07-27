@@ -5,7 +5,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 import { Download, Printer } from 'lucide-vue-next'
-import { formatQty } from '../../utils/format'
+import { formatQty, formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { downloadPdf } from '../../utils/downloadPdf'
 import type { DeliveryNoteOutput } from '../../api/delivery'
@@ -119,6 +119,37 @@ const handleExportLines = () => {
         <div class="info-item highlight-summary">
           <span class="info-label">Total Qty</span>
           <span class="info-val total-val num-val">{{ formatQty(totalQty, 0) }}</span>
+        </div>
+      </div>
+
+      <!-- Charges Block -->
+      <div class="charges-card">
+        <h4 class="section-subtitle">Delivery Charges</h4>
+        <div class="charges-grid">
+          <div class="info-item">
+            <span class="info-label">Charge Mode</span>
+            <span class="info-val">
+              {{ props.deliveryNote.loading_charge_mode === 'PER_UNIT' ? 'Per Unit Rate' : 'Flat Amount' }}
+            </span>
+          </div>
+          <div v-if="props.deliveryNote.loading_charge_mode === 'PER_UNIT'" class="info-item">
+            <span class="info-label">Delivery Rate / Unit</span>
+            <span class="info-val num-val">
+              {{ props.deliveryNote.loading_unloading_rate_per_unit ? formatCurrency(Number(props.deliveryNote.loading_unloading_rate_per_unit)) + ' / unit' : '—' }}
+            </span>
+          </div>
+          <div v-else class="info-item">
+            <span class="info-label">Flat Delivery Charge</span>
+            <span class="info-val num-val">
+              {{ props.deliveryNote.loading_charge ? formatCurrency(Number(props.deliveryNote.loading_charge)) : '—' }}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Computed Delivery Charge</span>
+            <span class="info-val num-val highlight-val">
+              {{ props.deliveryNote.computed_loading_charge ? formatCurrency(Number(props.deliveryNote.computed_loading_charge)) : '—' }}
+            </span>
+          </div>
         </div>
       </div>
 

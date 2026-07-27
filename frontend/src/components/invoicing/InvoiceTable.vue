@@ -6,6 +6,7 @@ import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
+import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { FilterMatchMode } from '@primevue/core/api'
 import {
@@ -19,12 +20,16 @@ import {
   FileText,
   FileCheck,
   XCircle,
-  Printer
+  Printer,
+  CreditCard,
+  Eye
 } from 'lucide-vue-next'
 import { formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
 import { downloadPdf } from '../../utils/downloadPdf'
+import InvoiceDetailDialog from './InvoiceDetailDialog.vue'
+import RecordPaymentDialog from './RecordPaymentDialog.vue'
 import type { InvoiceOutput } from '../../api/invoicing'
 
 interface Props {
@@ -45,10 +50,25 @@ const emit = defineEmits<{
   retry: []
   post: [id: number]
   cancel: [id: number]
+  refresh: []
 }>()
 
 const toast = useToast()
 const downloadingId = ref<number | null>(null)
+const selectedInvoiceForDetail = ref<InvoiceOutput | null>(null)
+const showDetailDialog = ref(false)
+const selectedInvoiceForPayment = ref<InvoiceOutput | null>(null)
+const showPaymentDialog = ref(false)
+
+const openDetail = (inv: InvoiceOutput) => {
+  selectedInvoiceForDetail.value = inv
+  showDetailDialog.value = true
+}
+
+const openPayment = (inv: InvoiceOutput) => {
+  selectedInvoiceForPayment.value = inv
+  showPaymentDialog.value = true
+}
 
 async function handleDownloadPdf(id: number, docNumber: string) {
   downloadingId.value = id
@@ -78,6 +98,18 @@ const statusFilterOptions = [
   { label: 'POSTED', value: 'POSTED' },
   { label: 'CANCELLED', value: 'CANCELLED' }
 ]
+
+const getPaymentSeverity = (status?: string) => {
+  switch (status) {
+    case 'PAID':
+      return 'success'
+    case 'PARTIAL':
+      return 'warn'
+    case 'UNPAID':
+    default:
+      return 'danger'
+  }
+}
 
 function buildDefaultFilters() {
   return {
@@ -111,16 +143,17 @@ function handleClearAll() {
 }
 
 const handleExport = () => {
-  const headers = ['Invoice No.', 'Invoice Date', 'Party', 'GSTIN', 'Subtotal', 'GST', 'Total', 'Status']
+  const headers = ['Invoice No.', 'Invoice Date', 'Party', 'GSTIN', 'Total', 'Paid', 'Due', 'Doc Status', 'Payment Status']
   const rows = props.invoices.map((inv) => [
     inv.invoice_number,
     inv.invoice_date,
     inv.party_name,
     inv.party_gstin_snapshot || '—',
-    formatCurrency(Number(inv.subtotal || 0)),
-    formatCurrency(Number(inv.gst_amount || 0)),
     formatCurrency(Number(inv.total_amount || 0)),
-    inv.status || '-'
+    formatCurrency(Number(inv.amount_paid || 0)),
+    formatCurrency(Number(inv.amount_due || 0)),
+    inv.status || '-',
+    inv.payment_status || 'UNPAID'
   ])
   exportToCsv('invoices.csv', headers, rows)
 }
@@ -206,10 +239,10 @@ const handleExport = () => {
     <div v-else-if="props.invoices.length === 0" class="state-card empty-card">
       <FileText :size="40" class="state-icon text-muted" />
       <h4 class="state-title">No Invoice records found</h4>
-      <p class="state-desc">Generate GST invoices from existing posted rent runs.</p>
+      <p class="state-desc">Generate tax invoices from uninvoiced stock withdrawals.</p>
       <button class="btn-primary" type="button" @click="emit('openGenerate')">
         <Plus :size="16" />
-        <span>Generate GST Invoices</span>
+        <span>Generate Invoices</span>
       </button>
     </div>
 
@@ -232,7 +265,7 @@ const handleExport = () => {
       >
         <Column field="invoice_number" header="Invoice No." sortable>
           <template #body="{ data }">
-            <span class="code-link">{{ data.invoice_number }}</span>
+            <span class="code-link cursor-pointer" @click="openDetail(data)">{{ data.invoice_number }}</span>
           </template>
           <template #filter="{ filterModel, filterCallback }">
             <InputText
@@ -276,31 +309,34 @@ const handleExport = () => {
           </template>
         </Column>
 
-        <Column field="party_gstin_snapshot" header="GSTIN">
-          <template #body="{ data }">
-            <span>{{ data.party_gstin_snapshot || '—' }}</span>
-          </template>
-        </Column>
-
-        <Column header="Subtotal (₹)">
-          <template #body="{ data }">
-            <span class="num-val">{{ formatCurrency(Number(data.subtotal || 0)) }}</span>
-          </template>
-        </Column>
-
-        <Column header="GST (₹)">
-          <template #body="{ data }">
-            <span class="num-val">{{ formatCurrency(Number(data.gst_amount || 0)) }}</span>
-          </template>
-        </Column>
-
         <Column header="Total (₹)" sortable field="total_amount">
           <template #body="{ data }">
-            <span class="num-val">{{ formatCurrency(Number(data.total_amount || 0)) }}</span>
+            <span class="num-val font-bold">{{ formatCurrency(Number(data.total_amount || 0)) }}</span>
           </template>
         </Column>
 
-        <Column field="status" header="Status" sortable>
+        <Column header="Paid (₹)">
+          <template #body="{ data }">
+            <span class="num-val text-success">{{ formatCurrency(Number(data.amount_paid || 0)) }}</span>
+          </template>
+        </Column>
+
+        <Column header="Amount Due (₹)">
+          <template #body="{ data }">
+            <strong class="num-val text-danger">{{ formatCurrency(Number(data.amount_due || 0)) }}</strong>
+          </template>
+        </Column>
+
+        <Column field="payment_status" header="Payment Status" sortable>
+          <template #body="{ data }">
+            <Tag
+              :value="data.payment_status || 'UNPAID'"
+              :severity="getPaymentSeverity(data.payment_status)"
+            />
+          </template>
+        </Column>
+
+        <Column field="status" header="Doc Status" sortable>
           <template #body="{ data }">
             <span
               class="status-pill"
@@ -331,6 +367,25 @@ const handleExport = () => {
         <Column header="Actions">
           <template #body="{ data }">
             <div class="row-actions">
+              <button
+                class="icon-btn"
+                title="View Invoice Detail"
+                type="button"
+                @click="openDetail(data)"
+              >
+                <Eye :size="16" />
+              </button>
+
+              <button
+                v-if="data.payment_status !== 'PAID'"
+                class="icon-btn highlight-hover"
+                title="Record Payment"
+                type="button"
+                @click="openPayment(data)"
+              >
+                <CreditCard :size="16" />
+              </button>
+
               <button
                 v-if="data.status === 'DRAFT'"
                 class="icon-btn"
@@ -366,6 +421,20 @@ const handleExport = () => {
         </Column>
       </DataTable>
     </div>
+
+    <!-- Detail Dialog -->
+    <InvoiceDetailDialog
+      v-model:visible="showDetailDialog"
+      :invoice="selectedInvoiceForDetail"
+      @refresh="emit('refresh')"
+    />
+
+    <!-- Record Payment Dialog -->
+    <RecordPaymentDialog
+      v-model:visible="showPaymentDialog"
+      :invoice="selectedInvoiceForPayment"
+      @success="emit('refresh')"
+    />
   </div>
 </template>
 
@@ -377,6 +446,32 @@ const handleExport = () => {
   flex-direction: column;
   gap: 16px;
   transition: all 0.25s ease;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.text-success {
+  color: var(--status-success-color);
+}
+
+.text-danger {
+  color: var(--status-danger-color);
+}
+
+.highlight-hover:hover {
+  color: var(--accent-primary);
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .state-card {

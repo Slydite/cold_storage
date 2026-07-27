@@ -8,25 +8,29 @@ import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
 import { FilterMatchMode } from '@primevue/core/api'
 import { Search, Filter, FilterX, Download, AlertCircle, RefreshCw, Package } from 'lucide-vue-next'
-import { chamberOptions } from '../../constants/chambers'
 import { formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
 import type { LotOutput } from '../../api/lot'
 import type { FacilityOutput } from '../../api/facility'
+import type { ChamberOutput, FloorOutput, BlockOutput } from '../../api/location'
 import type { PartyOutput } from '../../api/party'
 
 interface Props {
   lots: LotOutput[]
   facilities?: FacilityOutput[]
+  chambers?: ChamberOutput[]
+  floors?: FloorOutput[]
+  blocks?: BlockOutput[]
   parties?: PartyOutput[]
   loading: boolean
   error: boolean
   errorDetail?: string
   searchQuery: string
   selectedFacilityId?: number
-  selectedFloor?: string
-  selectedChamber: string
+  selectedChamberId?: number
+  selectedFloorId?: number
+  selectedBlockId?: number
   selectedPartyId?: number
   selectedStatus: string
 }
@@ -36,8 +40,9 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:searchQuery': [query: string]
   'update:selectedFacilityId': [id: number | undefined]
-  'update:selectedFloor': [floor: string]
-  'update:selectedChamber': [chamber: string]
+  'update:selectedChamberId': [id: number | undefined]
+  'update:selectedFloorId': [id: number | undefined]
+  'update:selectedBlockId': [id: number | undefined]
   'update:selectedPartyId': [id: number | undefined]
   'update:selectedStatus': [status: string]
   retry: []
@@ -54,22 +59,20 @@ const facilityFilterOptions = computed(() => [
   ...(props.facilities || []).map((f) => ({ label: f.name, value: f.id }))
 ])
 
-const floorOptions = computed(() => {
-  const distinctFloors = [
-    ...new Set(props.lots.map((l) => l.floor).filter((f): f is string => Boolean(f)))
-  ]
-  return [
-    { label: 'All Floors', value: 'all' },
-    ...distinctFloors.map((f) => ({ label: `Floor ${f}`, value: f }))
-  ]
-})
+const chamberFilterOptions = computed(() => [
+  { label: 'All Chambers', value: undefined },
+  ...(props.chambers || []).map((c) => ({ label: c.name, value: c.id }))
+])
 
-const floorFilterOptions = computed(() => {
-  const distinctFloors = [
-    ...new Set(props.lots.map((l) => l.floor).filter((f): f is string => Boolean(f)))
-  ]
-  return distinctFloors.map((f) => ({ label: `Floor ${f}`, value: f }))
-})
+const floorFilterOptions = computed(() => [
+  { label: 'All Floors', value: undefined },
+  ...(props.floors || []).map((f) => ({ label: f.name, value: f.id }))
+])
+
+const blockFilterOptions = computed(() => [
+  { label: 'All Blocks', value: undefined },
+  ...(props.blocks || []).map((b) => ({ label: b.name, value: b.id }))
+])
 
 const partyFilterOptions = computed(() => [
   { label: 'All Parties', value: undefined },
@@ -80,8 +83,7 @@ function buildDefaultFilters() {
   return {
     lot_number: { value: null, matchMode: FilterMatchMode.CONTAINS },
     facility_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
-    floor: { value: null, matchMode: FilterMatchMode.EQUALS },
-    chamber: { value: null, matchMode: FilterMatchMode.EQUALS },
+    location_display: { value: null, matchMode: FilterMatchMode.CONTAINS },
     party_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
     commodity_name: { value: null, matchMode: FilterMatchMode.CONTAINS },
     inward_date: { value: null, matchMode: FilterMatchMode.CONTAINS }
@@ -92,8 +94,9 @@ const extraActiveCount = computed(() => {
   let count = 0
   if (props.searchQuery && props.searchQuery.trim() !== '') count++
   if (props.selectedFacilityId !== undefined) count++
-  if (props.selectedFloor && props.selectedFloor !== 'all') count++
-  if (props.selectedChamber && props.selectedChamber !== 'all') count++
+  if (props.selectedChamberId !== undefined) count++
+  if (props.selectedFloorId !== undefined) count++
+  if (props.selectedBlockId !== undefined) count++
   if (props.selectedPartyId !== undefined) count++
   if (props.selectedStatus && props.selectedStatus !== 'active') count++
   return count
@@ -112,8 +115,9 @@ function handleClearAll() {
   clearFilters()
   emit('update:searchQuery', '')
   emit('update:selectedFacilityId', undefined)
-  emit('update:selectedFloor', 'all')
-  emit('update:selectedChamber', 'all')
+  emit('update:selectedChamberId', undefined)
+  emit('update:selectedFloorId', undefined)
+  emit('update:selectedBlockId', undefined)
   emit('update:selectedPartyId', undefined)
   emit('update:selectedStatus', 'active')
 }
@@ -122,8 +126,7 @@ const handleExport = () => {
   const headers = [
     'Lot No.',
     'Cold Storage',
-    'Floor',
-    'Chamber',
+    'Location',
     'Party',
     'Item / Product',
     'In Date',
@@ -134,8 +137,7 @@ const handleExport = () => {
   const rows = props.lots.map((lot) => [
     lot.lot_number,
     lot.facility_name || '-',
-    lot.floor || '-',
-    lot.chamber || '-',
+    lot.location_display || '-',
     lot.party_name || '-',
     lot.commodity_name,
     lot.inward_date,
@@ -172,20 +174,33 @@ const handleExport = () => {
           placeholder="Cold Storage"
         />
         <Select
-          :modelValue="selectedFloor"
-          @update:modelValue="emit('update:selectedFloor', $event)"
-          :options="floorOptions"
+          :modelValue="selectedChamberId"
+          @update:modelValue="emit('update:selectedChamberId', $event)"
+          :options="chamberFilterOptions"
           optionLabel="label"
           optionValue="value"
           class="toolbar-select"
+          placeholder="Chamber"
         />
         <Select
-          :modelValue="selectedChamber"
-          @update:modelValue="emit('update:selectedChamber', $event)"
-          :options="chamberOptions"
+          :modelValue="selectedFloorId"
+          @update:modelValue="emit('update:selectedFloorId', $event)"
+          :options="floorFilterOptions"
           optionLabel="label"
           optionValue="value"
           class="toolbar-select"
+          :disabled="selectedChamberId === undefined"
+          placeholder="Floor"
+        />
+        <Select
+          :modelValue="selectedBlockId"
+          @update:modelValue="emit('update:selectedBlockId', $event)"
+          :options="blockFilterOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="toolbar-select"
+          :disabled="selectedFloorId === undefined"
+          placeholder="Block"
         />
         <Select
           :modelValue="selectedPartyId"
@@ -340,40 +355,18 @@ const handleExport = () => {
           </template>
         </Column>
 
-        <Column field="floor" header="Floor" sortable>
+        <Column field="location_display" header="Location" sortable>
           <template #body="{ data }">
-            <span>{{ data.floor || '-' }}</span>
+            <span>{{ data.location_display || '—' }}</span>
           </template>
           <template #filter="{ filterModel, filterCallback }">
-            <Select
+            <InputText
               v-model="filterModel.value"
-              @change="filterCallback()"
-              :options="floorFilterOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Floor"
+              type="text"
+              @input="filterCallback()"
+              placeholder="Filter Location"
               class="p-column-filter"
               size="small"
-              showClear
-            />
-          </template>
-        </Column>
-
-        <Column field="chamber" header="Chamber" sortable>
-          <template #body="{ data }">
-            <span>{{ data.chamber || '-' }}</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <Select
-              v-model="filterModel.value"
-              @change="filterCallback()"
-              :options="chamberOptions.filter((c) => c.value !== 'all')"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Chamber"
-              class="p-column-filter"
-              size="small"
-              showClear
             />
           </template>
         </Column>

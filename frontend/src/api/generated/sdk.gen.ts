@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, ChambersCreateData, ChambersCreateErrors, ChambersCreateResponses, ChambersListData, ChambersListResponses, ChambersRetrieveData, ChambersRetrieveErrors, ChambersRetrieveResponses, ChambersUpdateData, ChambersUpdateErrors, ChambersUpdateResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPdfRetrieveData, DeliveryNotesPdfRetrieveErrors, DeliveryNotesPdfRetrieveResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, FloorsCreateData, FloorsCreateErrors, FloorsCreateResponses, FloorsListData, FloorsListResponses, FloorsRetrieveData, FloorsRetrieveErrors, FloorsRetrieveResponses, FloorsUpdateData, FloorsUpdateErrors, FloorsUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsListData, GrnsListResponses, GrnsPdfRetrieveData, GrnsPdfRetrieveErrors, GrnsPdfRetrieveResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPdfRetrieveData, InvoicesPdfRetrieveErrors, InvoicesPdfRetrieveResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, RateCardsCreateData, RateCardsCreateErrors, RateCardsCreateResponses, RateCardsListData, RateCardsListResponses, RateCardsRetrieveData, RateCardsRetrieveErrors, RateCardsRetrieveResponses, RentRunsCancelCreateData, RentRunsCancelCreateErrors, RentRunsCancelCreateResponses, RentRunsCreateData, RentRunsCreateErrors, RentRunsCreateResponses, RentRunsListData, RentRunsListResponses, RentRunsPdfRetrieveData, RentRunsPdfRetrieveErrors, RentRunsPdfRetrieveResponses, RentRunsPostCreateData, RentRunsPostCreateErrors, RentRunsPostCreateResponses, RentRunsPreviewCreateData, RentRunsPreviewCreateErrors, RentRunsPreviewCreateResponses, RentRunsRetrieveData, RentRunsRetrieveErrors, RentRunsRetrieveResponses, ReportsDnRegisterRetrieveData, ReportsDnRegisterRetrieveResponses, ReportsGrnRegisterRetrieveData, ReportsGrnRegisterRetrieveResponses, ReportsInvoicesRetrieveData, ReportsInvoicesRetrieveResponses, ReportsRentRunsRetrieveData, ReportsRentRunsRetrieveResponses, ReportsStockSummaryRetrieveData, ReportsStockSummaryRetrieveResponses, UsersActivateCreateData, UsersActivateCreateErrors, UsersActivateCreateResponses, UsersCreateData, UsersCreateErrors, UsersCreateResponses, UsersDeactivateCreateData, UsersDeactivateCreateErrors, UsersDeactivateCreateResponses, UsersListData, UsersListResponses, UsersRetrieveData, UsersRetrieveErrors, UsersRetrieveResponses, UsersUpdateData, UsersUpdateErrors, UsersUpdateResponses } from './types.gen';
+import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, BlocksCreateData, BlocksCreateErrors, BlocksCreateResponses, BlocksListData, BlocksListResponses, BlocksRetrieveData, BlocksRetrieveErrors, BlocksRetrieveResponses, BlocksUpdateData, BlocksUpdateErrors, BlocksUpdateResponses, ChambersCreateData, ChambersCreateErrors, ChambersCreateResponses, ChambersListData, ChambersListResponses, ChambersRetrieveData, ChambersRetrieveErrors, ChambersRetrieveResponses, ChambersUpdateData, ChambersUpdateErrors, ChambersUpdateResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPdfRetrieveData, DeliveryNotesPdfRetrieveErrors, DeliveryNotesPdfRetrieveResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, FloorsCreateData, FloorsCreateErrors, FloorsCreateResponses, FloorsListData, FloorsListResponses, FloorsRetrieveData, FloorsRetrieveErrors, FloorsRetrieveResponses, FloorsUpdateData, FloorsUpdateErrors, FloorsUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsListData, GrnsListResponses, GrnsPdfRetrieveData, GrnsPdfRetrieveErrors, GrnsPdfRetrieveResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPaymentsCreateData, InvoicesPaymentsCreateErrors, InvoicesPaymentsCreateResponses, InvoicesPaymentsDestroyData, InvoicesPaymentsDestroyErrors, InvoicesPaymentsDestroyResponses, InvoicesPaymentsListData, InvoicesPaymentsListErrors, InvoicesPaymentsListResponses, InvoicesPdfRetrieveData, InvoicesPdfRetrieveErrors, InvoicesPdfRetrieveResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesPreviewListData, InvoicesPreviewListResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, ReportsDnRegisterRetrieveData, ReportsDnRegisterRetrieveResponses, ReportsGrnRegisterRetrieveData, ReportsGrnRegisterRetrieveResponses, ReportsInvoicesRetrieveData, ReportsInvoicesRetrieveResponses, ReportsStockSummaryRetrieveData, ReportsStockSummaryRetrieveResponses, UsersActivateCreateData, UsersActivateCreateErrors, UsersActivateCreateResponses, UsersCreateData, UsersCreateErrors, UsersCreateResponses, UsersDeactivateCreateData, UsersDeactivateCreateErrors, UsersDeactivateCreateResponses, UsersListData, UsersListResponses, UsersRetrieveData, UsersRetrieveErrors, UsersRetrieveResponses, UsersUpdateData, UsersUpdateErrors, UsersUpdateResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -72,6 +72,66 @@ export const authMeRetrieve = <ThrowOnError extends boolean = false>(options?: O
         }, { scheme: 'basic', type: 'http' }],
     url: '/api/auth/me/',
     ...options
+});
+
+/**
+ * List blocks
+ */
+export const blocksList = <ThrowOnError extends boolean = false>(options?: Options<BlocksListData, ThrowOnError>): RequestResult<BlocksListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<BlocksListResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/blocks/',
+    ...options
+});
+
+/**
+ * Create a new block
+ */
+export const blocksCreate = <ThrowOnError extends boolean = false>(options: Options<BlocksCreateData, ThrowOnError>): RequestResult<BlocksCreateResponses, BlocksCreateErrors, ThrowOnError> => (options.client ?? client).post<BlocksCreateResponses, BlocksCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/blocks/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieve a block by ID
+ */
+export const blocksRetrieve = <ThrowOnError extends boolean = false>(options: Options<BlocksRetrieveData, ThrowOnError>): RequestResult<BlocksRetrieveResponses, BlocksRetrieveErrors, ThrowOnError> => (options.client ?? client).get<BlocksRetrieveResponses, BlocksRetrieveErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/blocks/{id}/',
+    ...options
+});
+
+/**
+ * Update an existing block
+ */
+export const blocksUpdate = <ThrowOnError extends boolean = false>(options: Options<BlocksUpdateData, ThrowOnError>): RequestResult<BlocksUpdateResponses, BlocksUpdateErrors, ThrowOnError> => (options.client ?? client).put<BlocksUpdateResponses, BlocksUpdateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/blocks/{id}/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -148,7 +208,7 @@ export const commoditiesList = <ThrowOnError extends boolean = false>(options: O
 });
 
 /**
- * Create a new commodity
+ * Create a new commodity (code is auto-generated server-side)
  */
 export const commoditiesCreate = <ThrowOnError extends boolean = false>(options: Options<CommoditiesCreateData, ThrowOnError>): RequestResult<CommoditiesCreateResponses, CommoditiesCreateErrors, ThrowOnError> => (options.client ?? client).post<CommoditiesCreateResponses, CommoditiesCreateErrors, ThrowOnError>({
     security: [{
@@ -290,7 +350,7 @@ export const facilitiesList = <ThrowOnError extends boolean = false>(options?: O
 });
 
 /**
- * Create a new facility
+ * Create a new facility (code is auto-generated server-side)
  */
 export const facilitiesCreate = <ThrowOnError extends boolean = false>(options: Options<FacilitiesCreateData, ThrowOnError>): RequestResult<FacilitiesCreateResponses, FacilitiesCreateErrors, ThrowOnError> => (options.client ?? client).post<FacilitiesCreateResponses, FacilitiesCreateErrors, ThrowOnError>({
     security: [{
@@ -337,9 +397,9 @@ export const facilitiesUpdate = <ThrowOnError extends boolean = false>(options: 
 });
 
 /**
- * List all floors for a facility
+ * List all floors
  */
-export const floorsList = <ThrowOnError extends boolean = false>(options: Options<FloorsListData, ThrowOnError>): RequestResult<FloorsListResponses, unknown, ThrowOnError> => (options.client ?? client).get<FloorsListResponses, unknown, ThrowOnError>({
+export const floorsList = <ThrowOnError extends boolean = false>(options?: Options<FloorsListData, ThrowOnError>): RequestResult<FloorsListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<FloorsListResponses, unknown, ThrowOnError>({
     security: [{
             in: 'cookie',
             name: 'sessionid',
@@ -492,7 +552,7 @@ export const invoicesList = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
- * Generate one invoice per party for a POSTED rent run
+ * Generate invoices for uninvoiced stock withdrawals
  */
 export const invoicesCreate = <ThrowOnError extends boolean = false>(options: Options<InvoicesCreateData, ThrowOnError>): RequestResult<InvoicesCreateResponses, InvoicesCreateErrors, ThrowOnError> => (options.client ?? client).post<InvoicesCreateResponses, InvoicesCreateErrors, ThrowOnError>({
     security: [{
@@ -535,6 +595,49 @@ export const invoicesCancelCreate = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
+ * List payments for an invoice
+ */
+export const invoicesPaymentsList = <ThrowOnError extends boolean = false>(options: Options<InvoicesPaymentsListData, ThrowOnError>): RequestResult<InvoicesPaymentsListResponses, InvoicesPaymentsListErrors, ThrowOnError> => (options.client ?? client).get<InvoicesPaymentsListResponses, InvoicesPaymentsListErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/invoices/{id}/payments/',
+    ...options
+});
+
+/**
+ * Record a payment for an invoice
+ */
+export const invoicesPaymentsCreate = <ThrowOnError extends boolean = false>(options: Options<InvoicesPaymentsCreateData, ThrowOnError>): RequestResult<InvoicesPaymentsCreateResponses, InvoicesPaymentsCreateErrors, ThrowOnError> => (options.client ?? client).post<InvoicesPaymentsCreateResponses, InvoicesPaymentsCreateErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/invoices/{id}/payments/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a payment for an invoice
+ */
+export const invoicesPaymentsDestroy = <ThrowOnError extends boolean = false>(options: Options<InvoicesPaymentsDestroyData, ThrowOnError>): RequestResult<InvoicesPaymentsDestroyResponses, InvoicesPaymentsDestroyErrors, ThrowOnError> => (options.client ?? client).delete<InvoicesPaymentsDestroyResponses, InvoicesPaymentsDestroyErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/invoices/{id}/payments/{payment_id}/',
+    ...options
+});
+
+/**
  * Stream PDF for an invoice
  */
 export const invoicesPdfRetrieve = <ThrowOnError extends boolean = false>(options: Options<InvoicesPdfRetrieveData, ThrowOnError>): RequestResult<InvoicesPdfRetrieveResponses, InvoicesPdfRetrieveErrors, ThrowOnError> => (options.client ?? client).get<InvoicesPdfRetrieveResponses, InvoicesPdfRetrieveErrors, ThrowOnError>({
@@ -557,6 +660,19 @@ export const invoicesPostCreate = <ThrowOnError extends boolean = false>(options
             type: 'apiKey'
         }, { scheme: 'basic', type: 'http' }],
     url: '/api/invoices/{id}/post/',
+    ...options
+});
+
+/**
+ * Preview uninvoiced charges for a facility
+ */
+export const invoicesPreviewList = <ThrowOnError extends boolean = false>(options: Options<InvoicesPreviewListData, ThrowOnError>): RequestResult<InvoicesPreviewListResponses, unknown, ThrowOnError> => (options.client ?? client).get<InvoicesPreviewListResponses, unknown, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/invoices/preview/',
     ...options
 });
 
@@ -617,7 +733,7 @@ export const partiesList = <ThrowOnError extends boolean = false>(options: Optio
 });
 
 /**
- * Create a new party
+ * Create a new party (code is auto-generated server-side)
  */
 export const partiesCreate = <ThrowOnError extends boolean = false>(options: Options<PartiesCreateData, ThrowOnError>): RequestResult<PartiesCreateResponses, PartiesCreateErrors, ThrowOnError> => (options.client ?? client).post<PartiesCreateResponses, PartiesCreateErrors, ThrowOnError>({
     security: [{
@@ -664,148 +780,6 @@ export const partiesUpdate = <ThrowOnError extends boolean = false>(options: Opt
 });
 
 /**
- * List rate cards for a facility
- */
-export const rateCardsList = <ThrowOnError extends boolean = false>(options: Options<RateCardsListData, ThrowOnError>): RequestResult<RateCardsListResponses, unknown, ThrowOnError> => (options.client ?? client).get<RateCardsListResponses, unknown, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'sessionid',
-            type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
-    url: '/api/rate-cards/',
-    ...options
-});
-
-/**
- * Create a new rate card
- */
-export const rateCardsCreate = <ThrowOnError extends boolean = false>(options: Options<RateCardsCreateData, ThrowOnError>): RequestResult<RateCardsCreateResponses, RateCardsCreateErrors, ThrowOnError> => (options.client ?? client).post<RateCardsCreateResponses, RateCardsCreateErrors, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'sessionid',
-            type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
-    url: '/api/rate-cards/',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * Retrieve a rate card by ID
- */
-export const rateCardsRetrieve = <ThrowOnError extends boolean = false>(options: Options<RateCardsRetrieveData, ThrowOnError>): RequestResult<RateCardsRetrieveResponses, RateCardsRetrieveErrors, ThrowOnError> => (options.client ?? client).get<RateCardsRetrieveResponses, RateCardsRetrieveErrors, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'sessionid',
-            type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
-    url: '/api/rate-cards/{id}/',
-    ...options
-});
-
-/**
- * List rent runs for a facility
- */
-export const rentRunsList = <ThrowOnError extends boolean = false>(options: Options<RentRunsListData, ThrowOnError>): RequestResult<RentRunsListResponses, unknown, ThrowOnError> => (options.client ?? client).get<RentRunsListResponses, unknown, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'sessionid',
-            type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
-    url: '/api/rent-runs/',
-    ...options
-});
-
-/**
- * Create a new rent run (DRAFT)
- */
-export const rentRunsCreate = <ThrowOnError extends boolean = false>(options: Options<RentRunsCreateData, ThrowOnError>): RequestResult<RentRunsCreateResponses, RentRunsCreateErrors, ThrowOnError> => (options.client ?? client).post<RentRunsCreateResponses, RentRunsCreateErrors, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'sessionid',
-            type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
-    url: '/api/rent-runs/',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * Retrieve a rent run by ID
- */
-export const rentRunsRetrieve = <ThrowOnError extends boolean = false>(options: Options<RentRunsRetrieveData, ThrowOnError>): RequestResult<RentRunsRetrieveResponses, RentRunsRetrieveErrors, ThrowOnError> => (options.client ?? client).get<RentRunsRetrieveResponses, RentRunsRetrieveErrors, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'sessionid',
-            type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
-    url: '/api/rent-runs/{id}/',
-    ...options
-});
-
-/**
- * Cancel a DRAFT rent run
- */
-export const rentRunsCancelCreate = <ThrowOnError extends boolean = false>(options: Options<RentRunsCancelCreateData, ThrowOnError>): RequestResult<RentRunsCancelCreateResponses, RentRunsCancelCreateErrors, ThrowOnError> => (options.client ?? client).post<RentRunsCancelCreateResponses, RentRunsCancelCreateErrors, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'sessionid',
-            type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
-    url: '/api/rent-runs/{id}/cancel/',
-    ...options
-});
-
-/**
- * Stream PDF for a rent run
- */
-export const rentRunsPdfRetrieve = <ThrowOnError extends boolean = false>(options: Options<RentRunsPdfRetrieveData, ThrowOnError>): RequestResult<RentRunsPdfRetrieveResponses, RentRunsPdfRetrieveErrors, ThrowOnError> => (options.client ?? client).get<RentRunsPdfRetrieveResponses, RentRunsPdfRetrieveErrors, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'sessionid',
-            type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
-    url: '/api/rent-runs/{id}/pdf/',
-    ...options
-});
-
-/**
- * Post a DRAFT rent run
- */
-export const rentRunsPostCreate = <ThrowOnError extends boolean = false>(options: Options<RentRunsPostCreateData, ThrowOnError>): RequestResult<RentRunsPostCreateResponses, RentRunsPostCreateErrors, ThrowOnError> => (options.client ?? client).post<RentRunsPostCreateResponses, RentRunsPostCreateErrors, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'sessionid',
-            type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
-    url: '/api/rent-runs/{id}/post/',
-    ...options
-});
-
-/**
- * Preview a rent run without persisting changes
- */
-export const rentRunsPreviewCreate = <ThrowOnError extends boolean = false>(options: Options<RentRunsPreviewCreateData, ThrowOnError>): RequestResult<RentRunsPreviewCreateResponses, RentRunsPreviewCreateErrors, ThrowOnError> => (options.client ?? client).post<RentRunsPreviewCreateResponses, RentRunsPreviewCreateErrors, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'sessionid',
-            type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
-    url: '/api/rent-runs/preview/',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
  * List Delivery Notes (DN) report
  */
 export const reportsDnRegisterRetrieve = <ThrowOnError extends boolean = false>(options: Options<ReportsDnRegisterRetrieveData, ThrowOnError>): RequestResult<ReportsDnRegisterRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<ReportsDnRegisterRetrieveResponses, unknown, ThrowOnError>({
@@ -841,19 +815,6 @@ export const reportsInvoicesRetrieve = <ThrowOnError extends boolean = false>(op
             type: 'apiKey'
         }, { scheme: 'basic', type: 'http' }],
     url: '/api/reports/invoices/',
-    ...options
-});
-
-/**
- * Rent run detail report export
- */
-export const reportsRentRunsRetrieve = <ThrowOnError extends boolean = false>(options: Options<ReportsRentRunsRetrieveData, ThrowOnError>): RequestResult<ReportsRentRunsRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<ReportsRentRunsRetrieveResponses, unknown, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'sessionid',
-            type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
-    url: '/api/reports/rent-runs/{rent_run_id}/',
     ...options
 });
 

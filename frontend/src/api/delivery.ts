@@ -9,6 +9,7 @@ import type {
   DeliveryNoteCreateInput,
   DeliveryLineInput,
   DeliveryLineOutput,
+  LoadingChargeModeEnum,
   StatusEnum
 } from './generated/types.gen'
 
@@ -17,6 +18,7 @@ export type {
   DeliveryNoteCreateInput,
   DeliveryLineInput,
   DeliveryLineOutput,
+  LoadingChargeModeEnum,
   StatusEnum
 }
 

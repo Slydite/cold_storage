@@ -8,8 +8,9 @@ import { Building, Layers, Package, Users } from 'lucide-vue-next'
 
 import FacilityForm from '../components/settings/FacilityForm.vue'
 import FacilityListTable from '../components/settings/FacilityListTable.vue'
-import FloorManager from '../components/settings/FloorManager.vue'
 import ChamberManager from '../components/settings/ChamberManager.vue'
+import FloorManager from '../components/settings/FloorManager.vue'
+import BlockManager from '../components/settings/BlockManager.vue'
 import CommodityManager from '../components/settings/CommodityManager.vue'
 import UserManager from '../components/settings/UserManager.vue'
 </script>
@@ -18,7 +19,7 @@ import UserManager from '../components/settings/UserManager.vue'
   <div class="page-container settings-page">
     <header class="settings-header">
       <h2 class="page-title">Settings & System Management</h2>
-      <p class="page-subtitle">Configure working facilities, floors, chambers, commodities, and user accounts.</p>
+      <p class="page-subtitle">Configure working facilities, chambers, floors, blocks, commodities, and user accounts.</p>
     </header>
 
     <Tabs value="facility" class="settings-tabs">
@@ -29,7 +30,7 @@ import UserManager from '../components/settings/UserManager.vue'
         </Tab>
         <Tab value="locations" class="tab-item">
           <Layers :size="16" />
-          <span>Floors & Chambers</span>
+          <span>Chambers, Floors & Blocks</span>
         </Tab>
         <Tab value="commodities" class="tab-item">
           <Package :size="16" />
@@ -51,8 +52,9 @@ import UserManager from '../components/settings/UserManager.vue'
 
         <TabPanel value="locations">
           <div class="locations-tab-content">
-            <FloorManager />
             <ChamberManager />
+            <FloorManager />
+            <BlockManager />
           </div>
         </TabPanel>
 

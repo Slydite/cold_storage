@@ -140,24 +140,30 @@ const handleExportLots = () => {
 
       <!-- Charges Block -->
       <div class="charges-card">
-        <h4 class="section-subtitle">Rates & Charges</h4>
+        <h4 class="section-subtitle">Receiving Charges</h4>
         <div class="charges-grid">
           <div class="info-item">
-            <span class="info-label">Preservation Rate</span>
-            <span class="info-val num-val">
-              {{ props.grn.preservation_rate_per_bag_per_month ? formatCurrency(Number(props.grn.preservation_rate_per_bag_per_month)) + ' / bag / mo' : '—' }}
+            <span class="info-label">Charge Mode</span>
+            <span class="info-val">
+              {{ props.grn.loading_charge_mode === 'PER_UNIT' ? 'Per Unit Rate' : 'Flat Amount' }}
             </span>
           </div>
-          <div class="info-item">
-            <span class="info-label">Loading/Unloading Rate</span>
+          <div v-if="props.grn.loading_charge_mode === 'PER_UNIT'" class="info-item">
+            <span class="info-label">Receiving Rate / Unit</span>
             <span class="info-val num-val">
-              {{ props.grn.loading_unloading_rate_per_bag ? formatCurrency(Number(props.grn.loading_unloading_rate_per_bag)) + ' / bag' : '—' }}
+              {{ props.grn.loading_unloading_rate_per_bag ? formatCurrency(Number(props.grn.loading_unloading_rate_per_bag)) + ' / unit' : '—' }}
             </span>
           </div>
-          <div class="info-item">
-            <span class="info-label">Loading Charge</span>
+          <div v-else class="info-item">
+            <span class="info-label">Flat Receiving Charge</span>
             <span class="info-val num-val">
               {{ props.grn.loading_charge ? formatCurrency(Number(props.grn.loading_charge)) : '—' }}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Computed Receiving Charge</span>
+            <span class="info-val num-val highlight-val">
+              {{ props.grn.computed_loading_charge ? formatCurrency(Number(props.grn.computed_loading_charge)) : '—' }}
             </span>
           </div>
         </div>
@@ -199,21 +205,15 @@ const handleExportLots = () => {
             </template>
           </Column>
 
-          <Column header="Chamber">
+          <Column header="Location">
             <template #body="{ data }">
-              <span>{{ data.chamber_name || data.chamber || '—' }}</span>
-            </template>
-          </Column>
-
-          <Column header="Floor">
-            <template #body="{ data }">
-              <span>{{ data.floor_name || data.floor || '—' }}</span>
+              <span>{{ data.location_display || [data.chamber_name || data.chamber, data.floor_name || data.floor].filter(Boolean).join(' / ') || '—' }}</span>
             </template>
           </Column>
 
           <Column field="initial_qty" header="Initial Qty">
             <template #body="{ data }">
-              <span class="num-val">{{ formatQty(data.initial_qty, 0) }}</span>
+              <span class="num-val">{{ formatQty(data.initial_qty, 0) }} {{ data.unit || '' }}</span>
             </template>
           </Column>
 

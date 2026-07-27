@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { useToast } from 'primevue/usetoast'
 import { useFacility } from '../composables/useFacility'
 import { useGrnList, usePostGrn, useCancelGrn } from '../composables/useGrns'
+import { useChamberList } from '../composables/useLocations'
 import { useSearchFilter } from '../composables/useSearchFilter'
 import { fetchParties } from '../api/party'
 import { fetchCommodities } from '../api/commodity'
@@ -18,7 +19,7 @@ const toast = useToast()
 
 const { facilityId, isLoading: loadingFacility, isError: facilityError, refetch: refetchFacility } = useFacility()
 
-const selectedChamber = ref('all')
+const selectedChamberId = ref<number | undefined>(undefined)
 const selectedPeriod = ref('this_month')
 const isPanelOpen = ref(false)
 const selectedGrn = ref<GrnOutput | null>(null)
@@ -40,6 +41,8 @@ const commoditiesQuery = useQuery({
   enabled: computed(() => !!facilityId.value)
 })
 
+const chambersQuery = useChamberList({ facilityId })
+
 const grnList = computed<GrnOutput[]>(() => grnsQuery.data.value || [])
 
 const { searchQuery, filtered: searchedGrns } = useSearchFilter(grnList, (item, query) =>
@@ -49,7 +52,11 @@ const { searchQuery, filtered: searchedGrns } = useSearchFilter(grnList, (item, 
 )
 
 const filteredGrns = computed(() =>
-  searchedGrns.value.filter((item) => selectedChamber.value === 'all' || item.lots?.some((l) => l.chamber === selectedChamber.value))
+  searchedGrns.value.filter(
+    (item) =>
+      selectedChamberId.value === undefined ||
+      item.lots?.some((l) => l.chamber_ref_id === selectedChamberId.value)
+  )
 )
 
 const isListLoading = computed(() => loadingFacility.value || grnsQuery.isLoading.value)
@@ -97,7 +104,8 @@ onMounted(() => {
       :error="isListError"
       :errorDetail="errorMessage"
       v-model:searchQuery="searchQuery"
-      v-model:selectedChamber="selectedChamber"
+      :chambers="chambersQuery.data.value || []"
+      v-model:selectedChamberId="selectedChamberId"
       v-model:selectedPeriod="selectedPeriod"
       @openCreate="isPanelOpen = true"
       @retry="handleRetry"

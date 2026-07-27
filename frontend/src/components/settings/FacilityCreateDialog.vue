@@ -25,7 +25,6 @@ const createFacilityMutation = useCreateFacility()
 
 const facilitySchema = z.object({
   name: z.string().min(1, 'Facility name is required'),
-  code: z.string().min(1, 'Facility code is required'),
   address: z.string().optional(),
   gstin: z.string().optional(),
   phone: z.string().optional(),
@@ -39,7 +38,6 @@ const { handleSubmit, errors, defineField, resetForm } = useForm({
   validationSchema: toTypedSchema(facilitySchema),
   initialValues: {
     name: '',
-    code: '',
     address: '',
     gstin: '',
     phone: '',
@@ -51,7 +49,6 @@ const { handleSubmit, errors, defineField, resetForm } = useForm({
 })
 
 const [name, nameProps] = defineField('name')
-const [code, codeProps] = defineField('code')
 const [address, addressProps] = defineField('address')
 const [gstin, gstinProps] = defineField('gstin')
 const [phone, phoneProps] = defineField('phone')
@@ -67,7 +64,6 @@ watch(
       resetForm({
         values: {
           name: '',
-          code: '',
           address: '',
           gstin: '',
           phone: '',
@@ -85,7 +81,6 @@ const onSubmit = handleSubmit(async (values) => {
   try {
     await createFacilityMutation.mutateAsync({
       name: values.name,
-      code: values.code,
       address: values.address || undefined,
       gstin: values.gstin || undefined,
       phone: values.phone || undefined,
@@ -135,19 +130,6 @@ const onSubmit = handleSubmit(async (values) => {
             :class="{ 'p-invalid': errors.name }"
           />
           <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
-        </div>
-
-        <div class="form-group">
-          <label for="new-fac-code">Facility Code <span class="required">*</span></label>
-          <InputText
-            id="new-fac-code"
-            v-model="code"
-            v-bind="codeProps"
-            placeholder="e.g. FAC-01"
-            class="w-full"
-            :class="{ 'p-invalid': errors.code }"
-          />
-          <span v-if="errors.code" class="field-error">{{ errors.code }}</span>
         </div>
 
         <div class="form-group">

@@ -16,12 +16,11 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
-  submit: [values: { name: string; code: string; type: TypeEnum; phone?: string; email?: string; address?: string; gstin?: string }]
+  submit: [values: { name: string; type: TypeEnum; phone?: string; email?: string; address?: string; gstin?: string }]
 }>()
 
 const partySchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  code: z.string().min(1, 'Code is required'),
   type: z.enum(['DEPOSITOR', 'VENDOR', 'TRANSPORTER'], {
     message: 'Type is required'
   }),
@@ -35,7 +34,6 @@ const { handleSubmit, errors, defineField, resetForm } = useForm({
   validationSchema: toTypedSchema(partySchema),
   initialValues: {
     name: '',
-    code: '',
     type: 'DEPOSITOR' as TypeEnum,
     phone: '',
     email: '',
@@ -45,7 +43,6 @@ const { handleSubmit, errors, defineField, resetForm } = useForm({
 })
 
 const [name, nameAttrs] = defineField('name')
-const [code, codeAttrs] = defineField('code')
 const [type] = defineField('type')
 const [phone, phoneAttrs] = defineField('phone')
 const [email, emailAttrs] = defineField('email')
@@ -65,7 +62,6 @@ watch(
       resetForm({
         values: {
           name: '',
-          code: '',
           type: 'DEPOSITOR',
           phone: '',
           email: '',
@@ -80,7 +76,6 @@ watch(
 const onSubmit = handleSubmit((values) => {
   emit('submit', {
     name: values.name,
-    code: values.code,
     type: values.type,
     phone: values.phone || undefined,
     email: values.email || undefined,
@@ -111,20 +106,6 @@ const onSubmit = handleSubmit((values) => {
           :class="{ 'has-error': errors.name }"
         />
         <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
-      </div>
-
-      <div class="form-field">
-        <label for="party-code">Party Code <span class="required">*</span></label>
-        <input
-          id="party-code"
-          v-model="code"
-          v-bind="codeAttrs"
-          type="text"
-          placeholder="e.g. PRT-001"
-          class="form-input"
-          :class="{ 'has-error': errors.code }"
-        />
-        <span v-if="errors.code" class="field-error">{{ errors.code }}</span>
       </div>
 
       <div class="form-field">

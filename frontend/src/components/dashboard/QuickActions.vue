@@ -27,10 +27,10 @@ const quickActions = [
     badgeClass: 'badge-blue'
   },
   {
-    title: 'Rent Run',
-    subtitle: 'Calculate Rent',
+    title: 'Billing Overview',
+    subtitle: 'Rent Accrual & Due',
     icon: Calculator,
-    path: '/billing?action=rent_run',
+    path: '/billing',
     badgeClass: 'badge-gold',
     hasArtwork: true
   }

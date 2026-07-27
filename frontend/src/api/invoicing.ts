@@ -3,16 +3,32 @@ import {
   invoicesRetrieve,
   invoicesCreate,
   invoicesPostCreate,
-  invoicesCancelCreate
+  invoicesCancelCreate,
+  invoicesPaymentsCreate,
+  invoicesPaymentsDestroy,
+  invoicesPreviewList
 } from './generated/sdk.gen'
 import type {
   InvoiceOutput,
   InvoiceLineOutput,
   GenerateInvoicesInput,
-  StatusEnum
+  PaymentInput,
+  PaymentOutput,
+  StatusEnum,
+  InvoicePreviewPartyOutput,
+  InvoicePreviewLineOutput
 } from './generated/types.gen'
 
-export type { InvoiceOutput, InvoiceLineOutput, GenerateInvoicesInput, StatusEnum }
+export type {
+  InvoiceOutput,
+  InvoiceLineOutput,
+  GenerateInvoicesInput,
+  PaymentInput,
+  PaymentOutput,
+  StatusEnum,
+  InvoicePreviewPartyOutput,
+  InvoicePreviewLineOutput
+}
 
 function extractErrorMessage(error: unknown, fallback: string): string {
   if (typeof error === 'object' && error !== null) {
@@ -61,10 +77,7 @@ export async function fetchInvoice(id: number): Promise<InvoiceOutput> {
   return res.data
 }
 
-export async function generateInvoices(body: {
-  facility_id: number
-  rent_run_id: number
-}): Promise<InvoiceOutput[]> {
+export async function generateInvoices(body: GenerateInvoicesInput): Promise<InvoiceOutput[]> {
   const res = await invoicesCreate({
     body
   })
@@ -74,7 +87,7 @@ export async function generateInvoices(body: {
   if (!res.data) {
     throw new Error('No data returned from invoice generation')
   }
-  return res.data
+  return Array.isArray(res.data) ? res.data : [res.data]
 }
 
 export async function postInvoice(id: number): Promise<InvoiceOutput> {
@@ -102,3 +115,51 @@ export async function cancelInvoice(id: number): Promise<InvoiceOutput> {
   }
   return res.data
 }
+
+// The API returns the full refreshed invoice (with recalculated amount_paid /
+// amount_due / payment_status), not the bare payment row.
+export async function createInvoicePayment(
+  invoiceId: number,
+  body: PaymentInput
+): Promise<InvoiceOutput> {
+  const res = await invoicesPaymentsCreate({
+    path: { id: invoiceId },
+    body
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to record payment'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from recording payment')
+  }
+  return res.data
+}
+
+export async function deleteInvoicePayment(
+  invoiceId: number,
+  paymentId: number
+): Promise<void> {
+  const res = await invoicesPaymentsDestroy({
+    path: { id: invoiceId, payment_id: String(paymentId) }
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to delete payment'))
+  }
+}
+
+export async function fetchInvoicePreview(params: {
+  facilityId: number
+  partyId?: number
+}): Promise<InvoicePreviewPartyOutput[]> {
+  const res = await invoicesPreviewList({
+    query: {
+      facility_id: params.facilityId,
+      party_id: params.partyId
+    }
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to fetch invoice preview'))
+  }
+  return res.data ?? []
+}
+

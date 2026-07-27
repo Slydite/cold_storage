@@ -43,7 +43,6 @@ const unitOptions = [
 
 const commoditySchema = z.object({
   name: z.string().min(1, 'Commodity name is required'),
-  code: z.string().min(1, 'Commodity code is required'),
   unit: z.string(),
   description: z.string().optional(),
   is_active: z.boolean()
@@ -53,7 +52,6 @@ const { handleSubmit, errors, defineField, resetForm } = useForm({
   validationSchema: toTypedSchema(commoditySchema),
   initialValues: {
     name: '',
-    code: '',
     unit: 'Bags',
     description: '',
     is_active: true
@@ -61,7 +59,6 @@ const { handleSubmit, errors, defineField, resetForm } = useForm({
 })
 
 const [name, nameProps] = defineField('name')
-const [code, codeProps] = defineField('code')
 const [unit] = defineField('unit')
 const [description, descriptionProps] = defineField('description')
 const [is_active] = defineField('is_active')
@@ -71,7 +68,6 @@ const openCreateDialog = () => {
   resetForm({
     values: {
       name: '',
-      code: '',
       unit: 'Bags',
       description: '',
       is_active: true
@@ -85,7 +81,6 @@ const openEditDialog = (item: CommodityOutput) => {
   resetForm({
     values: {
       name: item.name,
-      code: item.code,
       unit: item.unit ?? 'Bags',
       description: item.description ?? '',
       is_active: item.is_active ?? true
@@ -104,7 +99,6 @@ const onSubmit = handleSubmit(async (values) => {
         body: {
           facility_id: facilityId.value,
           name: values.name,
-          code: values.code,
           unit: values.unit,
           description: values.description || undefined,
           is_active: values.is_active
@@ -120,7 +114,6 @@ const onSubmit = handleSubmit(async (values) => {
       await createCommodityMutation.mutateAsync({
         facility_id: facilityId.value,
         name: values.name,
-        code: values.code,
         unit: values.unit,
         description: values.description || undefined,
         is_active: values.is_active
@@ -262,19 +255,6 @@ const onSubmit = handleSubmit(async (values) => {
             :class="{ 'p-invalid': errors.name }"
           />
           <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
-        </div>
-
-        <div class="form-group">
-          <label for="comm-code">Commodity Code <span class="required">*</span></label>
-          <InputText
-            id="comm-code"
-            v-model="code"
-            v-bind="codeProps"
-            placeholder="e.g. POT-01"
-            class="w-full"
-            :class="{ 'p-invalid': errors.code }"
-          />
-          <span v-if="errors.code" class="field-error">{{ errors.code }}</span>
         </div>
 
         <div class="form-group">

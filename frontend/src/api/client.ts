@@ -6,7 +6,9 @@ client.setConfig({
 })
 
 export function getCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp('(^|; )' + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'))
+  const match = document.cookie.match(
+    new RegExp('(^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)')
+  )
   const value = match?.[2]
   return value !== undefined ? decodeURIComponent(value) : null
 }

@@ -2,10 +2,11 @@
 import { computed } from 'vue'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
+import SelectButton from 'primevue/selectbutton'
 import DatePicker from 'primevue/datepicker'
 import { useConfirm } from 'primevue/useconfirm'
 import { Plus, Trash2, FileCheck } from 'lucide-vue-next'
-import { formatQty } from '../../utils/format'
+import { formatQty, formatCurrency } from '../../utils/format'
 import { useDeliveryNoteForm } from '../../composables/useDeliveryNoteForm'
 import { useLotList } from '../../composables/useLots'
 import type { PartyOutput } from '../../api/party'
@@ -37,6 +38,11 @@ const lotsQuery = useLotList(
 
 const availableLots = computed(() => lotsQuery.data.value || [])
 
+const chargeModeOptions = [
+  { label: 'Flat Total', value: 'FLAT' },
+  { label: 'Per Unit Rate', value: 'PER_UNIT' }
+]
+
 const {
   party_id,
   partyIdProps,
@@ -48,11 +54,17 @@ const {
   driverNameProps,
   remarks,
   remarksProps,
+  loading_charge_mode,
+  loading_charge,
+  loadingChargeProps,
+  loading_unloading_rate_per_unit,
+  loadingRateProps,
   lines,
   errors,
   addLineRow,
   removeLineRow,
   totalQty,
+  computedDeliveryChargeEstimate,
   getLotAvailable,
   getLineQtyError,
   submitForm,
@@ -64,9 +76,10 @@ const lotSelectOptions = computed(() => {
     .filter((lot) => lot.remaining_qty > 0)
     .map((lot) => {
       const unit = lot.commodity_unit ? lot.commodity_unit.toUpperCase() : 'UNITS'
+      const locStr = lot.location_display ? ` [${lot.location_display}]` : ''
       return {
         id: lot.id,
-        label: `${lot.lot_number} - ${lot.commodity_name} (${lot.remaining_qty} ${unit} available)`
+        label: `${lot.lot_number} - ${lot.commodity_name}${locStr} (${lot.remaining_qty} ${unit} avail)`
       }
     })
 })
@@ -210,6 +223,53 @@ const handleSaveAndPost = () => {
         </div>
       </div>
 
+      <!-- Delivery Charge Section -->
+      <div class="charge-section-card">
+        <div class="charge-header">
+          <h4 class="section-subtitle">Delivery Charge</h4>
+          <span class="charge-help">Delivering labour and transport charges</span>
+        </div>
+
+        <div class="charge-controls">
+          <div class="form-group">
+            <label class="form-label">Charge Mode</label>
+            <SelectButton
+              v-model="loading_charge_mode"
+              :options="chargeModeOptions"
+              optionLabel="label"
+              optionValue="value"
+              :allowEmpty="false"
+              class="w-full"
+            />
+          </div>
+
+          <div v-if="loading_charge_mode === 'FLAT'" class="form-group">
+            <label class="form-label">Flat Delivery Charge (₹)</label>
+            <InputText
+              v-model="loading_charge"
+              v-bind="loadingChargeProps"
+              placeholder="e.g. 500.00"
+              class="w-full"
+            />
+          </div>
+
+          <div v-else class="form-group">
+            <label class="form-label">Delivery Rate / Unit (₹)</label>
+            <InputText
+              v-model="loading_unloading_rate_per_unit"
+              v-bind="loadingRateProps"
+              placeholder="e.g. 5.00"
+              class="w-full"
+            />
+          </div>
+
+          <div class="form-group est-display">
+            <label class="form-label">Estimated Delivery Charge</label>
+            <span class="est-value">{{ formatCurrency(computedDeliveryChargeEstimate) }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Line Items Section -->
       <div class="items-section">
         <h4 class="section-subtitle">Delivery Items / Stock Withdrawal</h4>
@@ -278,7 +338,7 @@ const handleSaveAndPost = () => {
     <div class="panel-totals-bar">
       <div class="total-metric highlight-metric">
         <span class="metric-label">Total Dispatch Quantity</span>
-        <span class="metric-value">{{ formatQty(totalQty) }}</span>
+        <span class="metric-value">{{ formatQty(totalQty, 0) }}</span>
       </div>
     </div>
   </div>
@@ -341,7 +401,7 @@ const handleSaveAndPost = () => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .form-grid {
@@ -375,6 +435,47 @@ const handleSaveAndPost = () => {
   font-size: 11.5px;
   margin-top: 2px;
   display: block;
+}
+
+.charge-section-card {
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.charge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.charge-help {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.charge-controls {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 16px;
+  align-items: end;
+}
+
+.est-display {
+  background: var(--bg-page);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.est-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-primary);
 }
 
 .items-section {
@@ -480,12 +581,6 @@ const handleSaveAndPost = () => {
 }
 
 @media (max-width: 900px) {
-  /*
-   * See GrnCreatePanel: on narrow screens the panel stacked below the list, so
-   * tapping "New Delivery" looked like a no-op until you scrolled down. Render
-   * it as a full-screen overlay instead. z-index stays below PrimeVue dialogs
-   * (~1100) so the stock-withdrawal confirmation still appears above it.
-   */
   .detail-split-panel {
     position: fixed;
     inset: 0;
@@ -500,6 +595,9 @@ const handleSaveAndPost = () => {
 
 @media (max-width: 768px) {
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .charge-controls {
     grid-template-columns: 1fr;
   }
   .panel-topbar {

@@ -43,7 +43,6 @@ const handleRetry = () => {
 
 const handleCreateParty = async (values: {
   name: string
-  code: string
   type: TypeEnum
   phone?: string
   email?: string

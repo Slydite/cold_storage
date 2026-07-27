@@ -4,8 +4,9 @@ export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
 
-export type ChamberInput = {
-    facility_id: number;
+export type BlockInput = {
+    facility_id?: number | null;
+    chamber_id?: number | null;
     floor_id: number;
     name: string;
     sort_order?: number;
@@ -13,12 +14,15 @@ export type ChamberInput = {
     is_active?: boolean;
 };
 
-export type ChamberOutput = {
+export type BlockOutput = {
     readonly id: number;
     readonly floor_id: number;
     readonly floor_name: string;
+    readonly chamber_id: number;
+    readonly chamber_name: string;
     readonly facility_id: number;
     name: string;
+    code: string;
     sort_order?: number;
     capacity_bags?: number | null;
     is_active?: boolean;
@@ -26,7 +30,7 @@ export type ChamberOutput = {
     readonly updated_at: string;
 };
 
-export type ChamberUpdateInput = {
+export type BlockUpdateInput = {
     floor_id?: number;
     name?: string;
     sort_order?: number;
@@ -34,10 +38,34 @@ export type ChamberUpdateInput = {
     is_active?: boolean;
 };
 
+export type ChamberInput = {
+    facility_id: number;
+    name: string;
+    sort_order?: number;
+    is_active?: boolean;
+};
+
+export type ChamberOutput = {
+    readonly id: number;
+    readonly facility_id: number;
+    name: string;
+    code: string;
+    sort_order?: number;
+    is_active?: boolean;
+    readonly created_at: string;
+    readonly updated_at: string;
+};
+
+export type ChamberUpdateInput = {
+    facility_id?: number;
+    name?: string;
+    sort_order?: number;
+    is_active?: boolean;
+};
+
 export type CommodityInput = {
     facility_id: number;
     name: string;
-    code: string;
     unit?: string;
     description?: string;
     is_active?: boolean;
@@ -100,6 +128,9 @@ export type DeliveryNoteCreateInput = {
     driver_name?: string;
     transporter?: string;
     remarks?: string;
+    loading_charge?: string;
+    loading_unloading_rate_per_unit?: string;
+    loading_charge_mode?: LoadingChargeModeEnum;
     status?: StatusEnum;
     lines?: Array<DeliveryLineInput>;
 };
@@ -116,6 +147,10 @@ export type DeliveryNoteOutput = {
     driver_name?: string;
     transporter?: string;
     remarks?: string;
+    loading_charge?: string;
+    loading_unloading_rate_per_unit?: string;
+    loading_charge_mode?: LoadingChargeModeEnum;
+    readonly computed_loading_charge: string;
     status?: StatusEnum;
     readonly lines: Array<DeliveryLineOutput>;
     readonly created_at: string;
@@ -124,7 +159,6 @@ export type DeliveryNoteOutput = {
 
 export type FacilityInput = {
     name: string;
-    code: string;
     address?: string;
     gstin?: string;
     phone?: string;
@@ -150,7 +184,8 @@ export type FacilityOutput = {
 };
 
 export type FloorInput = {
-    facility_id: number;
+    facility_id?: number | null;
+    chamber_id: number;
     name: string;
     sort_order?: number;
     is_active?: boolean;
@@ -158,8 +193,11 @@ export type FloorInput = {
 
 export type FloorOutput = {
     readonly id: number;
+    readonly chamber_id: number;
+    readonly chamber_name: string;
     readonly facility_id: number;
     name: string;
+    code: string;
     sort_order?: number;
     is_active?: boolean;
     readonly created_at: string;
@@ -167,6 +205,7 @@ export type FloorOutput = {
 };
 
 export type FloorUpdateInput = {
+    chamber_id?: number;
     name?: string;
     sort_order?: number;
     is_active?: boolean;
@@ -185,6 +224,7 @@ export type GrnCreateInput = {
     transporter?: string;
     preservation_rate_per_bag_per_month?: string;
     loading_unloading_rate_per_bag?: string;
+    loading_charge_mode?: LoadingChargeModeEnum;
     inward_time?: string | null;
     status?: StatusEnum;
     items?: Array<LotItemInput>;
@@ -207,6 +247,8 @@ export type GrnOutput = {
     transporter?: string;
     preservation_rate_per_bag_per_month?: string;
     loading_unloading_rate_per_bag?: string;
+    loading_charge_mode?: LoadingChargeModeEnum;
+    readonly computed_loading_charge: string;
     inward_time?: string | null;
     status?: StatusEnum;
     readonly lots: Array<LotOutput>;
@@ -216,14 +258,13 @@ export type GrnOutput = {
 
 export type GenerateInvoicesInput = {
     facility_id: number;
-    rent_run_id: number;
+    party_id?: number | null;
 };
 
 export type InvoiceLineOutput = {
     readonly id: number;
     description: string;
     amount: string;
-    readonly rent_run_line_id: number | null;
 };
 
 export type InvoiceOutput = {
@@ -238,17 +279,48 @@ export type InvoiceOutput = {
     facility_name_snapshot?: string;
     facility_address_snapshot?: string;
     facility_gstin_snapshot?: string;
-    readonly rent_run_id: number | null;
     invoice_date: string;
     status?: StatusEnum;
     subtotal?: string;
     gst_rate?: string;
     gst_amount?: string;
     total_amount?: string;
+    readonly amount_paid: string;
+    readonly amount_due: string;
+    readonly payment_status: string;
+    readonly payments: Array<PaymentOutput>;
     readonly lines: Array<InvoiceLineOutput>;
     readonly created_at: string;
     readonly updated_at: string;
 };
+
+export type InvoicePreviewLineOutput = {
+    description: string;
+    amount: string;
+    lot_number?: string | null;
+    commodity_name?: string | null;
+    qty?: number | null;
+    inward_date?: string | null;
+    dispatch_date?: string | null;
+    days_stored?: number | null;
+};
+
+export type InvoicePreviewPartyOutput = {
+    party_id: number;
+    party_name: string;
+    party_code: string;
+    lines: Array<InvoicePreviewLineOutput>;
+    subtotal: string;
+    gst_rate: string;
+    gst_amount: string;
+    total_amount: string;
+};
+
+/**
+ * * `FLAT` - Flat
+ * * `PER_UNIT` - Per Unit
+ */
+export type LoadingChargeModeEnum = 'FLAT' | 'PER_UNIT';
 
 export type LoginInput = {
     username: string;
@@ -260,10 +332,12 @@ export type LotItemInput = {
     chamber?: string;
     floor?: string;
     rack?: string;
-    floor_id?: number | null;
     chamber_id?: number | null;
+    floor_id?: number | null;
+    block_id?: number | null;
     special_remarks?: string;
     initial_qty: number;
+    unit?: string;
     unit_weight?: string;
     rent_rate_per_unit?: string;
 };
@@ -285,13 +359,17 @@ export type LotOutput = {
     chamber?: string;
     floor?: string;
     rack?: string;
-    readonly floor_ref_id: number | null;
     readonly chamber_ref_id: number | null;
-    readonly floor_name: string | null;
-    readonly chamber_name: string | null;
+    readonly chamber_name: string;
+    readonly floor_ref_id: number | null;
+    readonly floor_name: string;
+    readonly block_ref_id: number | null;
+    readonly block_name: string;
+    readonly location_display: string;
     special_remarks?: string;
     initial_qty: number;
     remaining_qty: number;
+    unit?: string;
     unit_weight?: string;
     rent_rate_per_unit?: string;
     inward_date: string;
@@ -303,17 +381,18 @@ export type LotWithdrawalInput = {
     qty: number;
 };
 
-export type MissingRateCard = {
-    commodity_id: number;
-    commodity_name: string;
-    weight_category: string;
-    lot_number: string;
-};
+/**
+ * * `CASH` - Cash
+ * * `BANK_TRANSFER` - Bank Transfer
+ * * `CHEQUE` - Cheque
+ * * `UPI` - UPI
+ * * `OTHER` - Other
+ */
+export type MethodEnum = 'CASH' | 'BANK_TRANSFER' | 'CHEQUE' | 'UPI' | 'OTHER';
 
 export type PartyInput = {
     facility_id: number;
     name: string;
-    code: string;
     type: TypeEnum;
     phone?: string;
     email?: string | string;
@@ -339,108 +418,24 @@ export type PartyOutput = {
     readonly updated_at: string;
 };
 
-export type RateCardInput = {
-    facility_id: number;
-    commodity_id: number;
-    party_id?: number | null;
-    weight_category: WeightCategoryEnum;
-    rate_per_bag_per_month: string;
-    effective_from: string;
-    is_active?: boolean;
-};
-
-export type RateCardOutput = {
-    readonly id: number;
-    readonly facility_id: number;
-    readonly party_id: number | null;
-    readonly party_name: string | null;
-    readonly is_default: boolean;
-    readonly commodity_id: number;
-    readonly commodity_name: string;
-    readonly commodity_code: string;
-    weight_category: WeightCategoryEnum;
-    readonly weight_category_display: string;
-    rate_per_bag_per_month: string;
-    effective_from: string;
-    is_active?: boolean;
-    readonly created_at: string;
-    readonly updated_at: string;
-};
-
-export type RentRunCreateInput = {
-    facility_id: number;
-    period_start: string;
-    period_end: string;
-    party_id?: number | null;
-    commodity_id?: number | null;
-    chamber?: string;
-    min_billing_days?: number;
+export type PaymentInput = {
+    amount: string;
+    payment_date: string;
+    method?: MethodEnum;
+    reference?: string;
     notes?: string;
 };
 
-export type RentRunLineOutput = {
+export type PaymentOutput = {
     readonly id: number;
-    readonly lot_id: number;
-    readonly lot_number: string;
-    readonly commodity_name: string;
-    readonly party_id: number;
-    readonly party_name: string;
-    qty: number;
-    weight_category: WeightCategoryEnum;
-    rate_per_bag_per_month: string;
-    days_stored: number;
+    readonly invoice_id: number;
     amount: string;
-};
-
-export type RentRunOutput = {
-    readonly id: number;
-    readonly facility_id: number;
-    period_start: string;
-    period_end: string;
-    readonly party_id: number | null;
-    readonly party_name: string | null;
-    readonly commodity_id: number | null;
-    readonly commodity_name: string | null;
-    chamber?: string;
-    min_billing_days?: number;
+    payment_date: string;
+    method?: MethodEnum;
+    readonly method_display: string;
+    reference?: string;
     notes?: string;
-    status?: StatusEnum;
-    readonly run_date: string;
-    readonly lines: Array<RentRunLineOutput>;
-    readonly total_amount: number;
     readonly created_at: string;
-    readonly updated_at: string;
-};
-
-export type RentRunPreviewInput = {
-    facility_id: number;
-    period_start: string;
-    period_end: string;
-    party_id?: number | null;
-    commodity_id?: number | null;
-    chamber?: string;
-    min_billing_days?: number;
-};
-
-export type RentRunPreviewLine = {
-    lot_id: number;
-    lot_number: string;
-    commodity_id: number;
-    commodity_name: string;
-    party_id: number;
-    party_name: string;
-    qty: number;
-    weight_category: string;
-    rate_per_bag_per_month: string;
-    days_stored: number;
-    amount: string;
-    rate_source: string;
-};
-
-export type RentRunPreviewOutput = {
-    lines: Array<RentRunPreviewLine>;
-    total_amount: string;
-    missing_rate_cards: Array<MissingRateCard>;
 };
 
 /**
@@ -501,17 +496,18 @@ export type UserUpdateInput = {
     role?: RoleEnum;
 };
 
-/**
- * * `KG_20` - 20 kg bag
- * * `KG_50` - 50 kg bag
- * * `OTHER` - Other
- */
-export type WeightCategoryEnum = 'KG_20' | 'KG_50' | 'OTHER';
+export type BlockOutputWritable = {
+    name: string;
+    code: string;
+    sort_order?: number;
+    capacity_bags?: number | null;
+    is_active?: boolean;
+};
 
 export type ChamberOutputWritable = {
     name: string;
+    code: string;
     sort_order?: number;
-    capacity_bags?: number | null;
     is_active?: boolean;
 };
 
@@ -551,6 +547,9 @@ export type DeliveryNoteOutputWritable = {
     driver_name?: string;
     transporter?: string;
     remarks?: string;
+    loading_charge?: string;
+    loading_unloading_rate_per_unit?: string;
+    loading_charge_mode?: LoadingChargeModeEnum;
     status?: StatusEnum;
 };
 
@@ -568,6 +567,7 @@ export type FacilityOutputWritable = {
 
 export type FloorOutputWritable = {
     name: string;
+    code: string;
     sort_order?: number;
     is_active?: boolean;
 };
@@ -584,6 +584,7 @@ export type GrnOutputWritable = {
     transporter?: string;
     preservation_rate_per_bag_per_month?: string;
     loading_unloading_rate_per_bag?: string;
+    loading_charge_mode?: LoadingChargeModeEnum;
     inward_time?: string | null;
     status?: StatusEnum;
 };
@@ -622,6 +623,7 @@ export type LotOutputWritable = {
     special_remarks?: string;
     initial_qty: number;
     remaining_qty: number;
+    unit?: string;
     unit_weight?: string;
     rent_rate_per_unit?: string;
     inward_date: string;
@@ -639,28 +641,12 @@ export type PartyOutputWritable = {
     is_active?: boolean;
 };
 
-export type RateCardOutputWritable = {
-    weight_category: WeightCategoryEnum;
-    rate_per_bag_per_month: string;
-    effective_from: string;
-    is_active?: boolean;
-};
-
-export type RentRunLineOutputWritable = {
-    qty: number;
-    weight_category: WeightCategoryEnum;
-    rate_per_bag_per_month: string;
-    days_stored: number;
+export type PaymentOutputWritable = {
     amount: string;
-};
-
-export type RentRunOutputWritable = {
-    period_start: string;
-    period_end: string;
-    chamber?: string;
-    min_billing_days?: number;
+    payment_date: string;
+    method?: MethodEnum;
+    reference?: string;
     notes?: string;
-    status?: StatusEnum;
 };
 
 export type UserCreateInputWritable = {
@@ -767,10 +753,14 @@ export type AuthMeRetrieveResponses = {
 
 export type AuthMeRetrieveResponse = AuthMeRetrieveResponses[keyof AuthMeRetrieveResponses];
 
-export type ChambersListData = {
+export type BlocksListData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * Filter by Chamber ID
+         */
+        chamber_id?: number;
         /**
          * Filter by Facility ID
          */
@@ -779,6 +769,98 @@ export type ChambersListData = {
          * Filter by Floor ID
          */
         floor_id?: number;
+        /**
+         * Filter by active status
+         */
+        is_active?: boolean;
+    };
+    url: '/api/blocks/';
+};
+
+export type BlocksListResponses = {
+    200: Array<BlockOutput>;
+};
+
+export type BlocksListResponse = BlocksListResponses[keyof BlocksListResponses];
+
+export type BlocksCreateData = {
+    body: BlockInput;
+    path?: never;
+    query?: never;
+    url: '/api/blocks/';
+};
+
+export type BlocksCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type BlocksCreateResponses = {
+    201: BlockOutput;
+};
+
+export type BlocksCreateResponse = BlocksCreateResponses[keyof BlocksCreateResponses];
+
+export type BlocksRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this block.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/blocks/{id}/';
+};
+
+export type BlocksRetrieveErrors = {
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type BlocksRetrieveResponses = {
+    200: BlockOutput;
+};
+
+export type BlocksRetrieveResponse = BlocksRetrieveResponses[keyof BlocksRetrieveResponses];
+
+export type BlocksUpdateData = {
+    body?: BlockUpdateInput;
+    path: {
+        /**
+         * A unique integer value identifying this block.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/blocks/{id}/';
+};
+
+export type BlocksUpdateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type BlocksUpdateResponses = {
+    200: BlockOutput;
+};
+
+export type BlocksUpdateResponse = BlocksUpdateResponses[keyof BlocksUpdateResponses];
+
+export type ChambersListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filter by Facility ID
+         */
+        facility_id?: number;
         /**
          * Filter by active status
          */
@@ -1191,11 +1273,15 @@ export type FacilitiesUpdateResponse = FacilitiesUpdateResponses[keyof Facilitie
 export type FloorsListData = {
     body?: never;
     path?: never;
-    query: {
+    query?: {
+        /**
+         * Filter by Chamber ID
+         */
+        chamber_id?: number;
         /**
          * Filter by Facility ID
          */
-        facility_id: number;
+        facility_id?: number;
         /**
          * Filter by active status
          */
@@ -1443,6 +1529,10 @@ export type InvoicesListData = {
          */
         party_id?: number;
         /**
+         * Filter by payment_status (UNPAID, PARTIAL, PAID)
+         */
+        payment_status?: string;
+        /**
          * Filter by status (DRAFT, POSTED, CANCELLED)
          */
         status?: string;
@@ -1526,6 +1616,90 @@ export type InvoicesCancelCreateResponses = {
 
 export type InvoicesCancelCreateResponse = InvoicesCancelCreateResponses[keyof InvoicesCancelCreateResponses];
 
+export type InvoicesPaymentsListData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Invoice.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/invoices/{id}/payments/';
+};
+
+export type InvoicesPaymentsListErrors = {
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type InvoicesPaymentsListResponses = {
+    200: Array<PaymentOutput>;
+};
+
+export type InvoicesPaymentsListResponse = InvoicesPaymentsListResponses[keyof InvoicesPaymentsListResponses];
+
+export type InvoicesPaymentsCreateData = {
+    body: PaymentInput;
+    path: {
+        /**
+         * A unique integer value identifying this Invoice.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/invoices/{id}/payments/';
+};
+
+export type InvoicesPaymentsCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type InvoicesPaymentsCreateResponses = {
+    200: InvoiceOutput;
+};
+
+export type InvoicesPaymentsCreateResponse = InvoicesPaymentsCreateResponses[keyof InvoicesPaymentsCreateResponses];
+
+export type InvoicesPaymentsDestroyData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Invoice.
+         */
+        id: number;
+        payment_id: string;
+    };
+    query?: never;
+    url: '/api/invoices/{id}/payments/{payment_id}/';
+};
+
+export type InvoicesPaymentsDestroyErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type InvoicesPaymentsDestroyResponses = {
+    200: InvoiceOutput;
+};
+
+export type InvoicesPaymentsDestroyResponse = InvoicesPaymentsDestroyResponses[keyof InvoicesPaymentsDestroyResponses];
+
 export type InvoicesPdfRetrieveData = {
     body?: never;
     path: {
@@ -1580,10 +1754,36 @@ export type InvoicesPostCreateResponses = {
 
 export type InvoicesPostCreateResponse = InvoicesPostCreateResponses[keyof InvoicesPostCreateResponses];
 
+export type InvoicesPreviewListData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Filter by Party ID
+         */
+        party_id?: number;
+    };
+    url: '/api/invoices/preview/';
+};
+
+export type InvoicesPreviewListResponses = {
+    200: Array<InvoicePreviewPartyOutput>;
+};
+
+export type InvoicesPreviewListResponse = InvoicesPreviewListResponses[keyof InvoicesPreviewListResponses];
+
 export type LotsListData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * Filter by Block ID
+         */
+        block_id?: number;
         /**
          * Filter by Chamber text
          */
@@ -1772,251 +1972,6 @@ export type PartiesUpdateResponses = {
 
 export type PartiesUpdateResponse = PartiesUpdateResponses[keyof PartiesUpdateResponses];
 
-export type RateCardsListData = {
-    body?: never;
-    path?: never;
-    query: {
-        /**
-         * Filter by Commodity ID
-         */
-        commodity_id?: number;
-        /**
-         * Filter by Facility ID
-         */
-        facility_id: number;
-        /**
-         * Filter by active status
-         */
-        is_active?: boolean;
-        /**
-         * Filter for default rate cards (party=NULL)
-         */
-        is_default?: boolean;
-        /**
-         * Filter by Party ID (or 'null' for default rate cards)
-         */
-        party_id?: string;
-    };
-    url: '/api/rate-cards/';
-};
-
-export type RateCardsListResponses = {
-    200: Array<RateCardOutput>;
-};
-
-export type RateCardsListResponse = RateCardsListResponses[keyof RateCardsListResponses];
-
-export type RateCardsCreateData = {
-    body: RateCardInput;
-    path?: never;
-    query?: never;
-    url: '/api/rate-cards/';
-};
-
-export type RateCardsCreateErrors = {
-    /**
-     * No response body
-     */
-    400: unknown;
-};
-
-export type RateCardsCreateResponses = {
-    201: RateCardOutput;
-};
-
-export type RateCardsCreateResponse = RateCardsCreateResponses[keyof RateCardsCreateResponses];
-
-export type RateCardsRetrieveData = {
-    body?: never;
-    path: {
-        /**
-         * A unique integer value identifying this rate card.
-         */
-        id: number;
-    };
-    query?: never;
-    url: '/api/rate-cards/{id}/';
-};
-
-export type RateCardsRetrieveErrors = {
-    /**
-     * No response body
-     */
-    404: unknown;
-};
-
-export type RateCardsRetrieveResponses = {
-    200: RateCardOutput;
-};
-
-export type RateCardsRetrieveResponse = RateCardsRetrieveResponses[keyof RateCardsRetrieveResponses];
-
-export type RentRunsListData = {
-    body?: never;
-    path?: never;
-    query: {
-        /**
-         * Filter by Facility ID
-         */
-        facility_id: number;
-        /**
-         * Filter by status (DRAFT, POSTED, CANCELLED)
-         */
-        status?: string;
-    };
-    url: '/api/rent-runs/';
-};
-
-export type RentRunsListResponses = {
-    200: Array<RentRunOutput>;
-};
-
-export type RentRunsListResponse = RentRunsListResponses[keyof RentRunsListResponses];
-
-export type RentRunsCreateData = {
-    body: RentRunCreateInput;
-    path?: never;
-    query?: never;
-    url: '/api/rent-runs/';
-};
-
-export type RentRunsCreateErrors = {
-    /**
-     * No response body
-     */
-    400: unknown;
-};
-
-export type RentRunsCreateResponses = {
-    201: RentRunOutput;
-};
-
-export type RentRunsCreateResponse = RentRunsCreateResponses[keyof RentRunsCreateResponses];
-
-export type RentRunsRetrieveData = {
-    body?: never;
-    path: {
-        /**
-         * A unique integer value identifying this Rent Run.
-         */
-        id: number;
-    };
-    query?: never;
-    url: '/api/rent-runs/{id}/';
-};
-
-export type RentRunsRetrieveErrors = {
-    /**
-     * No response body
-     */
-    404: unknown;
-};
-
-export type RentRunsRetrieveResponses = {
-    200: RentRunOutput;
-};
-
-export type RentRunsRetrieveResponse = RentRunsRetrieveResponses[keyof RentRunsRetrieveResponses];
-
-export type RentRunsCancelCreateData = {
-    body?: never;
-    path: {
-        /**
-         * A unique integer value identifying this Rent Run.
-         */
-        id: number;
-    };
-    query?: never;
-    url: '/api/rent-runs/{id}/cancel/';
-};
-
-export type RentRunsCancelCreateErrors = {
-    /**
-     * No response body
-     */
-    400: unknown;
-};
-
-export type RentRunsCancelCreateResponses = {
-    200: RentRunOutput;
-};
-
-export type RentRunsCancelCreateResponse = RentRunsCancelCreateResponses[keyof RentRunsCancelCreateResponses];
-
-export type RentRunsPdfRetrieveData = {
-    body?: never;
-    path: {
-        /**
-         * A unique integer value identifying this Rent Run.
-         */
-        id: number;
-    };
-    query?: never;
-    url: '/api/rent-runs/{id}/pdf/';
-};
-
-export type RentRunsPdfRetrieveErrors = {
-    /**
-     * No response body
-     */
-    400: unknown;
-    /**
-     * No response body
-     */
-    404: unknown;
-};
-
-export type RentRunsPdfRetrieveResponses = {
-    200: Blob | File;
-};
-
-export type RentRunsPdfRetrieveResponse = RentRunsPdfRetrieveResponses[keyof RentRunsPdfRetrieveResponses];
-
-export type RentRunsPostCreateData = {
-    body?: never;
-    path: {
-        /**
-         * A unique integer value identifying this Rent Run.
-         */
-        id: number;
-    };
-    query?: never;
-    url: '/api/rent-runs/{id}/post/';
-};
-
-export type RentRunsPostCreateErrors = {
-    /**
-     * No response body
-     */
-    400: unknown;
-};
-
-export type RentRunsPostCreateResponses = {
-    200: RentRunOutput;
-};
-
-export type RentRunsPostCreateResponse = RentRunsPostCreateResponses[keyof RentRunsPostCreateResponses];
-
-export type RentRunsPreviewCreateData = {
-    body: RentRunPreviewInput;
-    path?: never;
-    query?: never;
-    url: '/api/rent-runs/preview/';
-};
-
-export type RentRunsPreviewCreateErrors = {
-    /**
-     * No response body
-     */
-    400: unknown;
-};
-
-export type RentRunsPreviewCreateResponses = {
-    200: RentRunPreviewOutput;
-};
-
-export type RentRunsPreviewCreateResponse = RentRunsPreviewCreateResponses[keyof RentRunsPreviewCreateResponses];
-
 export type ReportsDnRegisterRetrieveData = {
     body?: never;
     path?: never;
@@ -2116,27 +2071,6 @@ export type ReportsInvoicesRetrieveData = {
 };
 
 export type ReportsInvoicesRetrieveResponses = {
-    /**
-     * No response body
-     */
-    200: unknown;
-};
-
-export type ReportsRentRunsRetrieveData = {
-    body?: never;
-    path: {
-        rent_run_id: number;
-    };
-    query?: {
-        /**
-         * Response format: 'json' (default) or 'csv'. Named export_format (not 'format') to avoid colliding with DRF's reserved content-negotiation query parameter.
-         */
-        export_format?: string;
-    };
-    url: '/api/reports/rent-runs/{rent_run_id}/';
-};
-
-export type ReportsRentRunsRetrieveResponses = {
     /**
      * No response body
      */

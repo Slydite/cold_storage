@@ -21,18 +21,20 @@ function extractErrorMessage(error: unknown, fallback: string): string {
 
 export async function fetchLots(params: {
   facilityId?: number
-  floor?: string
+  chamberId?: number
+  floorId?: number
+  blockId?: number
   partyId?: number
   commodityId?: number
-  chamber?: string
   inStockOnly?: boolean
 }): Promise<LotOutput[]> {
   const queryObj: Record<string, unknown> = {}
   if (params.facilityId !== undefined) queryObj.facility_id = params.facilityId
-  if (params.floor !== undefined) queryObj.floor = params.floor
+  if (params.chamberId !== undefined) queryObj.chamber_id = params.chamberId
+  if (params.floorId !== undefined) queryObj.floor_id = params.floorId
+  if (params.blockId !== undefined) queryObj.block_id = params.blockId
   if (params.partyId !== undefined) queryObj.party_id = params.partyId
   if (params.commodityId !== undefined) queryObj.commodity_id = params.commodityId
-  if (params.chamber !== undefined) queryObj.chamber = params.chamber
   if (params.inStockOnly !== undefined) queryObj.in_stock_only = params.inStockOnly
 
   const res = await lotsList({
@@ -43,4 +45,5 @@ export async function fetchLots(params: {
   }
   return (res.data ?? []) as LotOutput[]
 }
+
 
