@@ -65,6 +65,21 @@ const isCreateDialogOpen = ref(false)
         responsiveLayout="scroll"
         class="p-datatable-sm"
       >
+        <Column :header="t('common.actions')" alignFrozen="left">
+          <template #body="{ data }">
+            <button
+              v-if="data.id !== selectedFacilityId"
+              type="button"
+              class="btn-outlined btn-xs"
+              @click="setSelectedFacilityId(data.id)"
+            >
+              <CheckCircle2 :size="14" />
+              <span>{{ t('common.setWorking') }}</span>
+            </button>
+            <span v-else class="working-badge">{{ t('common.currentlySelected') }}</span>
+          </template>
+        </Column>
+
         <Column field="code" :header="t('common.code')">
           <template #body="{ data }">
             <span class="code-link">{{ data.code }}</span>
@@ -94,21 +109,6 @@ const isCreateDialogOpen = ref(false)
         <Column field="gstin" :header="t('common.gstin')">
           <template #body="{ data }">
             {{ data.gstin || '-' }}
-          </template>
-        </Column>
-
-        <Column :header="t('common.actions')" alignFrozen="right">
-          <template #body="{ data }">
-            <button
-              v-if="data.id !== selectedFacilityId"
-              type="button"
-              class="btn-outlined btn-xs"
-              @click="setSelectedFacilityId(data.id)"
-            >
-              <CheckCircle2 :size="14" />
-              <span>{{ t('common.setWorking') }}</span>
-            </button>
-            <span v-else class="working-badge">{{ t('common.currentlySelected') }}</span>
           </template>
         </Column>
       </DataTable>

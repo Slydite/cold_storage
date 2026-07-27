@@ -80,7 +80,7 @@ const handleRetry = () => {
 
     <template v-else>
       <!-- Outstanding Invoices Section -->
-      <OutstandingInvoicesTable :invoices="outstandingInvoices" />
+      <OutstandingInvoicesTable :invoices="outstandingInvoices" @refresh="invoicesQuery.refetch()" />
 
       <!-- Active Stock Accruing Rent Section -->
       <ActiveStockTable :lots="activeLots" />

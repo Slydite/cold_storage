@@ -204,8 +204,8 @@ const onCommodityChange = (itemIdx: number, commId: number | null) => {
       <!-- Receiving Charge Section -->
       <div class="charge-section-card">
         <div class="charge-header">
-          <h4 class="section-subtitle">{{ t('grn.receivingCharge') }}</h4>
-          <span class="charge-help">{{ t('grn.receivingHelp') }}</span>
+          <h4 class="section-subtitle">{{ t('grn.loadingUnloadingCharge') }}</h4>
+          <span class="charge-help">{{ t('grn.loadingUnloadingHelp') }}</span>
         </div>
 
         <div class="charge-controls">
@@ -222,7 +222,7 @@ const onCommodityChange = (itemIdx: number, commId: number | null) => {
           </div>
 
           <div v-if="loading_charge_mode === 'FLAT'" class="form-group">
-            <label class="form-label">{{ t('grn.flatReceivingCharge') }}</label>
+            <label class="form-label">{{ t('grn.flatLoadingUnloadingCharge') }}</label>
             <InputText
               v-model="loading_charge"
               v-bind="loadingChargeProps"
@@ -232,7 +232,7 @@ const onCommodityChange = (itemIdx: number, commId: number | null) => {
           </div>
 
           <div v-else class="form-group">
-            <label class="form-label">{{ t('grn.receivingRatePerUnit') }}</label>
+            <label class="form-label">{{ t('grn.loadingUnloadingRatePerUnit') }}</label>
             <InputText
               v-model="loading_unloading_rate_per_bag"
               v-bind="loadingRateProps"
@@ -242,7 +242,7 @@ const onCommodityChange = (itemIdx: number, commId: number | null) => {
           </div>
 
           <div class="form-group est-display">
-            <label class="form-label">{{ t('grn.estimatedReceivingCharge') }}</label>
+            <label class="form-label">{{ t('grn.estimatedLoadingUnloadingCharge') }}</label>
             <span class="est-value">{{ formatCurrency(computedReceivingChargeEstimate) }}</span>
           </div>
         </div>

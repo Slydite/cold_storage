@@ -7,21 +7,34 @@ import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import DatePicker from 'primevue/datepicker'
 import { FilterMatchMode } from '@primevue/core/api'
-import { Search, Filter, FilterX, Download } from 'lucide-vue-next'
+import { Search, Filter, FilterX, Download, Eye } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
+import InvoiceDetailDialog from '../invoicing/InvoiceDetailDialog.vue'
 import type { InvoiceOutput } from '../../api/invoicing'
 
 const props = defineProps<{
   invoices: InvoiceOutput[]
 }>()
 
+const emit = defineEmits<{
+  refresh: []
+}>()
+
 const { t } = useI18n()
 
 const searchQuery = ref('')
 const selectedPaymentStatus = ref('')
+
+const selectedInvoice = ref<InvoiceOutput | null>(null)
+const showDetailDialog = ref(false)
+
+function handleOpenDetail(invoice: InvoiceOutput) {
+  selectedInvoice.value = invoice
+  showDetailDialog.value = true
+}
 
 const paymentStatusOptions = computed(() => [
   { label: t('common.allStatuses'), value: '' },
@@ -187,9 +200,22 @@ const getPaymentSeverity = (status?: string) => {
         responsiveLayout="scroll"
         class="custom-datatable"
       >
+        <Column :header="t('common.actions')" style="width: 80px">
+          <template #body="{ data }">
+            <button
+              class="icon-btn"
+              :title="t('common.details')"
+              type="button"
+              @click="handleOpenDetail(data)"
+            >
+              <Eye :size="16" />
+            </button>
+          </template>
+        </Column>
+
         <Column field="invoice_number" :header="t('invoicing.invoiceNumber')" sortable>
           <template #body="{ data }">
-            <span class="code-link">{{ data.invoice_number }}</span>
+            <span class="code-link clickable" @click="handleOpenDetail(data)">{{ data.invoice_number }}</span>
           </template>
           <template #filter="{ filterModel, filterCallback }">
             <InputText
@@ -261,6 +287,13 @@ const getPaymentSeverity = (status?: string) => {
         </Column>
       </DataTable>
     </div>
+
+    <!-- Detail Dialog -->
+    <InvoiceDetailDialog
+      v-model:visible="showDetailDialog"
+      :invoice="selectedInvoice"
+      @refresh="emit('refresh')"
+    />
   </div>
 </template>
 

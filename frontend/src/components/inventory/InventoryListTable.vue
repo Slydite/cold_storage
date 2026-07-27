@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
@@ -8,10 +8,14 @@ import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
 import { useI18n } from 'vue-i18n'
 import { FilterMatchMode } from '@primevue/core/api'
-import { Search, Filter, FilterX, Download, AlertCircle, RefreshCw, Package } from 'lucide-vue-next'
+import { Search, Filter, FilterX, Download, AlertCircle, RefreshCw, Package, Eye } from 'lucide-vue-next'
 import { formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
+import { useToast } from 'primevue/usetoast'
+import { fetchGrn } from '../../api/grn'
+import type { GrnOutput } from '../../api/generated/types.gen'
+import GrnDetailDialog from '../grn/GrnDetailDialog.vue'
 import type { LotOutput } from '../../api/lot'
 import type { FacilityOutput } from '../../api/facility'
 import type { ChamberOutput, FloorOutput, BlockOutput } from '../../api/location'
@@ -49,7 +53,30 @@ const emit = defineEmits<{
   retry: []
 }>()
 
+const toast = useToast()
 const { t } = useI18n()
+
+const selectedGrn = ref<GrnOutput | null>(null)
+const showGrnDetail = ref(false)
+const fetchingLotId = ref<number | null>(null)
+
+async function handleViewGrn(lot: LotOutput) {
+  fetchingLotId.value = lot.id
+  try {
+    const grn = await fetchGrn(lot.grn_id)
+    selectedGrn.value = grn
+    showGrnDetail.value = true
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: t('grn.failedToLoad'),
+      detail: err instanceof Error ? err.message : t('errors.generic'),
+      life: 5000
+    })
+  } finally {
+    fetchingLotId.value = null
+  }
+}
 
 const statusOptions = computed(() => [
   { label: t('inventory.activeLots'), value: 'active' },
@@ -296,9 +323,24 @@ const handleExport = () => {
         responsiveLayout="scroll"
         class="custom-datatable"
       >
+        <Column :header="t('common.actions')" style="width: 80px">
+          <template #body="{ data }">
+            <button
+              class="icon-btn"
+              :disabled="fetchingLotId !== null"
+              :title="t('common.details')"
+              type="button"
+              @click="handleViewGrn(data)"
+            >
+              <i v-if="fetchingLotId === data.id" class="pi pi-spin pi-spinner" style="font-size: 1rem"></i>
+              <Eye v-else :size="16" />
+            </button>
+          </template>
+        </Column>
+
         <Column field="lot_number" :header="t('inventory.lotNo')" sortable>
           <template #body="{ data }">
-            <span class="code-link">{{ data.lot_number }}</span>
+            <span class="code-link clickable" @click="handleViewGrn(data)">{{ data.lot_number }}</span>
           </template>
           <template #filter="{ filterModel, filterCallback }">
             <InputText
@@ -412,6 +454,12 @@ const handleExport = () => {
         </Column>
       </DataTable>
     </div>
+
+    <!-- GRN Detail Dialog -->
+    <GrnDetailDialog
+      v-model:visible="showGrnDetail"
+      :grn="selectedGrn"
+    />
   </div>
 </template>
 

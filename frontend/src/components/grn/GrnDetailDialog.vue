@@ -117,7 +117,7 @@ function handleExportLotsCsv() {
           <span class="meta-value">{{ grn.driver_name || '-' }}</span>
         </div>
         <div class="meta-item">
-          <span class="meta-label">{{ t('grn.receivingCharge') }}</span>
+          <span class="meta-label">{{ t('grn.loadingUnloadingCharge') }}</span>
           <span class="meta-value">
             {{ grn.loading_charge ? formatCurrency(Number(grn.loading_charge)) : '-' }}
           </span>

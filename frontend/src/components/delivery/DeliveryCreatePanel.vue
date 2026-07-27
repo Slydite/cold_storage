@@ -187,8 +187,8 @@ const lotOptions = computed(() => {
       <!-- Delivery Charge Section -->
       <div class="charge-section-card">
         <div class="charge-header">
-          <h4 class="section-subtitle">{{ t('delivery.deliveryCharge') }}</h4>
-          <span class="charge-help">{{ t('delivery.deliveryHelp') }}</span>
+          <h4 class="section-subtitle">{{ t('delivery.loadingUnloadingCharge') }}</h4>
+          <span class="charge-help">{{ t('delivery.loadingUnloadingHelp') }}</span>
         </div>
 
         <div class="charge-controls">
@@ -205,7 +205,7 @@ const lotOptions = computed(() => {
           </div>
 
           <div v-if="loading_charge_mode === 'FLAT'" class="form-group">
-            <label class="form-label">{{ t('delivery.flatDeliveryCharge') }}</label>
+            <label class="form-label">{{ t('delivery.flatLoadingUnloadingCharge') }}</label>
             <InputText
               v-model="loading_charge"
               v-bind="loadingChargeProps"
@@ -215,7 +215,7 @@ const lotOptions = computed(() => {
           </div>
 
           <div v-else class="form-group">
-            <label class="form-label">{{ t('delivery.deliveryRatePerUnit') }}</label>
+            <label class="form-label">{{ t('delivery.loadingUnloadingRatePerUnit') }}</label>
             <InputText
               v-model="loading_unloading_rate_per_unit"
               v-bind="loadingRateProps"
@@ -225,7 +225,7 @@ const lotOptions = computed(() => {
           </div>
 
           <div class="form-group est-display">
-            <label class="form-label">{{ t('delivery.estimatedDeliveryCharge') }}</label>
+            <label class="form-label">{{ t('delivery.estimatedLoadingUnloadingCharge') }}</label>
             <span class="est-value">{{ formatCurrency(computedDeliveryChargeEstimate) }}</span>
           </div>
         </div>

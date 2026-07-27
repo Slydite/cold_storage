@@ -155,12 +155,16 @@ const handleDeletePayment = (payment: PaymentOutput) => {
             </Column>
             <Column field="quantity" :header="t('common.quantity')">
               <template #body="{ data }">
-                <span class="num-val">{{ formatQty(data.quantity || 0, 0) }}</span>
+                <span class="num-val">
+                  {{ data.quantity !== null && data.quantity !== undefined ? `${formatQty(data.quantity, 0)}${data.unit ? ' ' + data.unit : ''}` : '-' }}
+                </span>
               </template>
             </Column>
-            <Column field="unit_price" :header="t('common.perUnitRate')">
+            <Column field="rate_per_unit" :header="t('common.perUnitRate')">
               <template #body="{ data }">
-                <span class="num-val">{{ formatCurrency(Number(data.unit_price || 0)) }}</span>
+                <span class="num-val">
+                  {{ data.rate_per_unit !== null && data.rate_per_unit !== undefined ? formatCurrency(Number(data.rate_per_unit)) : '-' }}
+                </span>
               </template>
             </Column>
             <Column field="amount" :header="t('common.subtotalRs')">
@@ -210,9 +214,9 @@ const handleDeletePayment = (payment: PaymentOutput) => {
               </template>
             </Column>
 
-            <Column field="reference_number" :header="t('invoicing.transactionRefNo')">
+            <Column field="reference" :header="t('invoicing.transactionRefNo')">
               <template #body="{ data }">
-                <span>{{ data.reference_number || '—' }}</span>
+                <span>{{ data.reference || '—' }}</span>
               </template>
             </Column>
 

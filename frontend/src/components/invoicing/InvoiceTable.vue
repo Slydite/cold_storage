@@ -273,6 +273,57 @@ const getPaymentSeverity = (status?: string) => {
         responsiveLayout="scroll"
         class="custom-datatable"
       >
+        <Column :header="t('common.actions')">
+          <template #body="{ data }">
+            <div class="row-actions">
+              <button class="icon-btn" :title="t('common.details')" type="button" @click="handleOpenDetail(data)">
+                <Eye :size="16" />
+              </button>
+
+              <button
+                v-if="data.status === 'DRAFT'"
+                class="icon-btn"
+                :title="t('invoicing.postTooltip')"
+                type="button"
+                @click="emit('post', data.id)"
+              >
+                <FileCheck :size="16" />
+              </button>
+
+              <button
+                v-if="data.status === 'DRAFT'"
+                class="icon-btn danger-hover"
+                :title="t('invoicing.cancelTooltip')"
+                type="button"
+                @click="emit('cancel', data.id)"
+              >
+                <XCircle :size="16" />
+              </button>
+
+              <button
+                v-if="data.status === 'POSTED' && data.payment_status !== 'PAID'"
+                class="icon-btn success-hover"
+                :title="t('invoicing.recordPayment')"
+                type="button"
+                @click="handleOpenPayment(data)"
+              >
+                <CreditCard :size="16" />
+              </button>
+
+              <button
+                class="icon-btn"
+                title="PDF"
+                aria-label="PDF"
+                type="button"
+                :disabled="downloadingId === data.id"
+                @click="handleDownloadPdf(data.id, data.invoice_number)"
+              >
+                <Printer :size="16" />
+              </button>
+            </div>
+          </template>
+        </Column>
+
         <Column field="invoice_number" :header="t('invoicing.invoiceNumber')" sortable>
           <template #body="{ data }">
             <span class="code-link clickable" @click="handleOpenDetail(data)">{{ data.invoice_number }}</span>
@@ -352,57 +403,6 @@ const getPaymentSeverity = (status?: string) => {
               :value="t(`status.${(data.payment_status || 'UNPAID').toLowerCase()}`)"
               :severity="getPaymentSeverity(data.payment_status)"
             />
-          </template>
-        </Column>
-
-        <Column :header="t('common.actions')">
-          <template #body="{ data }">
-            <div class="row-actions">
-              <button class="icon-btn" :title="t('common.details')" type="button" @click="handleOpenDetail(data)">
-                <Eye :size="16" />
-              </button>
-
-              <button
-                v-if="data.status === 'DRAFT'"
-                class="icon-btn"
-                title="Post Invoice"
-                type="button"
-                @click="emit('post', data.id)"
-              >
-                <FileCheck :size="16" />
-              </button>
-
-              <button
-                v-if="data.status === 'DRAFT'"
-                class="icon-btn danger-hover"
-                title="Cancel Invoice"
-                type="button"
-                @click="emit('cancel', data.id)"
-              >
-                <XCircle :size="16" />
-              </button>
-
-              <button
-                v-if="data.status === 'POSTED' && data.payment_status !== 'PAID'"
-                class="icon-btn success-hover"
-                :title="t('invoicing.recordPayment')"
-                type="button"
-                @click="handleOpenPayment(data)"
-              >
-                <CreditCard :size="16" />
-              </button>
-
-              <button
-                class="icon-btn"
-                title="PDF"
-                aria-label="PDF"
-                type="button"
-                :disabled="downloadingId === data.id"
-                @click="handleDownloadPdf(data.id, data.invoice_number)"
-              >
-                <Printer :size="16" />
-              </button>
-            </div>
           </template>
         </Column>
       </DataTable>

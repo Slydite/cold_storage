@@ -241,6 +241,44 @@ const handleExport = () => {
         responsiveLayout="scroll"
         class="custom-datatable"
       >
+        <Column :header="t('common.actions')">
+          <template #body="{ data }">
+            <div class="row-actions">
+              <button class="icon-btn" :title="t('common.details')" type="button" @click="emit('view', data)">
+                <Eye :size="16" />
+              </button>
+              <button
+                v-if="data.status === 'DRAFT'"
+                class="icon-btn"
+                :title="t('delivery.postTooltip')"
+                type="button"
+                @click="emit('post', data.id)"
+              >
+                <FileCheck :size="16" />
+              </button>
+              <button
+                v-if="data.status === 'DRAFT'"
+                class="icon-btn danger-hover"
+                :title="t('delivery.cancelTooltip')"
+                type="button"
+                @click="emit('cancel', data.id)"
+              >
+                <XCircle :size="16" />
+              </button>
+              <button
+                class="icon-btn"
+                title="PDF"
+                aria-label="PDF"
+                type="button"
+                :disabled="downloadingId === data.id"
+                @click="handleDownloadPdf(data.id, data.dn_number)"
+              >
+                <Printer :size="16" />
+              </button>
+            </div>
+          </template>
+        </Column>
+
         <Column field="dn_number" :header="t('delivery.deliveryNumber')" sortable>
           <template #body="{ data }">
             <span class="code-link clickable" @click="emit('view', data)">{{ data.dn_number }}</span>
@@ -305,44 +343,6 @@ const handleExport = () => {
               :value="t(`status.${(data.status || 'draft').toLowerCase()}`)"
               :severity="data.status === 'POSTED' ? 'success' : data.status === 'CANCELLED' ? 'danger' : 'warn'"
             />
-          </template>
-        </Column>
-
-        <Column :header="t('common.actions')">
-          <template #body="{ data }">
-            <div class="row-actions">
-              <button class="icon-btn" :title="t('common.details')" type="button" @click="emit('view', data)">
-                <Eye :size="16" />
-              </button>
-              <button
-                v-if="data.status === 'DRAFT'"
-                class="icon-btn"
-                title="Post DN"
-                type="button"
-                @click="emit('post', data.id)"
-              >
-                <FileCheck :size="16" />
-              </button>
-              <button
-                v-if="data.status === 'DRAFT'"
-                class="icon-btn danger-hover"
-                title="Cancel DN"
-                type="button"
-                @click="emit('cancel', data.id)"
-              >
-                <XCircle :size="16" />
-              </button>
-              <button
-                class="icon-btn"
-                title="PDF"
-                aria-label="PDF"
-                type="button"
-                :disabled="downloadingId === data.id"
-                @click="handleDownloadPdf(data.id, data.dn_number)"
-              >
-                <Printer :size="16" />
-              </button>
-            </div>
           </template>
         </Column>
       </DataTable>

@@ -126,7 +126,7 @@ const handleExportLines = () => {
 
       <!-- Charges Block -->
       <div class="charges-card">
-        <h4 class="section-subtitle">{{ t('delivery.deliveryCharge') }}</h4>
+        <h4 class="section-subtitle">{{ t('delivery.loadingUnloadingCharge') }}</h4>
         <div class="charges-grid">
           <div class="info-item">
             <span class="info-label">{{ t('delivery.chargeMode') }}</span>
@@ -135,19 +135,19 @@ const handleExportLines = () => {
             </span>
           </div>
           <div v-if="props.deliveryNote.loading_charge_mode === 'PER_UNIT'" class="info-item">
-            <span class="info-label">{{ t('delivery.deliveryRatePerUnit') }}</span>
+            <span class="info-label">{{ t('delivery.loadingUnloadingRatePerUnit') }}</span>
             <span class="info-val num-val">
               {{ props.deliveryNote.loading_unloading_rate_per_unit ? `${formatCurrency(Number(props.deliveryNote.loading_unloading_rate_per_unit))} / ${t('common.unit').toLowerCase()}` : '—' }}
             </span>
           </div>
           <div v-else class="info-item">
-            <span class="info-label">{{ t('delivery.flatDeliveryCharge') }}</span>
+            <span class="info-label">{{ t('delivery.flatLoadingUnloadingCharge') }}</span>
             <span class="info-val num-val">
               {{ props.deliveryNote.loading_charge ? formatCurrency(Number(props.deliveryNote.loading_charge)) : '—' }}
             </span>
           </div>
           <div class="info-item">
-            <span class="info-label">{{ t('delivery.computedDeliveryCharge') }}</span>
+            <span class="info-label">{{ t('delivery.computedLoadingUnloadingCharge') }}</span>
             <span class="info-val num-val highlight-val">
               {{ props.deliveryNote.computed_loading_charge ? formatCurrency(Number(props.deliveryNote.computed_loading_charge)) : '—' }}
             </span>
