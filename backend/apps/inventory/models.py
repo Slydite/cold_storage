@@ -62,7 +62,7 @@ class GRN(models.Model):
         CANCELLED = 'CANCELLED', 'Cancelled'
 
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='grns')
-    grn_number = models.CharField(max_length=100, unique=True)
+    grn_number = models.CharField(max_length=100)
     party = models.ForeignKey(Party, on_delete=models.PROTECT, related_name='grns')
     receipt_date = models.DateField()
     vehicle_number = models.CharField(max_length=50, blank=True)
@@ -88,6 +88,10 @@ class GRN(models.Model):
     class Meta:
         verbose_name = "Goods Receipt Note"
         verbose_name_plural = "Goods Receipt Notes"
+        # Sequences are per-facility (see libs.sequences), so grn_number alone
+        # is not globally unique - a second facility's first GRN is
+        # "GRN-000001" too. Scope the constraint to match.
+        unique_together = ('facility', 'grn_number')
 
     def __str__(self):
         return f"GRN #{self.grn_number} - {self.party.name}"

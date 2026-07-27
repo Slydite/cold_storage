@@ -14,7 +14,7 @@ class DeliveryNote(models.Model):
         CANCELLED = 'CANCELLED', 'Cancelled'
 
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='delivery_notes')
-    dn_number = models.CharField(max_length=100, unique=True)
+    dn_number = models.CharField(max_length=100)
     party = models.ForeignKey(Party, on_delete=models.PROTECT, related_name='delivery_notes')
     dispatch_date = models.DateField()
     vehicle_number = models.CharField(max_length=50, blank=True)
@@ -35,6 +35,9 @@ class DeliveryNote(models.Model):
     class Meta:
         verbose_name = "Delivery Note"
         verbose_name_plural = "Delivery Notes"
+        # Sequences are per-facility (see libs.sequences); scope the
+        # uniqueness constraint to match, same reasoning as GRN.grn_number.
+        unique_together = ('facility', 'dn_number')
 
     def __str__(self):
         return f"DN #{self.dn_number} - {self.party.name}"

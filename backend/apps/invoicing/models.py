@@ -18,7 +18,7 @@ class Invoice(models.Model):
         CANCELLED = 'CANCELLED', 'Cancelled'
 
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='invoices')
-    invoice_number = models.CharField(max_length=100, unique=True)
+    invoice_number = models.CharField(max_length=100)
     party = models.ForeignKey(Party, on_delete=models.PROTECT, related_name='invoices')
     invoice_date = models.DateField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
@@ -40,6 +40,9 @@ class Invoice(models.Model):
 
     class Meta:
         verbose_name = "Invoice"
+        # Sequences are per-facility (see libs.sequences); scope the
+        # uniqueness constraint to match, same reasoning as GRN.grn_number.
+        unique_together = ('facility', 'invoice_number')
 
     def __str__(self):
         return f"Invoice {self.invoice_number} ({self.party.name}) [{self.status}]"

@@ -1689,6 +1689,58 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/reports/payments/:
+    get:
+      operationId: reports_payments_retrieve
+      summary: List Payment Register report
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+        description: Filter by payment_date >= date_from
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+        description: Filter by payment_date <= date_to
+      - in: query
+        name: export_format
+        schema:
+          type: string
+        description: 'Response format: ''json'' (default) or ''csv''. Named export_format
+          (not ''format'') to avoid colliding with DRF''s reserved content-negotiation
+          query parameter.'
+      - in: query
+        name: facility_id
+        schema:
+          type: integer
+        description: Filter by Facility ID
+        required: true
+      - in: query
+        name: method
+        schema:
+          type: string
+        description: Filter by payment method (CASH, BANK_TRANSFER, CHEQUE, UPI, OTHER)
+      - in: query
+        name: party_id
+        schema:
+          type: integer
+        description: Filter by Party ID
+      tags:
+      - reports
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRegisterResponse'
+          description: ''
   /api/reports/stock-summary/:
     get:
       operationId: reports_stock_summary_retrieve
@@ -3262,6 +3314,70 @@ components:
       - invoice_id
       - method_display
       - payment_date
+    PaymentRegisterOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        payment_date:
+          type: string
+          format: date
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        method_display:
+          type: string
+          readOnly: true
+        reference:
+          type: string
+          maxLength: 100
+        notes:
+          type: string
+        invoice_id:
+          type: integer
+          readOnly: true
+        invoice_number:
+          type: string
+          readOnly: true
+        invoice_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        party_id:
+          type: integer
+          readOnly: true
+        party_name:
+          type: string
+          readOnly: true
+      required:
+      - amount
+      - id
+      - invoice_id
+      - invoice_number
+      - invoice_total
+      - method_display
+      - party_id
+      - party_name
+      - payment_date
+    PaymentRegisterResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentRegisterOutput'
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - results
+      - total_amount
     RoleEnum:
       enum:
       - ADMIN

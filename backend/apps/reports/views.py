@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.db.models import Sum
 from django.utils.dateparse import parse_date
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -12,10 +13,12 @@ from apps.inventory.selectors import get_lots_list, get_grns_list
 from apps.inventory.serializers import GRNOutputSerializer
 from apps.delivery.selectors import get_delivery_notes_list
 from apps.delivery.serializers import DeliveryNoteOutputSerializer
-from apps.invoicing.selectors import get_invoices_list
+from apps.invoicing.selectors import get_invoices_list, get_payments_list
 from apps.invoicing.serializers import InvoiceOutputSerializer
 
 from .csv_utils import csv_response
+from .serializers import PaymentRegisterOutputSerializer, PaymentRegisterResponseSerializer
+
 
 
 class StockSummaryView(APIView):
@@ -267,3 +270,85 @@ class InvoiceRegisterView(APIView):
 
         serializer = InvoiceOutputSerializer(qs, many=True)
         return Response(serializer.data)
+
+
+class PaymentRegisterView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('facility_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="Filter by Facility ID"),
+            OpenApiParameter('party_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Party ID"),
+            OpenApiParameter('method', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by payment method (CASH, BANK_TRANSFER, CHEQUE, UPI, OTHER)"),
+            OpenApiParameter('date_from', OpenApiTypes.DATE, OpenApiParameter.QUERY, required=False, description="Filter by payment_date >= date_from"),
+            OpenApiParameter('date_to', OpenApiTypes.DATE, OpenApiParameter.QUERY, required=False, description="Filter by payment_date <= date_to"),
+            OpenApiParameter('export_format', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Response format: 'json' (default) or 'csv'. Named export_format (not 'format') to avoid colliding with DRF's reserved content-negotiation query parameter."),
+        ],
+        responses={200: PaymentRegisterResponseSerializer},
+        summary="List Payment Register report"
+    )
+    def get(self, request):
+        facility_id = request.query_params.get('facility_id')
+        if not facility_id:
+            raise ValidationError({"facility_id": "This query parameter is required."})
+        try:
+            facility_id_int = int(facility_id)
+        except ValueError:
+            raise ValidationError({"facility_id": "Must be an integer."})
+
+        party_id = request.query_params.get('party_id')
+        party_id_int = None
+        if party_id:
+            try:
+                party_id_int = int(party_id)
+            except ValueError:
+                raise ValidationError({"party_id": "Must be an integer."})
+
+        method = request.query_params.get('method')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        fmt = request.query_params.get('export_format', 'json').lower()
+
+        parsed_from = None
+        if date_from:
+            parsed_from = parse_date(date_from)
+            if parsed_from is None:
+                raise ValidationError({"date_from": "Must be a valid date (YYYY-MM-DD)."})
+
+        parsed_to = None
+        if date_to:
+            parsed_to = parse_date(date_to)
+            if parsed_to is None:
+                raise ValidationError({"date_to": "Must be a valid date (YYYY-MM-DD)."})
+
+        qs = get_payments_list(
+            facility_id=facility_id_int,
+            party_id=party_id_int,
+            method=method,
+            date_from=parsed_from,
+            date_to=parsed_to,
+        )
+
+        if fmt == 'csv':
+            header = ["payment_date", "invoice_number", "party_name", "method", "reference", "amount", "notes"]
+            rows = []
+            for p in qs:
+                rows.append([
+                    p.payment_date,
+                    p.invoice.invoice_number,
+                    p.invoice.party.name if p.invoice.party else "",
+                    p.method,
+                    p.reference,
+                    p.amount,
+                    p.notes
+                ])
+            return csv_response("payment-register.csv", header, rows)
+
+        total_amount = qs.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+        serializer = PaymentRegisterResponseSerializer({
+            'results': qs,
+            'total_amount': total_amount
+        })
+        return Response(serializer.data)
+

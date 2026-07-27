@@ -438,6 +438,26 @@ export type PaymentOutput = {
     readonly created_at: string;
 };
 
+export type PaymentRegisterOutput = {
+    readonly id: number;
+    payment_date: string;
+    amount: string;
+    method?: MethodEnum;
+    readonly method_display: string;
+    reference?: string;
+    notes?: string;
+    readonly invoice_id: number;
+    readonly invoice_number: string;
+    readonly invoice_total: string;
+    readonly party_id: number;
+    readonly party_name: string;
+};
+
+export type PaymentRegisterResponse = {
+    results: Array<PaymentRegisterOutput>;
+    total_amount: string;
+};
+
 /**
  * * `ADMIN` - Admin
  */
@@ -647,6 +667,19 @@ export type PaymentOutputWritable = {
     method?: MethodEnum;
     reference?: string;
     notes?: string;
+};
+
+export type PaymentRegisterOutputWritable = {
+    payment_date: string;
+    amount: string;
+    method?: MethodEnum;
+    reference?: string;
+    notes?: string;
+};
+
+export type PaymentRegisterResponseWritable = {
+    results: Array<PaymentRegisterOutputWritable>;
+    total_amount: string;
 };
 
 export type UserCreateInputWritable = {
@@ -2076,6 +2109,44 @@ export type ReportsInvoicesRetrieveResponses = {
      */
     200: unknown;
 };
+
+export type ReportsPaymentsRetrieveData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by payment_date >= date_from
+         */
+        date_from?: string;
+        /**
+         * Filter by payment_date <= date_to
+         */
+        date_to?: string;
+        /**
+         * Response format: 'json' (default) or 'csv'. Named export_format (not 'format') to avoid colliding with DRF's reserved content-negotiation query parameter.
+         */
+        export_format?: string;
+        /**
+         * Filter by Facility ID
+         */
+        facility_id: number;
+        /**
+         * Filter by payment method (CASH, BANK_TRANSFER, CHEQUE, UPI, OTHER)
+         */
+        method?: string;
+        /**
+         * Filter by Party ID
+         */
+        party_id?: number;
+    };
+    url: '/api/reports/payments/';
+};
+
+export type ReportsPaymentsRetrieveResponses = {
+    200: PaymentRegisterResponse;
+};
+
+export type ReportsPaymentsRetrieveResponse = ReportsPaymentsRetrieveResponses[keyof ReportsPaymentsRetrieveResponses];
 
 export type ReportsStockSummaryRetrieveData = {
     body?: never;
