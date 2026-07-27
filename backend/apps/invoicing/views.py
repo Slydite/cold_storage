@@ -17,13 +17,17 @@ from .services import (
     generate_invoices_for_uninvoiced_deliveries,
     post_invoice,
     cancel_invoice,
+    record_payment,
+    delete_payment,
     build_invoice_pdf,
 )
 from .serializers import (
     GenerateInvoicesInputSerializer,
     InvoiceOutputSerializer,
+    PaymentInputSerializer,
+    PaymentOutputSerializer,
 )
-from .models import Invoice
+from .models import Invoice, Payment
 
 
 class InvoiceViewSet(ViewSet):
@@ -35,6 +39,7 @@ class InvoiceViewSet(ViewSet):
             OpenApiParameter('facility_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="Filter by Facility ID"),
             OpenApiParameter('party_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Party ID"),
             OpenApiParameter('status', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by status (DRAFT, POSTED, CANCELLED)"),
+            OpenApiParameter('payment_status', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by payment_status (UNPAID, PARTIAL, PAID)"),
         ],
         responses={200: InvoiceOutputSerializer(many=True)},
         summary="List invoices for a facility"
@@ -46,12 +51,14 @@ class InvoiceViewSet(ViewSet):
 
         party_id = request.query_params.get('party_id')
         status_param = request.query_params.get('status')
+        payment_status_param = request.query_params.get('payment_status')
 
         try:
             invoices = get_invoices_list(
                 facility_id=int(facility_id),
                 party_id=int(party_id) if party_id else None,
-                status=status_param
+                status=status_param,
+                payment_status=payment_status_param,
             )
         except ValueError:
             raise ValidationError({"facility_id": "Must be an integer."})
@@ -120,6 +127,67 @@ class InvoiceViewSet(ViewSet):
         return Response(InvoiceOutputSerializer(invoice).data)
 
     @extend_schema(
+        methods=['get'],
+        responses={200: PaymentOutputSerializer(many=True), 404: None},
+        summary="List payments for an invoice"
+    )
+    @extend_schema(
+        methods=['post'],
+        request=PaymentInputSerializer,
+        responses={200: InvoiceOutputSerializer, 400: None, 404: None},
+        summary="Record a payment for an invoice"
+    )
+    @action(detail=True, methods=['get', 'post'], url_path='payments')
+    def payments(self, request, pk=None):
+        try:
+            invoice = get_invoice_by_id(pk)
+        except (Invoice.DoesNotExist, ValueError):
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == 'POST':
+            serializer = PaymentInputSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            try:
+                record_payment(
+                    invoice_id=invoice.id,
+                    amount=serializer.validated_data['amount'],
+                    payment_date=serializer.validated_data['payment_date'],
+                    method=serializer.validated_data.get('method', Payment.Method.CASH),
+                    reference=serializer.validated_data.get('reference', ''),
+                    notes=serializer.validated_data.get('notes', '')
+                )
+            except DjangoValidationError as e:
+                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+            refreshed_invoice = get_invoice_by_id(invoice.id)
+            return Response(InvoiceOutputSerializer(refreshed_invoice).data, status=status.HTTP_200_OK)
+        else:
+            serializer = PaymentOutputSerializer(invoice.payments.all(), many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        responses={200: InvoiceOutputSerializer, 400: None, 404: None},
+        summary="Delete a payment for an invoice"
+    )
+    @action(detail=True, methods=['delete'], url_path=r'payments/(?P<payment_id>[^/.]+)')
+    def delete_payment_action(self, request, pk=None, payment_id=None):
+        try:
+            invoice = get_invoice_by_id(pk)
+        except (Invoice.DoesNotExist, ValueError):
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            delete_payment(payment_id=int(payment_id))
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except (Payment.DoesNotExist, ValueError):
+            return Response({"detail": "Payment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        refreshed_invoice = get_invoice_by_id(invoice.id)
+        return Response(InvoiceOutputSerializer(refreshed_invoice).data, status=status.HTTP_200_OK)
+
+    @extend_schema(
         responses={(200, 'application/pdf'): OpenApiTypes.BINARY, 400: None, 404: None},
         summary="Stream PDF for an invoice"
     )
@@ -136,3 +204,4 @@ class InvoiceViewSet(ViewSet):
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{invoice.invoice_number}.pdf"'
         return response
+

@@ -8,6 +8,7 @@ from libs.sequences import get_next_sequence_number
 from libs.lookups import get_facility_or_raise, get_party_or_raise
 from libs.pdf import render_pdf
 from libs.choices import ChargeMode
+from libs.sanitizers import clean_text, title_name, upper_code
 from apps.inventory.models import Lot
 from apps.inventory.services import withdraw_stock_from_lot
 from .models import DeliveryNote, DeliveryLine
@@ -43,6 +44,12 @@ def create_delivery_note(
 
     if loading_charge_mode not in ChargeMode.values:
         raise ValidationError(f"Invalid loading_charge_mode: {loading_charge_mode}. Allowed: {ChargeMode.values}")
+
+    vehicle_number = upper_code(vehicle_number)
+    driver_name = title_name(driver_name)
+    transporter = title_name(transporter)
+    remarks = clean_text(remarks)
+
 
     lines = lines or []
     lot_ids = [line_data.get('lot_id') for line_data in lines if line_data.get('lot_id') is not None]

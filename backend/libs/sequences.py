@@ -3,6 +3,19 @@ from django.core.exceptions import ValidationError
 from apps.facilities.models import Facility
 from apps.inventory.models import Sequence
 
+DEFAULT_PREFIXES = {
+    'PARTY': 'PRT-',
+    'COMMODITY': 'CMD-',
+    'CHAMBER': 'CHM-',
+    'FLOOR': 'FLR-',
+    'BLOCK': 'BLK-',
+    'FACILITY': 'FAC-',
+    'GRN': 'GRN-',
+    'DN': 'DN-',
+    'INV': 'INV-',
+    'LOT': 'LOT-',
+}
+
 @transaction.atomic
 def get_next_sequence_number(
     facility_id: int = None,
@@ -11,20 +24,24 @@ def get_next_sequence_number(
     facility: Facility = None,
 ) -> str:
     """
-    Generate the next sequence number for a given facility and sequence type (e.g. 'GRN', 'DN', 'INV')
+    Generate the next sequence number for a given facility and sequence type (e.g. 'GRN', 'DN', 'INV', 'PARTY', 'FACILITY')
     using select_for_update() on the Sequence model inside an atomic transaction.
-    Format example: GRN-000001
+    Format example: GRN-000001, PRT-000001, FAC-000001
 
     Pass an already-loaded `facility` to skip a redundant lookup when the caller
     has one on hand; otherwise pass `facility_id` and it will be fetched here.
+    If both `facility` and `facility_id` are None, a global sequence (facility=None) is used.
     """
-    if facility is None:
+    if facility is None and facility_id is not None:
         try:
             facility = Facility.objects.get(pk=facility_id)
         except Facility.DoesNotExist:
             raise ValidationError(f"Facility with ID {facility_id} does not exist.")
 
-    default_prefix = prefix if prefix is not None else f"{sequence_type}-"
+    if prefix is not None:
+        default_prefix = prefix
+    else:
+        default_prefix = DEFAULT_PREFIXES.get(sequence_type, f"{sequence_type}-")
 
     seq, created = Sequence.objects.select_for_update().get_or_create(
         facility=facility,
@@ -39,4 +56,5 @@ def get_next_sequence_number(
     seq.save()
 
     return f"{seq.prefix}{seq.current_value:06d}"
+
 

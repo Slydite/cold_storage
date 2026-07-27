@@ -33,6 +33,7 @@ def test_create_chamber_floor_block_hierarchy_success(auth_client, default_facil
     assert chamber_res.status_code == status.HTTP_201_CREATED
     chamber_id = chamber_res.data['id']
     assert chamber_res.data['name'] == "Chamber 1"
+    assert chamber_res.data['code'] == "CHM-000001"
     assert chamber_res.data['facility_id'] == default_facility.id
 
     # Create Floor under Chamber
@@ -44,6 +45,7 @@ def test_create_chamber_floor_block_hierarchy_success(auth_client, default_facil
     assert floor_res.status_code == status.HTTP_201_CREATED
     floor_id = floor_res.data['id']
     assert floor_res.data['name'] == "Floor 1"
+    assert floor_res.data['code'] == "FLR-000001"
     assert floor_res.data['chamber_id'] == chamber_id
     assert floor_res.data['facility_id'] == default_facility.id
 
@@ -57,6 +59,7 @@ def test_create_chamber_floor_block_hierarchy_success(auth_client, default_facil
     assert block_res.status_code == status.HTTP_201_CREATED
     block_id = block_res.data['id']
     assert block_res.data['name'] == "Block A"
+    assert block_res.data['code'] == "BLK-000001"
     assert block_res.data['floor_id'] == floor_id
     assert block_res.data['chamber_id'] == chamber_id
     assert block_res.data['facility_id'] == default_facility.id
@@ -66,7 +69,7 @@ def test_create_chamber_floor_block_hierarchy_success(auth_client, default_facil
     assert block_obj.floor.id == floor_id
     assert block_obj.floor.chamber.id == chamber_id
     assert block_obj.floor.chamber.facility.id == default_facility.id
-    assert str(block_obj) == "Chamber 1 / Floor 1 / Block A"
+    assert str(block_obj) == "Chamber 1 / Floor 1 / Block A (BLK-000001)"
 
 
 @pytest.mark.django_db
@@ -225,4 +228,3 @@ def test_list_blocks_filtered_by_facility(auth_client, default_facility):
     block_ids = [item['id'] for item in res_b.data]
     assert b1.id in block_ids
     assert b2.id not in block_ids
-

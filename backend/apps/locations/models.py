@@ -5,6 +5,7 @@ from apps.facilities.models import Facility
 class Chamber(models.Model):
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='chambers')
     name = models.CharField(max_length=50)
+    code = models.CharField(max_length=50)
     sort_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -15,12 +16,13 @@ class Chamber(models.Model):
         ordering = ('sort_order', 'name')
 
     def __str__(self):
-        return f"{self.facility.name} / {self.name}"
+        return f"{self.facility.name} / {self.name} ({self.code})"
 
 
 class Floor(models.Model):
     chamber = models.ForeignKey(Chamber, on_delete=models.CASCADE, related_name='floors')
     name = models.CharField(max_length=50)
+    code = models.CharField(max_length=50)
     sort_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -35,12 +37,13 @@ class Floor(models.Model):
         return self.chamber.facility_id
 
     def __str__(self):
-        return f"{self.chamber.name} / {self.name}"
+        return f"{self.chamber.name} / {self.name} ({self.code})"
 
 
 class Block(models.Model):
     floor = models.ForeignKey(Floor, on_delete=models.CASCADE, related_name='blocks')
     name = models.CharField(max_length=50)
+    code = models.CharField(max_length=50)
     sort_order = models.PositiveIntegerField(default=0)
     capacity_bags = models.PositiveIntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
@@ -56,5 +59,6 @@ class Block(models.Model):
         return self.floor.chamber.facility_id
 
     def __str__(self):
-        return f"{self.floor.chamber.name} / {self.floor.name} / {self.name}"
+        return f"{self.floor.chamber.name} / {self.floor.name} / {self.name} ({self.code})"
+
 

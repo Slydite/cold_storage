@@ -38,7 +38,7 @@ class FacilityViewSet(ViewSet):
     @extend_schema(
         request=FacilityInputSerializer,
         responses={201: FacilityOutputSerializer, 400: None},
-        summary="Create a new facility"
+        summary="Create a new facility (code is auto-generated server-side)"
     )
     def create(self, request):
         serializer = FacilityInputSerializer(data=request.data)
@@ -47,7 +47,6 @@ class FacilityViewSet(ViewSet):
         try:
             facility = create_facility(
                 name=serializer.validated_data['name'],
-                code=serializer.validated_data['code'],
                 address=serializer.validated_data.get('address', ''),
                 gstin=serializer.validated_data.get('gstin', ''),
                 phone=serializer.validated_data.get('phone', ''),
@@ -76,7 +75,6 @@ class FacilityViewSet(ViewSet):
             facility = update_facility(
                 facility_id=pk,
                 name=serializer.validated_data['name'],
-                code=serializer.validated_data['code'],
                 address=serializer.validated_data.get('address', ''),
                 gstin=serializer.validated_data.get('gstin', ''),
                 phone=serializer.validated_data.get('phone', ''),
@@ -91,4 +89,5 @@ class FacilityViewSet(ViewSet):
             
         output_serializer = FacilityOutputSerializer(facility)
         return Response(output_serializer.data)
+
 

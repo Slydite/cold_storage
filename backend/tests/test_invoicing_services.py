@@ -7,11 +7,13 @@ from apps.inventory.services import create_commodity, create_grn
 from apps.inventory.models import GRN
 from apps.delivery.services import create_delivery_note
 from apps.delivery.models import DeliveryNote
-from apps.invoicing.models import Invoice
+from apps.invoicing.models import Invoice, Payment, PaymentStatus
 from apps.invoicing.services import (
     generate_invoices_for_uninvoiced_deliveries,
     post_invoice,
     cancel_invoice,
+    record_payment,
+    delete_payment,
     build_invoice_pdf,
 )
 from apps.invoicing.serializers import InvoiceOutputSerializer
@@ -23,7 +25,6 @@ def test_party(default_facility):
     return create_party(
         facility_id=default_facility.id,
         name="Invoice Test Farmer",
-        code="INV-FARM-01",
         type="DEPOSITOR",
         gstin="27ABCDE1234F1Z5"
     )
@@ -34,7 +35,6 @@ def test_party2(default_facility):
     return create_party(
         facility_id=default_facility.id,
         name="Second Farmer",
-        code="INV-FARM-02",
         type="DEPOSITOR",
         gstin=""
     )
@@ -45,9 +45,9 @@ def test_commodity(default_facility):
     return create_commodity(
         facility_id=default_facility.id,
         name="Test Commodity",
-        code="COMM-01",
         unit="BAGS"
     )
+
 
 
 @pytest.mark.django_db
@@ -311,3 +311,184 @@ def test_invoice_party_and_facility_snapshots_and_rename_resilience(default_faci
     inv.refresh_from_db()
     assert inv.party_name_snapshot == original_party_name
     assert inv.party.name == "Renamed Corporate Entity Ltd"
+
+
+@pytest.mark.django_db
+def test_invoice_no_payments_unpaid(default_facility, test_party):
+    inv = Invoice.objects.create(
+        facility=default_facility,
+        invoice_number="INV-TEST-001",
+        party=test_party,
+        invoice_date=date(2026, 7, 1),
+        subtotal=Decimal('1000.00'),
+        gst_rate=Decimal('18.00'),
+        gst_amount=Decimal('180.00'),
+        total_amount=Decimal('1180.00')
+    )
+    assert inv.payment_status == PaymentStatus.UNPAID
+    assert inv.amount_paid == Decimal('0.00')
+    assert inv.amount_due == Decimal('1180.00')
+
+
+@pytest.mark.django_db
+def test_record_payment_partial_and_paid(default_facility, test_party):
+    inv = Invoice.objects.create(
+        facility=default_facility,
+        invoice_number="INV-TEST-002",
+        party=test_party,
+        invoice_date=date(2026, 7, 1),
+        total_amount=Decimal('1000.00')
+    )
+
+    # 1. Partial payment
+    payment1 = record_payment(
+        invoice_id=inv.id,
+        amount=Decimal('400.00'),
+        payment_date=date(2026, 7, 2),
+        method=Payment.Method.CASH,
+        reference="REF-001"
+    )
+    assert payment1.amount == Decimal('400.00')
+    inv.refresh_from_db()
+    assert inv.payment_status == PaymentStatus.PARTIAL
+    assert inv.amount_paid == Decimal('400.00')
+    assert inv.amount_due == Decimal('600.00')
+
+    # 2. Paying remaining exact balance
+    payment2 = record_payment(
+        invoice_id=inv.id,
+        amount=Decimal('600.00'),
+        payment_date=date(2026, 7, 3),
+        method=Payment.Method.BANK_TRANSFER,
+        reference="UTR12345678"
+    )
+    assert payment2.amount == Decimal('600.00')
+    inv.refresh_from_db()
+    assert inv.payment_status == PaymentStatus.PAID
+    assert inv.amount_paid == Decimal('1000.00')
+    assert inv.amount_due == Decimal('0.00')
+
+
+@pytest.mark.django_db
+def test_two_partial_payments_sum_correctly(default_facility, test_party):
+    inv = Invoice.objects.create(
+        facility=default_facility,
+        invoice_number="INV-TEST-003",
+        party=test_party,
+        invoice_date=date(2026, 7, 1),
+        total_amount=Decimal('919.26')
+    )
+
+    record_payment(
+        invoice_id=inv.id,
+        amount=Decimal('500.00'),
+        payment_date=date(2026, 7, 2),
+        method=Payment.Method.UPI
+    )
+    record_payment(
+        invoice_id=inv.id,
+        amount=Decimal('419.26'),
+        payment_date=date(2026, 7, 3),
+        method=Payment.Method.CHEQUE
+    )
+
+    inv.refresh_from_db()
+    assert inv.amount_paid == Decimal('919.26')
+    assert inv.amount_due == Decimal('0.00')
+    assert inv.payment_status == PaymentStatus.PAID
+
+
+@pytest.mark.django_db
+def test_record_payment_invalid_amount_raises_validation_error(default_facility, test_party):
+    inv = Invoice.objects.create(
+        facility=default_facility,
+        invoice_number="INV-TEST-004",
+        party=test_party,
+        invoice_date=date(2026, 7, 1),
+        total_amount=Decimal('1000.00')
+    )
+
+    with pytest.raises(ValidationError) as exc1:
+        record_payment(
+            invoice_id=inv.id,
+            amount=Decimal('0.00'),
+            payment_date=date(2026, 7, 2)
+        )
+    assert "greater than zero" in str(exc1.value)
+
+    with pytest.raises(ValidationError) as exc2:
+        record_payment(
+            invoice_id=inv.id,
+            amount=Decimal('-50.00'),
+            payment_date=date(2026, 7, 2)
+        )
+    assert "greater than zero" in str(exc2.value)
+
+
+@pytest.mark.django_db
+def test_record_payment_cancelled_invoice_raises_validation_error(default_facility, test_party):
+    inv = Invoice.objects.create(
+        facility=default_facility,
+        invoice_number="INV-TEST-005",
+        party=test_party,
+        invoice_date=date(2026, 7, 1),
+        status=Invoice.Status.CANCELLED,
+        total_amount=Decimal('1000.00')
+    )
+
+    with pytest.raises(ValidationError) as exc:
+        record_payment(
+            invoice_id=inv.id,
+            amount=Decimal('500.00'),
+            payment_date=date(2026, 7, 2)
+        )
+    assert "cancelled invoice" in str(exc.value)
+
+
+@pytest.mark.django_db
+def test_record_payment_overpayment(default_facility, test_party):
+    inv = Invoice.objects.create(
+        facility=default_facility,
+        invoice_number="INV-TEST-006",
+        party=test_party,
+        invoice_date=date(2026, 7, 1),
+        total_amount=Decimal('1000.00')
+    )
+
+    payment = record_payment(
+        invoice_id=inv.id,
+        amount=Decimal('1200.00'),
+        payment_date=date(2026, 7, 2),
+        method=Payment.Method.CASH
+    )
+    assert payment.amount == Decimal('1200.00')
+
+    inv.refresh_from_db()
+    assert inv.amount_paid == Decimal('1200.00')
+    assert inv.amount_due == Decimal('0.00')  # Clamped to 0.00, NOT negative -200.00
+    assert inv.payment_status == PaymentStatus.PAID
+
+
+@pytest.mark.django_db
+def test_delete_payment_service(default_facility, test_party):
+    inv = Invoice.objects.create(
+        facility=default_facility,
+        invoice_number="INV-TEST-007",
+        party=test_party,
+        invoice_date=date(2026, 7, 1),
+        total_amount=Decimal('1000.00')
+    )
+
+    payment = record_payment(
+        invoice_id=inv.id,
+        amount=Decimal('400.00'),
+        payment_date=date(2026, 7, 2)
+    )
+    inv.refresh_from_db()
+    assert inv.amount_paid == Decimal('400.00')
+
+    delete_payment(payment_id=payment.id)
+    inv.refresh_from_db()
+    assert inv.amount_paid == Decimal('0.00')
+    assert inv.payments.count() == 0
+

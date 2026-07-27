@@ -5,10 +5,10 @@ from .models import Commodity, GRN, Lot
 class CommodityInputSerializer(serializers.Serializer):
     facility_id = serializers.IntegerField()
     name = serializers.CharField(max_length=255)
-    code = serializers.CharField(max_length=50)
     unit = serializers.CharField(max_length=50, default='BAGS')
     description = serializers.CharField(max_length=1000, required=False, allow_blank=True, default='')
     is_active = serializers.BooleanField(default=True)
+
 
 
 class CommodityOutputSerializer(serializers.ModelSerializer):

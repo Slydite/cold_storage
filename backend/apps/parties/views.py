@@ -64,7 +64,7 @@ class PartyViewSet(ViewSet):
     @extend_schema(
         request=PartyInputSerializer,
         responses={201: PartyOutputSerializer, 400: None},
-        summary="Create a new party"
+        summary="Create a new party (code is auto-generated server-side)"
     )
     def create(self, request):
         serializer = PartyInputSerializer(data=request.data)
@@ -74,7 +74,6 @@ class PartyViewSet(ViewSet):
             party = create_party(
                 facility_id=serializer.validated_data['facility_id'],
                 name=serializer.validated_data['name'],
-                code=serializer.validated_data['code'],
                 type=serializer.validated_data['type'],
                 phone=serializer.validated_data.get('phone', ''),
                 email=serializer.validated_data.get('email', ''),
@@ -101,7 +100,6 @@ class PartyViewSet(ViewSet):
             party = update_party(
                 party_id=pk,
                 name=serializer.validated_data['name'],
-                code=serializer.validated_data['code'],
                 type=serializer.validated_data['type'],
                 phone=serializer.validated_data.get('phone', ''),
                 email=serializer.validated_data.get('email', ''),
@@ -114,3 +112,4 @@ class PartyViewSet(ViewSet):
             
         output_serializer = PartyOutputSerializer(party)
         return Response(output_serializer.data)
+

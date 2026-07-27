@@ -6,8 +6,8 @@ from apps.parties.models import Party
 from libs.choices import ChargeMode
 
 class Sequence(models.Model):
-    facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='sequences')
-    sequence_type = models.CharField(max_length=50)  # e.g., 'GRN', 'DN', 'INV'
+    facility = models.ForeignKey(Facility, on_delete=models.CASCADE, null=True, blank=True, related_name='sequences')
+    sequence_type = models.CharField(max_length=50)  # e.g., 'GRN', 'DN', 'INV', 'PARTY', 'FACILITY'
     prefix = models.CharField(max_length=20, default='', blank=True)
     current_value = models.PositiveIntegerField(default=0)
 
@@ -15,7 +15,9 @@ class Sequence(models.Model):
         unique_together = ('facility', 'sequence_type')
 
     def __str__(self):
-        return f"{self.facility.code} - {self.sequence_type}: {self.prefix}{self.current_value}"
+        fac_code = self.facility.code if self.facility else "GLOBAL"
+        return f"{fac_code} - {self.sequence_type}: {self.prefix}{self.current_value}"
+
 
 
 class Commodity(models.Model):

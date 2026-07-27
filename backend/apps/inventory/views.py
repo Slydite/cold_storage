@@ -82,7 +82,7 @@ class CommodityViewSet(ViewSet):
     @extend_schema(
         request=CommodityInputSerializer,
         responses={201: CommodityOutputSerializer, 400: None},
-        summary="Create a new commodity"
+        summary="Create a new commodity (code is auto-generated server-side)"
     )
     def create(self, request):
         serializer = CommodityInputSerializer(data=request.data)
@@ -92,7 +92,6 @@ class CommodityViewSet(ViewSet):
             commodity = create_commodity(
                 facility_id=serializer.validated_data['facility_id'],
                 name=serializer.validated_data['name'],
-                code=serializer.validated_data['code'],
                 unit=serializer.validated_data.get('unit', 'BAGS'),
                 description=serializer.validated_data.get('description', ''),
                 is_active=serializer.validated_data.get('is_active', True)
@@ -116,7 +115,6 @@ class CommodityViewSet(ViewSet):
             commodity = update_commodity(
                 commodity_id=pk,
                 name=serializer.validated_data['name'],
-                code=serializer.validated_data['code'],
                 unit=serializer.validated_data.get('unit', 'BAGS'),
                 description=serializer.validated_data.get('description', ''),
                 is_active=serializer.validated_data.get('is_active', True)
@@ -126,6 +124,7 @@ class CommodityViewSet(ViewSet):
 
         output_serializer = CommodityOutputSerializer(commodity)
         return Response(output_serializer.data)
+
 
 
 class GRNViewSet(ViewSet):

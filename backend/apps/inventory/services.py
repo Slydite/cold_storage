@@ -8,6 +8,7 @@ from libs.sequences import get_next_sequence_number
 from libs.lookups import get_facility_or_raise, get_party_or_raise
 from libs.pdf import render_pdf
 from libs.choices import ChargeMode
+from libs.sanitizers import clean_text, title_name, upper_code
 from apps.locations.models import Chamber, Floor, Block
 from .models import Commodity, GRN, Lot
 
@@ -17,15 +18,19 @@ def create_commodity(
     *,
     facility_id: int,
     name: str,
-    code: str,
     unit: str = 'BAGS',
     description: str = '',
     is_active: bool = True
 ) -> Commodity:
     """
     Create a new commodity for a facility.
+    Generates commodity code automatically using sequence helper.
     """
     facility = get_facility_or_raise(facility_id)
+
+    name = title_name(name)
+    description = clean_text(description)
+    code = get_next_sequence_number(facility=facility, sequence_type='COMMODITY')
 
     commodity = Commodity(
         facility=facility,
@@ -50,7 +55,12 @@ def update_commodity(*, commodity_id: int, **fields) -> Commodity:
     except Commodity.DoesNotExist:
         raise ValidationError(f"Commodity with ID {commodity_id} does not exist.")
 
-    allowed_fields = ['name', 'code', 'unit', 'description', 'is_active']
+    if 'name' in fields and fields['name'] is not None:
+        fields['name'] = title_name(fields['name'])
+    if 'description' in fields and fields['description'] is not None:
+        fields['description'] = clean_text(fields['description'])
+
+    allowed_fields = ['name', 'unit', 'description', 'is_active']
     for field, value in fields.items():
         if field in allowed_fields:
             setattr(commodity, field, value)
@@ -92,6 +102,13 @@ def create_grn(
 
     if loading_charge_mode not in ChargeMode.values:
         raise ValidationError(f"Invalid loading_charge_mode: {loading_charge_mode}. Allowed: {ChargeMode.values}")
+
+    vehicle_number = upper_code(vehicle_number)
+    driver_name = title_name(driver_name)
+    transporter = title_name(transporter)
+    bill_no = upper_code(bill_no)
+    bilty_no = upper_code(bilty_no)
+    remarks = clean_text(remarks)
 
     grn_number = get_next_sequence_number(facility=facility, sequence_type='GRN')
 
@@ -195,6 +212,7 @@ def create_grn(
             floor_text = floor_ref.name
 
         unit = item_data.get('unit') or commodity.unit or Lot.UnitType.BAGS
+        special_remarks = clean_text(item_data.get('special_remarks', ''))
 
         lot = Lot(
             facility=facility,
@@ -207,7 +225,7 @@ def create_grn(
             chamber_ref=chamber_ref,
             floor_ref=floor_ref,
             block_ref=block_ref,
-            special_remarks=item_data.get('special_remarks', ''),
+            special_remarks=special_remarks,
             initial_qty=initial_qty,
             remaining_qty=initial_qty,  # Rule #2: Derived server-side
             unit=unit,

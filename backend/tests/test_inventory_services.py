@@ -18,7 +18,6 @@ def test_party(default_facility):
     return create_party(
         facility_id=default_facility.id,
         name="Test Farmer",
-        code="FARM-01",
         type="DEPOSITOR"
     )
 
@@ -27,7 +26,6 @@ def test_commodity(default_facility):
     return create_commodity(
         facility_id=default_facility.id,
         name="Cold Potato",
-        code="POT-01",
         unit="BAGS"
     )
 
@@ -36,16 +34,24 @@ def test_create_commodity_success(default_facility):
     commodity = create_commodity(
         facility_id=default_facility.id,
         name="Royal Apple",
-        code="APP-01",
         unit="BOXES",
-        description="Fresh apples"
+        description="  Fresh   apples  "
     )
     assert commodity.name == "Royal Apple"
-    assert commodity.code == "APP-01"
+    assert commodity.code == "CMD-000001"
     assert commodity.unit == "BOXES"
+    assert commodity.description == "Fresh apples"
     assert commodity.facility == default_facility
     assert commodity.is_active is True
     assert commodity.history.count() == 1
+
+@pytest.mark.django_db
+def test_create_commodity_sequence_advances(default_facility):
+    c1 = create_commodity(facility_id=default_facility.id, name="Commodity 1")
+    c2 = create_commodity(facility_id=default_facility.id, name="Commodity 2")
+    assert c1.code == "CMD-000001"
+    assert c2.code == "CMD-000002"
+    assert c1.code != c2.code
 
 @pytest.mark.django_db
 def test_create_grn_with_sequence_and_lots(default_facility, test_party, test_commodity):
@@ -75,12 +81,14 @@ def test_create_grn_with_sequence_and_lots(default_facility, test_party, test_co
         facility_id=default_facility.id,
         party_id=test_party.id,
         receipt_date=receipt_date,
-        vehicle_number="KA-01-AB-1234",
-        driver_name="Ramesh",
+        vehicle_number="ka-01-ab-1234",
+        driver_name=" ramesh ",
         items=items
     )
 
     assert grn1.grn_number == "GRN-000001"
+    assert grn1.vehicle_number == "KA-01-AB-1234"
+    assert grn1.driver_name == "Ramesh"
     assert grn1.party == test_party
     assert grn1.status == GRN.Status.POSTED
     assert grn1.lots.count() == 2
@@ -340,4 +348,3 @@ def test_lot_unit_override_and_fallback(default_facility, test_party, test_commo
     lots = list(grn.lots.order_by('id'))
     assert lots[0].unit == "BOXES"
     assert lots[1].unit == test_commodity.unit  # "BAGS"
-

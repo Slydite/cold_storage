@@ -17,7 +17,6 @@ def test_party(default_facility):
     return create_party(
         facility_id=default_facility.id,
         name="Test Customer",
-        code="CUST-01",
         type="DEPOSITOR"
     )
 
@@ -27,7 +26,6 @@ def test_commodity(default_facility):
     return create_commodity(
         facility_id=default_facility.id,
         name="Frozen Peas",
-        code="PEA-01",
         unit="BAGS"
     )
 
@@ -233,9 +231,9 @@ def test_create_delivery_note_facility_validation(default_facility, test_party, 
     other_facility = Facility.objects.create(code="FAC-02", name="Other Facility")
     grn_other = create_grn(
         facility_id=other_facility.id,
-        party_id=create_party(facility_id=other_facility.id, name="Other Party", code="P2", type="DEPOSITOR").id,
+        party_id=create_party(facility_id=other_facility.id, name="Other Party", type="DEPOSITOR").id,
         receipt_date=date(2026, 7, 25),
-        items=[{"commodity_id": create_commodity(facility_id=other_facility.id, name="Peas 2", code="P2").id, "initial_qty": 50}]
+        items=[{"commodity_id": create_commodity(facility_id=other_facility.id, name="Peas 2").id, "initial_qty": 50}]
     )
     other_lot = grn_other.lots.first()
 
@@ -288,4 +286,3 @@ def test_dn_computed_loading_charge_per_unit_mode(default_facility, test_party, 
     )
     # 100 units * 5.50 = 550.00
     assert dn.computed_loading_charge() == Decimal('550.00')
-

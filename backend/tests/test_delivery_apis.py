@@ -9,12 +9,12 @@ from apps.delivery.models import DeliveryNote
 
 @pytest.fixture
 def party(default_facility):
-    return create_party(facility_id=default_facility.id, name="DN API Customer", code="CUST-API", type="DEPOSITOR")
+    return create_party(facility_id=default_facility.id, name="DN API Customer", type="DEPOSITOR")
 
 
 @pytest.fixture
 def commodity(default_facility):
-    return create_commodity(facility_id=default_facility.id, name="Sweet Corn", code="CORN-01", unit="BAGS")
+    return create_commodity(facility_id=default_facility.id, name="Sweet Corn", unit="BAGS")
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ def test_delivery_note_api_create_list_retrieve_post(auth_client, default_facili
     dn_id = res.data['id']
     assert res.data['dn_number'] == "DN-000001"
     assert res.data['status'] == DeliveryNote.Status.DRAFT
-    assert res.data['party_name'] == "DN API Customer"
+    assert res.data['party_name'] == "DN Api Customer"
     assert len(res.data['lines']) == 1
     assert res.data['lines'][0]['lot_number'] == lot.lot_number
     assert res.data['lines'][0]['commodity_name'] == "Sweet Corn"

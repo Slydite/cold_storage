@@ -1,6 +1,5 @@
 import pytest
 from rest_framework import status
-from apps.facilities.models import Facility
 
 @pytest.mark.django_db
 def test_unauthenticated_facility_list_denied(api_client):
@@ -26,19 +25,18 @@ def test_retrieve_facility(auth_client, default_facility):
 def test_create_facility_api(auth_client):
     data = {
         "name": "New API Facility",
-        "code": "API-01",
+        "code": "CLIENT-CODE-IGNORED",
         "address": "API Logistics Area"
     }
     response = auth_client.post('/api/facilities/', data)
     assert response.status_code == status.HTTP_201_CREATED
-    assert response.data['name'] == "New API Facility"
-    assert response.data['code'] == "API-01"
+    assert response.data['name'] == "New Api Facility"
+    assert response.data['code'] == "FAC-000001"
 
 @pytest.mark.django_db
 def test_update_facility_api(auth_client, default_facility):
     data = {
         "name": "Updated Facility Name",
-        "code": default_facility.code,
         "address": "Updated Address"
     }
     response = auth_client.put(f'/api/facilities/{default_facility.id}/', data)

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from django.utils.dateparse import parse_date
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -238,9 +239,15 @@ class InvoiceRegisterView(APIView):
 
         qs = get_invoices_list(facility_id=facility_id_int, status=status_param)
         if date_from:
-            qs = qs.filter(invoice_date__gte=date_from)
+            parsed_from = parse_date(date_from)
+            if parsed_from is None:
+                raise ValidationError({"date_from": "Must be a valid date (YYYY-MM-DD)."})
+            qs = [inv for inv in qs if inv.invoice_date >= parsed_from]
         if date_to:
-            qs = qs.filter(invoice_date__lte=date_to)
+            parsed_to = parse_date(date_to)
+            if parsed_to is None:
+                raise ValidationError({"date_to": "Must be a valid date (YYYY-MM-DD)."})
+            qs = [inv for inv in qs if inv.invoice_date <= parsed_to]
 
         if fmt == 'csv':
             header = ["invoice_number", "invoice_date", "party_name", "party_gstin_snapshot", "status", "subtotal", "gst_amount", "total_amount"]

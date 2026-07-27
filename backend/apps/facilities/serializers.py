@@ -11,7 +11,6 @@ class FacilityOutputSerializer(serializers.ModelSerializer):
 
 class FacilityInputSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
-    code = serializers.CharField(max_length=50)
     address = serializers.CharField(max_length=1000, required=False, allow_blank=True, default="")
     gstin = serializers.CharField(max_length=15, required=False, allow_blank=True, default="")
     phone = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
@@ -19,4 +18,5 @@ class FacilityInputSerializer(serializers.Serializer):
     bank_account_no = serializers.CharField(max_length=40, required=False, allow_blank=True, default="")
     bank_ifsc = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
     terms_and_conditions = serializers.CharField(required=False, allow_blank=True, default="")
+
 

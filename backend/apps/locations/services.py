@@ -1,6 +1,8 @@
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from libs.lookups import get_facility_or_raise
+from libs.sequences import get_next_sequence_number
+from libs.sanitizers import title_name
 from .models import Chamber, Floor, Block
 
 
@@ -14,12 +16,16 @@ def create_chamber(
 ) -> Chamber:
     """
     Create a new chamber for a facility.
+    Generates chamber code automatically using sequence helper.
     """
     facility = get_facility_or_raise(facility_id)
+    name = title_name(name)
+    code = get_next_sequence_number(facility=facility, sequence_type='CHAMBER')
 
     chamber = Chamber(
         facility=facility,
         name=name,
+        code=code,
         sort_order=sort_order,
         is_active=is_active
     )
@@ -40,6 +46,9 @@ def update_chamber(*, chamber_id: int, facility_id: int = None, **fields) -> Cha
 
     if facility_id is not None and chamber.facility_id != facility_id:
         raise ValidationError(f"Chamber with ID {chamber_id} does not belong to facility {facility_id}.")
+
+    if 'name' in fields and fields['name'] is not None:
+        fields['name'] = title_name(fields['name'])
 
     allowed_fields = ['name', 'sort_order', 'is_active']
     for field, value in fields.items():
@@ -63,9 +72,10 @@ def create_floor(
     """
     Create a new floor under a chamber.
     Validates chamber exists and belongs to facility (if facility_id provided).
+    Generates floor code automatically using sequence helper.
     """
     try:
-        chamber = Chamber.objects.get(pk=chamber_id)
+        chamber = Chamber.objects.select_related('facility').get(pk=chamber_id)
     except Chamber.DoesNotExist:
         raise ValidationError(f"Chamber with ID {chamber_id} does not exist.")
 
@@ -74,9 +84,13 @@ def create_floor(
         if chamber.facility_id != facility.id:
             raise ValidationError(f"Chamber with ID {chamber_id} does not belong to facility {facility.id}.")
 
+    name = title_name(name)
+    code = get_next_sequence_number(facility=chamber.facility, sequence_type='FLOOR')
+
     floor = Floor(
         chamber=chamber,
         name=name,
+        code=code,
         sort_order=sort_order,
         is_active=is_active
     )
@@ -110,6 +124,9 @@ def update_floor(*, floor_id: int, facility_id: int = None, **fields) -> Floor:
             raise ValidationError(f"Chamber with ID {new_chamber_id} does not belong to facility {target_facility_id}.")
         floor.chamber = new_chamber
 
+    if 'name' in fields and fields['name'] is not None:
+        fields['name'] = title_name(fields['name'])
+
     allowed_fields = ['name', 'sort_order', 'is_active']
     for field, value in fields.items():
         if field in allowed_fields and value is not None:
@@ -134,9 +151,10 @@ def create_block(
     """
     Create a new block under a floor.
     Validates floor exists, chamber matches (if chamber_id provided), and facility matches (if facility_id provided).
+    Generates block code automatically using sequence helper.
     """
     try:
-        floor = Floor.objects.select_related('chamber').get(pk=floor_id)
+        floor = Floor.objects.select_related('chamber__facility').get(pk=floor_id)
     except Floor.DoesNotExist:
         raise ValidationError(f"Floor with ID {floor_id} does not exist.")
 
@@ -148,9 +166,13 @@ def create_block(
         if floor.chamber.facility_id != facility.id:
             raise ValidationError(f"Floor with ID {floor_id} does not belong to facility {facility.id}.")
 
+    name = title_name(name)
+    code = get_next_sequence_number(facility=floor.chamber.facility, sequence_type='BLOCK')
+
     block = Block(
         floor=floor,
         name=name,
+        code=code,
         sort_order=sort_order,
         capacity_bags=capacity_bags,
         is_active=is_active
@@ -185,6 +207,9 @@ def update_block(*, block_id: int, facility_id: int = None, **fields) -> Block:
             raise ValidationError(f"Floor with ID {new_floor_id} does not belong to facility {target_facility_id}.")
         block.floor = new_floor
 
+    if 'name' in fields and fields['name'] is not None:
+        fields['name'] = title_name(fields['name'])
+
     allowed_fields = ['name', 'sort_order', 'capacity_bags', 'is_active']
     for field, value in fields.items():
         if field in allowed_fields and value is not None:
@@ -193,4 +218,5 @@ def update_block(*, block_id: int, facility_id: int = None, **fields) -> Block:
     block.full_clean()
     block.save()
     return block
+
 

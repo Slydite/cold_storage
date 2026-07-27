@@ -22,7 +22,6 @@ def test_party(default_facility):
     return create_party(
         facility_id=default_facility.id,
         name="Invoice API Customer",
-        code="CUST-INV-01",
         type="DEPOSITOR",
         gstin="27ABCDE1234F1Z5"
     )
@@ -33,9 +32,9 @@ def test_commodity(default_facility):
     return create_commodity(
         facility_id=default_facility.id,
         name="Sweet Corn",
-        code="CORN-01",
         unit="BAGS"
     )
+
 
 
 @pytest.mark.django_db
@@ -43,6 +42,9 @@ def test_unauthenticated_invoicing_apis_denied(api_client):
     assert api_client.get('/api/invoices/').status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
     assert api_client.post('/api/invoices/', {}).status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
     assert api_client.get('/api/invoices/1/pdf/').status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+    assert api_client.get('/api/invoices/1/payments/').status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+    assert api_client.post('/api/invoices/1/payments/', {}).status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+    assert api_client.delete('/api/invoices/1/payments/1/').status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
 
 
 @pytest.mark.django_db
@@ -84,6 +86,9 @@ def test_invoice_api_generate_list_retrieve_post_cancel_pdf(auth_client, default
     assert inv_data['subtotal'] == "7500.00"
     assert inv_data['gst_amount'] == "1350.00"
     assert inv_data['total_amount'] == "8850.00"
+    assert inv_data['payment_status'] == "UNPAID"
+    assert inv_data['amount_paid'] == "0.00"
+    assert inv_data['amount_due'] == "8850.00"
     assert 'pdf_url' not in inv_data
 
     # List Invoices
@@ -107,3 +112,70 @@ def test_invoice_api_generate_list_retrieve_post_cancel_pdf(auth_client, default
     res_post = auth_client.post(f'/api/invoices/{inv_id}/post/')
     assert res_post.status_code == status.HTTP_200_OK
     assert res_post.data['status'] == Invoice.Status.POSTED
+
+
+@pytest.mark.django_db
+def test_payment_api_workflow_and_filtering(auth_client, default_facility, test_party):
+    inv = Invoice.objects.create(
+        facility=default_facility,
+        invoice_number="INV-API-PAY-001",
+        party=test_party,
+        invoice_date=date(2026, 7, 1),
+        total_amount=Decimal('1000.00')
+    )
+
+    # 1. Record payment via API
+    pay_payload1 = {
+        "amount": "400.00",
+        "payment_date": "2026-07-27",
+        "method": "CASH",
+        "reference": "REC-01",
+        "notes": "Partial cash payment"
+    }
+    res_pay1 = auth_client.post(f'/api/invoices/{inv.id}/payments/', pay_payload1, format='json')
+    assert res_pay1.status_code == status.HTTP_200_OK
+    assert res_pay1.data['payment_status'] == "PARTIAL"
+    assert res_pay1.data['amount_paid'] == "400.00"
+    assert res_pay1.data['amount_due'] == "600.00"
+    assert len(res_pay1.data['payments']) == 1
+    p1_id = res_pay1.data['payments'][0]['id']
+
+    # 2. List payments for invoice via GET API
+    res_pay_list = auth_client.get(f'/api/invoices/{inv.id}/payments/')
+    assert res_pay_list.status_code == status.HTTP_200_OK
+    assert len(res_pay_list.data) == 1
+    assert res_pay_list.data[0]['amount'] == "400.00"
+    assert res_pay_list.data[0]['method_display'] == "Cash"
+
+    # 3. Filter invoices list by payment_status
+    res_filter_partial = auth_client.get(f'/api/invoices/?facility_id={default_facility.id}&payment_status=PARTIAL')
+    assert res_filter_partial.status_code == status.HTTP_200_OK
+    assert len(res_filter_partial.data) == 1
+
+    res_filter_paid = auth_client.get(f'/api/invoices/?facility_id={default_facility.id}&payment_status=PAID')
+    assert res_filter_paid.status_code == status.HTTP_200_OK
+    assert len(res_filter_paid.data) == 0
+
+    # 4. Record second payment to reach PAID
+    pay_payload2 = {
+        "amount": "600.00",
+        "payment_date": "2026-07-28",
+        "method": "BANK_TRANSFER",
+        "reference": "UTR9999"
+    }
+    res_pay2 = auth_client.post(f'/api/invoices/{inv.id}/payments/', pay_payload2, format='json')
+    assert res_pay2.status_code == status.HTTP_200_OK
+    assert res_pay2.data['payment_status'] == "PAID"
+    assert res_pay2.data['amount_paid'] == "1000.00"
+    assert res_pay2.data['amount_due'] == "0.00"
+    assert len(res_pay2.data['payments']) == 2
+    p2_id = res_pay2.data['payments'][0]['id']  # ordered -payment_date
+
+    # 5. Delete a payment via DELETE API
+    res_del = auth_client.delete(f'/api/invoices/{inv.id}/payments/{p2_id}/')
+    assert res_del.status_code == status.HTTP_200_OK
+    assert res_del.data['payment_status'] == "PARTIAL"
+    assert res_del.data['amount_paid'] == "400.00"
+    assert res_del.data['amount_due'] == "600.00"
+    assert len(res_del.data['payments']) == 1
+

@@ -9,7 +9,7 @@ from libs.pdf import render_pdf
 from libs.sequences import get_next_sequence_number
 from apps.billing.services import compute_delivery_line_rent, days_stored
 from apps.delivery.selectors import get_uninvoiced_delivery_lines
-from .models import Invoice, InvoiceLine
+from .models import Invoice, InvoiceLine, Payment
 from .selectors import get_invoice_by_id
 
 
@@ -25,7 +25,7 @@ def generate_invoices_for_uninvoiced_deliveries(
     Implements Rule 3 (Only withdrawn stock is invoiced) and Anti-double-billing Invariant:
     - Queries uninvoiced delivery lines from POSTED delivery notes via get_uninvoiced_delivery_lines.
     - Computes rent using compute_delivery_line_rent pure calculator.
-    - Bills GRN one-time loading charge IN FULL on the FIRST invoice that includes any withdrawal
+    - Bills GRN one-time receiving charge IN FULL on the FIRST invoice that includes any withdrawal
       from that GRN (if loading_charge_invoiced_at IS NULL).
     - Bills DN one-time loading charge on the invoice that includes that DN's lines (if loading_charge_invoiced_at IS NULL).
     - Marks DeliveryLine.invoiced_at and links DeliveryLine.invoice_line.
@@ -61,7 +61,7 @@ def generate_invoices_for_uninvoiced_deliveries(
                 'delivery_line': line
             })
 
-        # 2. GRN loading charges (billed once on first withdrawal)
+        # 2. GRN receiving charges (billed once on first withdrawal)
         processed_grns = set()
         for line in line_list:
             grn = line.lot.grn
@@ -70,7 +70,7 @@ def generate_invoices_for_uninvoiced_deliveries(
                 charge = grn.computed_loading_charge()
                 if charge > Decimal('0.00'):
                     invoice_items.append({
-                        'description': f"Loading Charge - GRN #{grn.grn_number}",
+                        'description': f"Receiving Charge - GRN #{grn.grn_number}",
                         'amount': charge,
                         'grn': grn
                     })
@@ -286,3 +286,62 @@ def build_invoice_pdf(*, invoice_id: int) -> bytes:
         'amount_in_words': amount_in_words_str,
     }
     return render_pdf('pdf/invoice.html', context)
+
+
+@transaction.atomic
+def record_payment(
+    *,
+    invoice_id: int,
+    amount: Decimal,
+    payment_date: date,
+    method: str = Payment.Method.CASH,
+    reference: str = '',
+    notes: str = ''
+) -> Payment:
+    """
+    Record a payment against an invoice using row locking (select_for_update).
+
+    Overpayment Decision & Reasoning:
+    In real cold storage operations, customers frequently make payments in round figures or pay advances
+    that may exceed individual invoice totals. Overpayment is allowed (amount_paid > total_amount) to preserve
+    exact financial auditability of funds received. The invoice payment_status evaluates to 'PAID' and amount_due
+    is clamped to Decimal('0.00'), while the Payment model stores the exact received amount.
+    """
+    try:
+        invoice = Invoice.objects.select_for_update().get(pk=invoice_id)
+    except Invoice.DoesNotExist:
+        raise ValidationError(f"Invoice with ID {invoice_id} does not exist.")
+
+    amount_dec = Decimal(str(amount)).quantize(Decimal('0.01'))
+    if amount_dec <= Decimal('0.00'):
+        raise ValidationError("Payment amount must be greater than zero.")
+
+    if invoice.status == Invoice.Status.CANCELLED:
+        raise ValidationError("Cannot record payment against a cancelled invoice.")
+
+    payment = Payment(
+        invoice=invoice,
+        amount=amount_dec,
+        payment_date=payment_date,
+        method=method,
+        reference=reference,
+        notes=notes,
+    )
+    payment.full_clean()
+    payment.save()
+    return payment
+
+
+@transaction.atomic
+def delete_payment(*, payment_id: int) -> None:
+    """
+    Delete a payment record to correct a mistaken entry.
+    Carries simple_history.HistoricalRecords on Payment so the operation remains fully auditable.
+    """
+    try:
+        payment = Payment.objects.select_for_update().get(pk=payment_id)
+    except Payment.DoesNotExist:
+        raise ValidationError(f"Payment with ID {payment_id} does not exist.")
+
+    payment.delete()
+

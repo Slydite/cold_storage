@@ -7,11 +7,11 @@ from apps.inventory.services import create_commodity, create_grn
 
 @pytest.fixture
 def party(default_facility):
-    return create_party(facility_id=default_facility.id, name="API Farmer", code="FARM-API", type="DEPOSITOR")
+    return create_party(facility_id=default_facility.id, name="API Farmer", type="DEPOSITOR")
 
 @pytest.fixture
 def commodity(default_facility):
-    return create_commodity(facility_id=default_facility.id, name="Onion", code="ONI-01", unit="BAGS")
+    return create_commodity(facility_id=default_facility.id, name="Onion", unit="BAGS")
 
 @pytest.mark.django_db
 def test_unauthenticated_inventory_denied(api_client):
@@ -21,11 +21,11 @@ def test_unauthenticated_inventory_denied(api_client):
 
 @pytest.mark.django_db
 def test_commodity_api_lifecycle(auth_client, default_facility):
-    # Create commodity
+    # Create commodity (client-supplied code is ignored)
     data = {
         "facility_id": default_facility.id,
         "name": "Carrot",
-        "code": "CAR-01",
+        "code": "CLIENT-CODE-IGNORED",
         "unit": "BAGS",
         "description": "Orange carrots"
     }
@@ -33,6 +33,7 @@ def test_commodity_api_lifecycle(auth_client, default_facility):
     assert res.status_code == status.HTTP_201_CREATED
     comm_id = res.data['id']
     assert res.data['name'] == "Carrot"
+    assert res.data['code'] == "CMD-000001"
 
     # List commodities
     res_list = auth_client.get(f'/api/commodities/?facility_id={default_facility.id}')
@@ -43,13 +44,13 @@ def test_commodity_api_lifecycle(auth_client, default_facility):
     update_data = {
         "facility_id": default_facility.id,
         "name": "Red Carrot",
-        "code": "CAR-01",
         "unit": "BAGS",
         "is_active": True
     }
     res_upd = auth_client.put(f'/api/commodities/{comm_id}/', update_data)
     assert res_upd.status_code == status.HTTP_200_OK
     assert res_upd.data['name'] == "Red Carrot"
+    assert res_upd.data['code'] == "CMD-000001"
 
 @pytest.mark.django_db
 def test_grn_api_create_and_list(auth_client, default_facility, party, commodity):
@@ -75,7 +76,7 @@ def test_grn_api_create_and_list(auth_client, default_facility, party, commodity
     res = auth_client.post('/api/grns/', grn_payload, format='json')
     assert res.status_code == status.HTTP_201_CREATED
     assert res.data['grn_number'] == "GRN-000001"
-    assert res.data['party_name'] == "API Farmer"
+    assert res.data['party_name'] == "Api Farmer"
     assert len(res.data['lots']) == 1
     assert res.data['lots'][0]['remaining_qty'] == 300
 
@@ -132,4 +133,3 @@ def test_grn_api_roundtrip_loading_charge_mode(auth_client, default_facility, pa
     assert res.data['loading_charge_mode'] == "PER_UNIT"
     assert res.data['computed_loading_charge'] == Decimal("2500.00")
     assert res.data['lots'][0]['unit'] == "CRATES"
-

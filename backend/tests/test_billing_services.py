@@ -17,7 +17,6 @@ def test_party(default_facility):
     return create_party(
         facility_id=default_facility.id,
         name="Billing Test Farmer",
-        code="FARM-BILL-01",
         type="DEPOSITOR"
     )
 
@@ -27,9 +26,9 @@ def test_commodity(default_facility):
     return create_commodity(
         facility_id=default_facility.id,
         name="Green Peas",
-        code="PEAS-01",
         unit="BAGS"
     )
+
 
 
 @pytest.mark.django_db

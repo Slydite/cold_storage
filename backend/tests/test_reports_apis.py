@@ -14,7 +14,6 @@ def party(default_facility):
     return create_party(
         facility_id=default_facility.id,
         name="Report Test Farmer",
-        code="REP-FARM-01",
         type="DEPOSITOR",
         gstin="27ABCDE1234F1Z5"
     )
@@ -25,9 +24,9 @@ def commodity(default_facility):
     return create_commodity(
         facility_id=default_facility.id,
         name="Potato",
-        code="POT-01",
         unit="BAGS"
     )
+
 
 
 @pytest.mark.django_db
