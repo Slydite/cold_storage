@@ -9,6 +9,9 @@ class InvoiceLineOutputSerializer(serializers.ModelSerializer):
             'id',
             'description',
             'amount',
+            'quantity',
+            'unit',
+            'rate_per_unit',
         ]
 
 
@@ -99,6 +102,9 @@ class InvoicePreviewLineOutputSerializer(serializers.Serializer):
     inward_date = serializers.DateField(allow_null=True, required=False, default=None)
     dispatch_date = serializers.DateField(allow_null=True, required=False, default=None)
     days_stored = serializers.IntegerField(allow_null=True, required=False, default=None)
+    quantity = serializers.IntegerField(allow_null=True, required=False, default=None)
+    unit = serializers.CharField(allow_blank=True, required=False, default='')
+    rate_per_unit = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True, required=False, default=None)
 
 
 class InvoicePreviewPartyOutputSerializer(serializers.Serializer):

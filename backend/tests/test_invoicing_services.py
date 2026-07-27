@@ -779,3 +779,58 @@ def test_preview_party_id_filtering(default_facility, test_party, test_party2, t
     assert preview_p2[0]['party_id'] == test_party2.id
 
 
+
+
+@pytest.mark.django_db
+def test_invoice_lines_carry_billed_quantity_unit_and_rate(default_facility):
+    """
+    InvoiceLine used to only store description + amount. A quantity/unit/rate
+    was embedded in the description text but never available as data, so the
+    frontend had nothing real to show and displayed fabricated zero columns.
+    """
+    party = create_party(facility_id=default_facility.id, name="Rate Test Farmer", type="DEPOSITOR")
+    commodity = create_commodity(facility_id=default_facility.id, name="Rate Test Commodity", unit="BAGS")
+
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=party.id,
+        receipt_date=date(2026, 7, 1),
+        status=GRN.Status.POSTED,
+        loading_charge_mode='PER_UNIT',
+        loading_unloading_rate_per_bag=Decimal('2.00'),
+        items=[{
+            "commodity_id": commodity.id,
+            "initial_qty": 100,
+            "rent_rate_per_unit": Decimal('12.00'),
+        }],
+    )
+    lot = grn.lots.first()
+
+    dn = create_delivery_note(
+        facility_id=default_facility.id,
+        party_id=party.id,
+        dispatch_date=date(2026, 8, 1),
+        status=DeliveryNote.Status.POSTED,
+        loading_charge_mode='FLAT',
+        loading_charge=Decimal('150.00'),
+        lines=[{"lot_id": lot.id, "qty": 100}],
+    )
+
+    invoice = generate_invoices_for_uninvoiced_deliveries(
+        facility_id=default_facility.id, party_id=party.id
+    )[0]
+
+    rent_line = InvoiceLine.objects.get(invoice=invoice, description__startswith='Rent')
+    assert rent_line.quantity == 100
+    assert rent_line.unit == 'BAGS'
+    assert rent_line.rate_per_unit == Decimal('12.00')
+
+    grn_charge_line = InvoiceLine.objects.get(invoice=invoice, description__contains=grn.grn_number)
+    assert grn_charge_line.quantity == 100
+    assert grn_charge_line.rate_per_unit == Decimal('2.00')
+    assert "Loading/Unloading Charge" in grn_charge_line.description
+
+    dn_charge_line = InvoiceLine.objects.get(invoice=invoice, description__contains=dn.dn_number)
+    assert dn_charge_line.quantity is None
+    assert dn_charge_line.rate_per_unit is None
+    assert "Loading/Unloading Charge" in dn_charge_line.description

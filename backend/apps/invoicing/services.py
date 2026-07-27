@@ -9,6 +9,7 @@ from libs.pdf import render_pdf
 from libs.sequences import get_next_sequence_number
 from apps.billing.services import compute_delivery_line_rent, days_stored
 from apps.delivery.selectors import get_uninvoiced_delivery_lines
+from libs.choices import ChargeMode
 from .models import Invoice, InvoiceLine, Payment
 from .selectors import get_invoice_by_id
 
@@ -37,9 +38,15 @@ def build_invoice_items(*, party, line_list: list) -> dict:
             'inward_date': line.lot.inward_date,
             'dispatch_date': line.delivery_note.dispatch_date,
             'days_stored': d_count,
+            'quantity': line.qty,
+            'unit': line.lot.unit,
+            'rate_per_unit': line.lot.rent_rate_per_unit,
         })
 
-    # 2. GRN receiving charges (billed once on first withdrawal)
+    # 2. GRN loading/unloading charges (billed once on first withdrawal).
+    # User-facing wording is "Loading/Unloading Charge" on the frontend and on
+    # invoices; the field/method names (loading_charge, computed_loading_charge)
+    # stay as-is - this is presentation wording only, not a schema change.
     processed_grns = set()
     for line in line_list:
         grn = line.lot.grn
@@ -47,8 +54,10 @@ def build_invoice_items(*, party, line_list: list) -> dict:
             processed_grns.add(grn.id)
             charge = grn.computed_loading_charge()
             if charge > Decimal('0.00'):
+                is_per_unit = grn.loading_charge_mode == ChargeMode.PER_UNIT
+                total_units = sum(lot.initial_qty for lot in grn.lots.all()) if is_per_unit else None
                 invoice_items.append({
-                    'description': f"Receiving Charge - GRN #{grn.grn_number}",
+                    'description': f"Loading/Unloading Charge - GRN #{grn.grn_number}",
                     'amount': charge,
                     'grn': grn,
                     'lot_number': None,
@@ -57,9 +66,12 @@ def build_invoice_items(*, party, line_list: list) -> dict:
                     'inward_date': None,
                     'dispatch_date': None,
                     'days_stored': None,
+                    'quantity': total_units,
+                    'unit': 'UNITS' if is_per_unit else '',
+                    'rate_per_unit': grn.loading_unloading_rate_per_bag if is_per_unit else None,
                 })
 
-    # 3. DN loading charges (billed once on invoice containing DN's lines)
+    # 3. DN loading/unloading charges (billed once on invoice containing DN's lines)
     processed_dns = set()
     for line in line_list:
         dn = line.delivery_note
@@ -67,8 +79,10 @@ def build_invoice_items(*, party, line_list: list) -> dict:
             processed_dns.add(dn.id)
             charge = dn.computed_loading_charge()
             if charge > Decimal('0.00'):
+                is_per_unit = dn.loading_charge_mode == ChargeMode.PER_UNIT
+                total_units = sum(dl.qty for dl in dn.lines.all()) if is_per_unit else None
                 invoice_items.append({
-                    'description': f"Delivery Charge - DN #{dn.dn_number}",
+                    'description': f"Loading/Unloading Charge - DN #{dn.dn_number}",
                     'amount': charge,
                     'dn': dn,
                     'lot_number': None,
@@ -77,6 +91,9 @@ def build_invoice_items(*, party, line_list: list) -> dict:
                     'inward_date': None,
                     'dispatch_date': None,
                     'days_stored': None,
+                    'quantity': total_units,
+                    'unit': 'UNITS' if is_per_unit else '',
+                    'rate_per_unit': dn.loading_unloading_rate_per_unit if is_per_unit else None,
                 })
 
     subtotal = sum((item['amount'] for item in invoice_items), Decimal('0.00')).quantize(Decimal('0.01'))
@@ -129,6 +146,9 @@ def preview_uninvoiced_charges(
                 'inward_date': item['inward_date'],
                 'dispatch_date': item['dispatch_date'],
                 'days_stored': item['days_stored'],
+                'quantity': item['quantity'],
+                'unit': item['unit'],
+                'rate_per_unit': item['rate_per_unit'],
             })
 
         previews.append({
@@ -215,7 +235,10 @@ def generate_invoices_for_uninvoiced_deliveries(
             inv_line = InvoiceLine(
                 invoice=invoice,
                 description=item['description'],
-                amount=item['amount']
+                amount=item['amount'],
+                quantity=item.get('quantity'),
+                unit=item.get('unit') or '',
+                rate_per_unit=item.get('rate_per_unit')
             )
             inv_line.full_clean()
             inv_line.save()

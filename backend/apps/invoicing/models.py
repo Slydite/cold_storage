@@ -78,6 +78,15 @@ class InvoiceLine(models.Model):
     description = models.CharField(max_length=500)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
 
+    # Snapshot of the qty/unit/rate a rent or per-unit charge line was billed
+    # at, so the customer can verify the amount. Null for flat charge lines,
+    # which have no per-unit rate to show. Deliberately stored here rather
+    # than re-derived from the Lot/GRN/DN at display time: those can change
+    # after the invoice is generated, but what was actually billed must not.
+    quantity = models.PositiveIntegerField(null=True, blank=True)
+    unit = models.CharField(max_length=20, blank=True)
+    rate_per_unit = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

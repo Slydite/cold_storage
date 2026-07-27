@@ -265,6 +265,9 @@ export type InvoiceLineOutput = {
     readonly id: number;
     description: string;
     amount: string;
+    quantity?: number | null;
+    unit?: string;
+    rate_per_unit?: string | null;
 };
 
 export type InvoiceOutput = {
@@ -303,6 +306,9 @@ export type InvoicePreviewLineOutput = {
     inward_date?: string | null;
     dispatch_date?: string | null;
     days_stored?: number | null;
+    quantity?: number | null;
+    unit?: string;
+    rate_per_unit?: string | null;
 };
 
 export type InvoicePreviewPartyOutput = {
@@ -612,6 +618,9 @@ export type GrnOutputWritable = {
 export type InvoiceLineOutputWritable = {
     description: string;
     amount: string;
+    quantity?: number | null;
+    unit?: string;
+    rate_per_unit?: string | null;
 };
 
 export type InvoiceOutputWritable = {

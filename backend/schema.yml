@@ -2755,6 +2755,20 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        unit:
+          type: string
+          maxLength: 20
+        rate_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
       required:
       - amount
       - description
@@ -2883,6 +2897,17 @@ components:
           nullable: true
         days_stored:
           type: integer
+          nullable: true
+        quantity:
+          type: integer
+          nullable: true
+        unit:
+          type: string
+          default: ''
+        rate_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
           nullable: true
       required:
       - amount
