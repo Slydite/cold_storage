@@ -427,7 +427,7 @@ const en = {
     dnRegisterDesc: 'Complete outward goods movement log filtered by date range and status.',
     gstRegisterTitle: 'GST Invoice Register',
     gstRegisterDesc: 'Comprehensive GST invoice ledger including party GSTIN snapshots and total amounts.',
-    rentRunNote: 'Looking for Rent Run specific reports? Detailed per-run breakdown reports can be exported directly from individual Rent Run details on the Billing page.',
+    billingNote: 'Rent accrues on stock still in storage and is billed when it leaves on a Delivery Note - see the Billing page for what is currently outstanding or still accruing.',
     stockOccupancySummary: 'Stock Occupancy Summary',
     stockOccupancyDesc: 'Overview of active commodity holdings and chamber breakdown across the facility.',
     dateFrom: 'Date From',
@@ -444,7 +444,11 @@ const en = {
     noStockByCommodity: 'No active stock by commodity.',
     noStockByChamber: 'No active stock by chamber.',
     totalBags: 'Total Bags',
-    qtyMt: 'Qty (MT)'
+    qtyMt: 'Qty (MT)',
+    paymentRegisterTitle: 'Payment Collection Register',
+    paymentRegisterDesc: 'Comprehensive payment registry including payment dates, methods, invoice references, and amounts.',
+    totalCollected: 'Total Collected: {total}',
+    allMethods: 'All Methods'
   },
   settings: {
     title: 'Settings',
@@ -622,7 +626,14 @@ const en = {
     Boxes: 'Boxes',
     MT: 'MT',
     Kg: 'Kg',
-    Crates: 'Crates'
+    Crates: 'Crates',
+    // Canonical values as stored by the backend (apps.inventory.models.Lot.UnitType) -
+    // Commodity.unit is a free CharField seeded/entered in this exact casing.
+    BAGS: 'Bags',
+    BOXES: 'Boxes',
+    CRATES: 'Crates',
+    PACKETS: 'Packets',
+    LOOSE: 'Loose'
   },
   paymentMethod: {
     cash: 'Cash',

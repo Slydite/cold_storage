@@ -429,7 +429,7 @@ const hi: MessageSchema = {
     dnRegisterDesc: 'दिनांक सीमा और स्थिति के आधार पर निकासी सामान संचालन का पूरा लॉग।',
     gstRegisterTitle: 'GST बीजक रजिस्टर',
     gstRegisterDesc: 'पार्टी GSTIN और कुल राशि सहित व्यापक GST बीजक लेज़र।',
-    rentRunNote: 'किराया रन की विस्तृत रिपोर्ट देखना चाहते हैं? बिलिंग पृष्ठ से सीधे निर्यात की जा सकती है।',
+    billingNote: 'भंडार में पड़े माल पर किराया लगातार जुड़ता है और निकासी पर्ची (DN) से बाहर जाने पर बिल किया जाता है - अभी क्या बकाया है या अभी भी जुड़ रहा है, यह बिलिंग पृष्ठ पर देखें।',
     stockOccupancySummary: 'स्टॉक अधिभोग सारांश',
     stockOccupancyDesc: 'सुविधा में सक्रिय जिंस होल्डिंग्स और कक्ष विवरण का अवलोकन।',
     dateFrom: 'दिनांक से',
@@ -446,7 +446,11 @@ const hi: MessageSchema = {
     noStockByCommodity: 'जिंस के अनुसार कोई सक्रिय स्टॉक नहीं है।',
     noStockByChamber: 'कक्ष के अनुसार कोई सक्रिय स्टॉक नहीं है।',
     totalBags: 'कुल बोरियां',
-    qtyMt: 'मात्रा (मीट्रिक टन)'
+    qtyMt: 'मात्रा (मीट्रिक टन)',
+    paymentRegisterTitle: 'भुगतान संग्रह रजिस्टर',
+    paymentRegisterDesc: 'भुगतान तिथियों, विधियों, बीजक संदर्भों और राशियों सहित व्यापक भुगतान रजिस्ट्री।',
+    totalCollected: 'कुल संगृहीत भुगतान: {total}',
+    allMethods: 'सभी भुगतान विधियां'
   },
   settings: {
     title: 'सेटिंग्स',
@@ -624,7 +628,12 @@ const hi: MessageSchema = {
     Boxes: 'बॉक्स',
     MT: 'मीट्रिक टन',
     Kg: 'किग्रा',
-    Crates: 'क्रेट'
+    Crates: 'क्रेट',
+    BAGS: 'बोरी',
+    BOXES: 'बॉक्स',
+    CRATES: 'क्रेट',
+    PACKETS: 'पैकेट',
+    LOOSE: 'खुला'
   },
   paymentMethod: {
     cash: 'नकद',

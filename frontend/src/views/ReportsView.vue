@@ -4,6 +4,7 @@ import { Info } from 'lucide-vue-next'
 import { useFacility } from '../composables/useFacility'
 import StockSummaryCard from '../components/reports/StockSummaryCard.vue'
 import RegisterExportCard from '../components/reports/RegisterExportCard.vue'
+import PaymentRegisterCard from '../components/reports/PaymentRegisterCard.vue'
 
 const { t } = useI18n()
 const { facilityId } = useFacility()
@@ -50,12 +51,20 @@ const { facilityId } = useFacility()
         reportType="invoice"
         :facilityId="facilityId"
       />
+
+      <!-- 5. Payment Register -->
+      <PaymentRegisterCard
+        :title="t('reports.paymentRegisterTitle')"
+        :description="t('reports.paymentRegisterDesc')"
+        endpoint="/api/reports/payments/"
+        :facilityId="facilityId"
+      />
     </div>
 
     <div class="reports-note">
       <Info :size="16" class="note-icon" />
       <span>
-        {{ t('reports.rentRunNote') }}
+        {{ t('reports.billingNote') }}
       </span>
     </div>
   </div>
