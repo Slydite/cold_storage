@@ -13,7 +13,6 @@ import {
   Boxes,
   Receipt,
   FileText,
-  Users,
   BarChart3,
   Settings,
   Snowflake,
@@ -35,7 +34,6 @@ const navItems = computed(() => [
   { label: t('nav.inventory'), icon: Boxes, path: '/inventory' },
   { label: t('nav.billing'), icon: Receipt, path: '/billing' },
   { label: t('nav.invoicing'), icon: FileText, path: '/invoicing' },
-  { label: t('nav.parties'), icon: Users, path: '/parties' },
   { label: t('nav.reports'), icon: BarChart3, path: '/reports' },
   { label: t('nav.settings'), icon: Settings, path: '/settings' }
 ])

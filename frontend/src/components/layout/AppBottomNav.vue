@@ -34,7 +34,7 @@ const isActive = (path: string) => {
 }
 
 const isMoreActive = computed(() => {
-  const overflowPaths = ['/billing', '/invoicing', '/parties', '/reports', '/settings']
+  const overflowPaths = ['/billing', '/invoicing', '/reports', '/settings']
   return overflowPaths.some((path) => route.path.startsWith(path))
 })
 

@@ -42,9 +42,7 @@ const router = createRouter({
     },
     {
       path: '/parties',
-      name: 'parties',
-      component: () => import('../views/PartiesView.vue'),
-      meta: { title: 'Parties', subtitle: 'Customer and supplier directory management.' }
+      redirect: '/settings/parties'
     },
     {
       path: '/reports',
@@ -54,9 +52,45 @@ const router = createRouter({
     },
     {
       path: '/settings',
-      name: 'settings',
       component: () => import('../views/SettingsView.vue'),
-      meta: { title: 'Settings', subtitle: 'Facility configuration, units, and preference settings.' }
+      children: [
+        {
+          path: '',
+          name: 'settings',
+          component: { render: () => null },
+          meta: { title: 'Settings', subtitle: 'Facility configuration, units, and preference settings.' }
+        },
+        {
+          path: 'facility',
+          name: 'settings-facility',
+          component: () => import('../views/settings/FacilitySection.vue'),
+          meta: { title: 'Settings', subtitle: 'Facility configuration, units, and preference settings.' }
+        },
+        {
+          path: 'locations',
+          name: 'settings-locations',
+          component: () => import('../views/settings/LocationsSection.vue'),
+          meta: { title: 'Settings', subtitle: 'Facility configuration, units, and preference settings.' }
+        },
+        {
+          path: 'commodities',
+          name: 'settings-commodities',
+          component: () => import('../views/settings/CommoditiesSection.vue'),
+          meta: { title: 'Settings', subtitle: 'Facility configuration, units, and preference settings.' }
+        },
+        {
+          path: 'parties',
+          name: 'settings-parties',
+          component: () => import('../views/PartiesView.vue'),
+          meta: { title: 'Settings', subtitle: 'Facility configuration, units, and preference settings.' }
+        },
+        {
+          path: 'users',
+          name: 'settings-users',
+          component: () => import('../views/settings/UsersSection.vue'),
+          meta: { title: 'Settings', subtitle: 'Facility configuration, units, and preference settings.' }
+        }
+      ]
     },
     {
       path: '/login',

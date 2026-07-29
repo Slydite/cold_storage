@@ -171,6 +171,10 @@ const hi: MessageSchema = {
     createGstInvoice: 'GST बीजक बनाएं',
     billingOverview: 'बिलिंग अवलोकन',
     rentAccrualAndDue: 'किराया उपार्जन और देय',
+    inventoryCard: 'भंडार',
+    inventoryCardSubtitle: 'स्टॉक और कक्षों को ब्राउज़ करें',
+    reportsCard: 'रिपोर्ट्स',
+    reportsCardSubtitle: 'अधिभोग और राजस्व देखें',
     warehouseArtwork: 'गोदाम कलाकृति'
   },
   grn: {

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Plus, Truck, FileCheck2, Calculator } from 'lucide-vue-next'
+import { Plus, Truck, FileCheck2, Calculator, Boxes, BarChart3 } from 'lucide-vue-next'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -31,6 +31,22 @@ const quickActions = computed(() => [
     icon: FileCheck2,
     path: '/invoicing?action=create',
     badgeClass: 'badge-blue'
+  },
+  {
+    id: 'inventory',
+    title: t('dashboard.inventoryCard'),
+    subtitle: t('dashboard.inventoryCardSubtitle'),
+    icon: Boxes,
+    path: '/inventory',
+    badgeClass: 'badge-red'
+  },
+  {
+    id: 'reports',
+    title: t('dashboard.reportsCard'),
+    subtitle: t('dashboard.reportsCardSubtitle'),
+    icon: BarChart3,
+    path: '/reports',
+    badgeClass: 'badge-purple'
   },
   {
     id: 'billingOverview',
@@ -148,21 +164,33 @@ const triggerQuickAction = (path: string) => {
   color: #F59E0B;
 }
 
+.badge-red {
+  background: var(--badge-red-bg);
+  color: var(--badge-red-color);
+}
+
 .action-text {
   display: flex;
   flex-direction: column;
   z-index: 2;
+  min-width: 0;
 }
 
 .action-title {
   font-size: 14.5px;
   font-weight: 700;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .action-subtitle {
   font-size: 12px;
   color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .action-card-btn.has-art-bg {
@@ -190,13 +218,36 @@ const triggerQuickAction = (path: string) => {
 
 @media (max-width: 1200px) {
   .actions-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .actions-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 600px) {
   .actions-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .action-card-btn {
+    padding: 12px 10px;
+    gap: 8px;
+    border-radius: 10px;
+  }
+  .action-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+  .action-title {
+    font-size: 13px;
+  }
+  .action-subtitle {
+    font-size: 10.5px;
   }
 }
 </style>

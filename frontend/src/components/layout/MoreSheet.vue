@@ -9,7 +9,6 @@ import { useToast } from 'primevue/usetoast'
 import {
   Receipt,
   FileText,
-  Users,
   BarChart3,
   Settings as SettingsIcon,
   ChevronDown,
@@ -35,7 +34,6 @@ const authStore = useAuthStore()
 const overflowItems = computed(() => [
   { label: t('nav.billing'), icon: Receipt, path: '/billing' },
   { label: t('nav.invoicing'), icon: FileText, path: '/invoicing' },
-  { label: t('nav.parties'), icon: Users, path: '/parties' },
   { label: t('nav.reports'), icon: BarChart3, path: '/reports' },
   { label: t('nav.settings'), icon: SettingsIcon, path: '/settings' }
 ])

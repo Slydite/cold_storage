@@ -172,6 +172,10 @@ const en = {
     createGstInvoice: 'Create GST Invoice',
     billingOverview: 'Billing Overview',
     rentAccrualAndDue: 'Rent Accrual & Due',
+    inventoryCard: 'Inventory',
+    inventoryCardSubtitle: 'Browse stock and chambers',
+    reportsCard: 'Reports',
+    reportsCardSubtitle: 'View occupancy & revenue',
     warehouseArtwork: 'Warehouse Artwork'
   },
   grn: {
