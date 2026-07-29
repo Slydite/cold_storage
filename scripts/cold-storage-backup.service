@@ -1,5 +1,5 @@
 [Unit]
-Description=Cold Storage WMS - Postgres backup to Google Drive
+Description=Cold Storage WMS - Postgres + secrets backup to Google Drive
 After=network-online.target postgresql.service
 Wants=network-online.target
 
@@ -8,6 +8,7 @@ Type=oneshot
 User=frappeuser
 Group=frappeuser
 ExecStart=/home/frappeuser/cold_storage/scripts/backup_db.sh
+ExecStart=/home/frappeuser/cold_storage/scripts/backup_secrets.sh
 
 # Overridable without editing this unit:
 #   sudo systemctl edit cold-storage-backup.service

@@ -88,7 +88,9 @@ fi
 
 ARCHIVE="$BACKUP_DIR/secrets_${STAMP}.tar.gz"
 
-log "Archiving $(ls -1 "$STAGE_DIR" | wc -l) item(s)"
+# -A, not plain ls: .env is a dotfile and would otherwise be missing from the
+# count (it is still archived - this was only ever a misleading log line).
+log "Archiving $(ls -A1 "$STAGE_DIR" | wc -l) item(s)"
 tar -czf "$ARCHIVE" -C "$STAGE" "secrets_${STAMP}"
 chmod 600 "$ARCHIVE"
 
