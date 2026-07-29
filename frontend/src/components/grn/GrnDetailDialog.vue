@@ -12,6 +12,7 @@ import { downloadPdf } from '../../utils/downloadPdf'
 import { exportToCsv } from '../../utils/csvExport'
 import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 import { emailGrn } from '../../api/grn'
+import { EMAIL_TO_CLIENT_ENABLED } from '../../config/features'
 import type { GrnOutput } from '../../api/grn'
 
 const props = defineProps<{
@@ -146,6 +147,7 @@ function handleExportLotsCsv() {
             <span>PDF</span>
           </button>
           <button
+            v-if="EMAIL_TO_CLIENT_ENABLED"
             class="btn-outlined btn-sm"
             type="button"
             :disabled="!grn.party_email || emailing"

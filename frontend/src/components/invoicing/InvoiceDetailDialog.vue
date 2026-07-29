@@ -12,6 +12,7 @@ import { formatCurrency, formatQty } from '../../utils/format'
 import { useDeleteInvoicePayment } from '../../composables/useInvoices'
 import { downloadPdf } from '../../utils/downloadPdf'
 import { emailInvoice } from '../../api/invoicing'
+import { EMAIL_TO_CLIENT_ENABLED } from '../../config/features'
 import RecordPaymentDialog from './RecordPaymentDialog.vue'
 import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 import type { InvoiceOutput } from '../../api/invoicing'
@@ -334,7 +335,7 @@ const handleDeletePayment = (payment: PaymentOutput) => {
               <span>PDF</span>
             </button>
             <button
-              v-if="invoice"
+              v-if="EMAIL_TO_CLIENT_ENABLED && invoice"
               class="btn-outlined"
               type="button"
               :disabled="!invoice.party_email || emailing"

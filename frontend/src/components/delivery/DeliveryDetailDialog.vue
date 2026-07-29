@@ -11,6 +11,7 @@ import { exportToCsv } from '../../utils/csvExport'
 import { downloadPdf } from '../../utils/downloadPdf'
 import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 import { emailDeliveryNote } from '../../api/delivery'
+import { EMAIL_TO_CLIENT_ENABLED } from '../../config/features'
 import type { DeliveryNoteOutput } from '../../api/delivery'
 
 interface Props {
@@ -281,7 +282,7 @@ const handleExportLines = () => {
             <span>PDF</span>
           </button>
           <button
-            v-if="props.deliveryNote"
+            v-if="EMAIL_TO_CLIENT_ENABLED && props.deliveryNote"
             class="btn-outlined"
             type="button"
             :disabled="!props.deliveryNote.party_email || emailing"
