@@ -142,6 +142,7 @@ class Lot(models.Model):
 
     class Meta:
         verbose_name_plural = "Lots"
+        unique_together = ('facility', 'lot_number')
 
     def __str__(self):
         return f"Lot {self.lot_number} ({self.commodity.name}) - Qty: {self.remaining_qty}/{self.initial_qty}"

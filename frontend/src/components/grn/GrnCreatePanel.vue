@@ -41,16 +41,15 @@ const chamberOptions = computed(() => {
 })
 
 const getFloorsForChamber = (chamberId: number | null | undefined) => {
-  if (!floors.value) return []
-  if (!chamberId) return floors.value.map((f) => ({ label: f.name, value: f.id }))
+  if (!floors.value || !chamberId) return []
   return floors.value.filter((f) => f.chamber_id === chamberId).map((f) => ({ label: f.name, value: f.id }))
 }
 
 const getBlocksForFloor = (floorId: number | null | undefined, chamberId: number | null | undefined) => {
-  if (!blocks.value) return []
+  if (!blocks.value || !floorId) return []
   let res = blocks.value
   if (chamberId) res = res.filter((b) => b.chamber_id === chamberId)
-  if (floorId) res = res.filter((b) => b.floor_id === floorId)
+  res = res.filter((b) => b.floor_id === floorId)
   return res.map((b) => ({ label: b.name, value: b.id }))
 }
 
@@ -275,6 +274,7 @@ const onFloorChange = (itemIdx: number) => {
               <tr>
                 <th width="35">#</th>
                 <th>{{ t('grn.commodityProduct') }} <span class="req">*</span></th>
+                <th width="120">{{ t('inventory.lotNo') }}</th>
                 <th width="120">{{ t('grn.chamber') }}</th>
                 <th width="120">{{ t('grn.floor') }}</th>
                 <th width="120">{{ t('grn.block') }}</th>
@@ -301,6 +301,17 @@ const onFloorChange = (itemIdx: number) => {
                   />
                 </td>
                 <td>
+                  <div class="lot-no-cell">
+                    <span v-if="item.lot_number_loading" class="lot-loading">
+                      <i class="pi pi-spin pi-spinner text-muted mr-1"></i>
+                      <span>{{ t('grn.reserving') }}</span>
+                    </span>
+                    <span v-else class="lot-code">
+                      {{ item.lot_number || '—' }}
+                    </span>
+                  </div>
+                </td>
+                <td>
                   <Select
                     v-model="item.chamber_id"
                     @update:modelValue="onChamberChange(idx)"
@@ -319,7 +330,8 @@ const onFloorChange = (itemIdx: number) => {
                     :options="getFloorsForChamber(item.chamber_id)"
                     optionLabel="label"
                     optionValue="value"
-                    :placeholder="t('grn.floor')"
+                    :placeholder="!item.chamber_id ? t('grn.selectChamberFirst') : t('grn.floor')"
+                    :disabled="!item.chamber_id"
                     showClear
                     class="w-full input-sm-select"
                   />
@@ -330,7 +342,8 @@ const onFloorChange = (itemIdx: number) => {
                     :options="getBlocksForFloor(item.floor_id, item.chamber_id)"
                     optionLabel="label"
                     optionValue="value"
-                    :placeholder="t('grn.block')"
+                    :placeholder="!item.floor_id ? t('grn.selectFloorFirst') : t('grn.block')"
+                    :disabled="!item.floor_id"
                     showClear
                     class="w-full input-sm-select"
                   />
@@ -597,6 +610,30 @@ const onFloorChange = (itemIdx: number) => {
 .highlight-metric .metric-value {
   color: var(--accent-primary);
   font-size: 20px;
+}
+.lot-no-cell {
+  display: flex;
+  align-items: center;
+  font-family: monospace;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+.lot-loading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-style: italic;
+  font-family: var(--font-family);
+}
+.lot-code {
+  background: var(--bg-page);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px dashed var(--border-subtle);
+  font-feature-settings: "tnum";
 }
 @media (max-width: 900px) {
   .detail-split-panel {

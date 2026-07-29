@@ -1,4 +1,4 @@
-import { ref, computed, type Ref, type ComputedRef } from 'vue'
+import { ref, computed, watch, type Ref, type ComputedRef } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
@@ -16,6 +16,8 @@ export interface FormLineItem {
   unit?: string
   unit_weight?: number | null
   rent_rate_per_unit?: number | null
+  lot_number?: string | null
+  lot_number_loading?: boolean
 }
 
 const createDefaultLineItem = (): FormLineItem => ({
@@ -26,7 +28,9 @@ const createDefaultLineItem = (): FormLineItem => ({
   initial_qty: 100,
   unit: 'Bags',
   unit_weight: null,
-  rent_rate_per_unit: null
+  rent_rate_per_unit: null,
+  lot_number: null,
+  lot_number_loading: false
 })
 
 export function useGrnForm(
@@ -49,7 +53,8 @@ export function useGrnForm(
       initial_qty: z.number().min(1, t('validation.qtyMin1')),
       unit: z.string().optional(),
       unit_weight: z.number().nullable().optional(),
-      rent_rate_per_unit: z.number().nullable().optional()
+      rent_rate_per_unit: z.number().nullable().optional(),
+      lot_number: z.string().nullable().optional()
     })
   )
 
@@ -97,8 +102,42 @@ export function useGrnForm(
 
   const items = ref<FormLineItem[]>([createDefaultLineItem()])
 
+  const reserveNumberForLine = async (item: FormLineItem) => {
+    if (!facilityId.value) return
+    item.lot_number_loading = true
+    try {
+      const { reserveLotNumber } = await import('../api/lot')
+      const num = await reserveLotNumber(facilityId.value)
+      item.lot_number = num
+    } catch (err) {
+      item.lot_number = null
+      toast.add({
+        severity: 'warn',
+        summary: t('grn.reservationFailedSummary'),
+        detail: err instanceof Error ? err.message : t('grn.reservationFailedDetail'),
+        life: 5000
+      })
+    } finally {
+      item.lot_number_loading = false
+    }
+  }
+
+  watch(
+    () => facilityId.value,
+    (newFacId) => {
+      if (newFacId) {
+        items.value.forEach((item) => {
+          if (!item.lot_number && !item.lot_number_loading) {
+            reserveNumberForLine(item)
+          }
+        })
+      }
+    },
+    { immediate: true }
+  )
+
   const addItemRow = () => {
-    items.value.push({
+    const newItem: FormLineItem = {
       commodity_id: null,
       chamber_id: null,
       floor_id: null,
@@ -106,8 +145,12 @@ export function useGrnForm(
       initial_qty: 1,
       unit: 'Bags',
       unit_weight: null,
-      rent_rate_per_unit: null
-    })
+      rent_rate_per_unit: null,
+      lot_number: null,
+      lot_number_loading: false
+    }
+    items.value.push(newItem)
+    reserveNumberForLine(newItem)
   }
 
   const removeItemRow = (index: number) => {
@@ -138,7 +181,9 @@ export function useGrnForm(
 
   const handleResetForm = () => {
     resetForm()
-    items.value = [createDefaultLineItem()]
+    const defaultItem = createDefaultLineItem()
+    items.value = [defaultItem]
+    reserveNumberForLine(defaultItem)
   }
 
   const submitForm = async (targetStatus: 'DRAFT' | 'POSTED') => {
@@ -183,7 +228,8 @@ export function useGrnForm(
         initial_qty: item.initial_qty,
         unit: item.unit || undefined,
         unit_weight: item.unit_weight != null ? String(item.unit_weight) : undefined,
-        rent_rate_per_unit: item.rent_rate_per_unit != null ? String(item.rent_rate_per_unit) : undefined
+        rent_rate_per_unit: item.rent_rate_per_unit != null ? String(item.rent_rate_per_unit) : undefined,
+        lot_number: item.lot_number || undefined
       }))
 
       const payload: GrnCreateInput = {

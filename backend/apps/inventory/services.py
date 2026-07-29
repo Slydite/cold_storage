@@ -1,16 +1,17 @@
+import re
 from typing import List, Dict, Any
 from datetime import date
 from decimal import Decimal
 from django.db import transaction
 from django.core.exceptions import ValidationError
 
-from libs.sequences import get_next_sequence_number
+from libs.sequences import get_next_sequence_number, DEFAULT_PREFIXES
 from libs.lookups import get_facility_or_raise, get_party_or_raise
 from libs.pdf import render_pdf
 from libs.choices import ChargeMode
 from libs.sanitizers import clean_text, title_name, upper_code
 from apps.locations.models import Chamber, Floor, Block
-from .models import Commodity, GRN, Lot
+from .models import Commodity, GRN, Lot, Sequence
 
 
 @transaction.atomic
@@ -152,7 +153,14 @@ def create_grn(
         if initial_qty <= 0:
             raise ValidationError(f"Initial quantity for commodity '{commodity.name}' must be greater than 0.")
 
-        lot_number = item_data.get('lot_number') or get_next_sequence_number(facility=facility, sequence_type='LOT')
+        lot_number = item_data.get('lot_number')
+        if lot_number:
+            seq = Sequence.objects.filter(facility=facility, sequence_type='LOT').first()
+            prefix = seq.prefix if seq else DEFAULT_PREFIXES.get('LOT', 'LOT-')
+            if not re.match(r'^' + re.escape(prefix) + r'\d+$', lot_number):
+                raise ValidationError(f"Invalid lot number format: {lot_number}. Expected prefix '{prefix}' followed by digits.")
+        else:
+            lot_number = get_next_sequence_number(facility=facility, sequence_type='LOT')
 
         chamber_id = item_data.get('chamber_id')
         floor_id = item_data.get('floor_id')

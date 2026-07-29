@@ -133,3 +133,44 @@ def test_grn_api_roundtrip_loading_charge_mode(auth_client, default_facility, pa
     assert res.data['loading_charge_mode'] == "PER_UNIT"
     assert res.data['computed_loading_charge'] == Decimal("2500.00")
     assert res.data['lots'][0]['unit'] == "CRATES"
+
+
+@pytest.mark.django_db
+def test_reserve_number_returns_sequential_values_and_never_repeats(auth_client, default_facility):
+    res1 = auth_client.post('/api/lots/reserve-number/', {"facility_id": default_facility.id})
+    assert res1.status_code == status.HTTP_201_CREATED
+    lot1 = res1.data['lot_number']
+    assert lot1.startswith("LOT-")
+
+    res2 = auth_client.post('/api/lots/reserve-number/', {"facility_id": default_facility.id})
+    assert res2.status_code == status.HTTP_201_CREATED
+    lot2 = res2.data['lot_number']
+    assert lot2.startswith("LOT-")
+
+    assert lot1 != lot2
+    num1 = int(lot1.split('-')[1])
+    num2 = int(lot2.split('-')[1])
+    assert num2 == num1 + 1
+
+
+@pytest.mark.django_db
+def test_grn_created_with_previously_reserved_lot_number(auth_client, default_facility, party, commodity):
+    res_reserve = auth_client.post('/api/lots/reserve-number/', {"facility_id": default_facility.id})
+    assert res_reserve.status_code == status.HTTP_201_CREATED
+    reserved_number = res_reserve.data['lot_number']
+
+    grn_payload = {
+        "facility_id": default_facility.id,
+        "party_id": party.id,
+        "receipt_date": "2026-07-25",
+        "items": [
+            {
+                "commodity_id": commodity.id,
+                "initial_qty": 300,
+                "lot_number": reserved_number
+            }
+        ]
+    }
+    res_grn = auth_client.post('/api/grns/', grn_payload, format='json')
+    assert res_grn.status_code == status.HTTP_201_CREATED
+    assert res_grn.data['lots'][0]['lot_number'] == reserved_number

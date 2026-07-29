@@ -348,3 +348,108 @@ def test_lot_unit_override_and_fallback(default_facility, test_party, test_commo
     lots = list(grn.lots.order_by('id'))
     assert lots[0].unit == "BOXES"
     assert lots[1].unit == test_commodity.unit  # "BAGS"
+
+
+@pytest.mark.django_db
+def test_duplicate_lot_number_same_facility_fails(default_facility, test_party, test_commodity):
+    from django.db import IntegrityError
+    create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+            "lot_number": "LOT-000001"
+        }]
+    )
+    with pytest.raises((ValidationError, IntegrityError)):
+        create_grn(
+            facility_id=default_facility.id,
+            party_id=test_party.id,
+            receipt_date=date(2026, 7, 25),
+            items=[{
+                "commodity_id": test_commodity.id,
+                "initial_qty": 100,
+                "lot_number": "LOT-000001"
+            }]
+        )
+
+
+@pytest.mark.django_db
+def test_same_lot_number_different_facility_allowed(default_facility, test_party, test_commodity):
+    from apps.facilities.models import Facility
+    other_facility = Facility.objects.create(
+        code="FAC-02",
+        name="Second Facility",
+        address="456 Cold Road"
+    )
+    other_party = create_party(facility_id=other_facility.id, name="Other Farmer", type="DEPOSITOR")
+    other_commodity = create_commodity(facility_id=other_facility.id, name="Apple", unit="BAGS")
+
+    create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+            "lot_number": "LOT-000001"
+        }]
+    )
+
+    grn_other = create_grn(
+        facility_id=other_facility.id,
+        party_id=other_party.id,
+        receipt_date=date(2026, 7, 25),
+        items=[{
+            "commodity_id": other_commodity.id,
+            "initial_qty": 100,
+            "lot_number": "LOT-000001"
+        }]
+    )
+    assert grn_other.lots.first().lot_number == "LOT-000001"
+
+
+@pytest.mark.django_db
+def test_client_supplied_lot_number_bogus_format_rejected(default_facility, test_party, test_commodity):
+    for bogus_lot in ["HACKED", "LOT-abc", ""]:
+        if bogus_lot == "":
+            grn = create_grn(
+                facility_id=default_facility.id,
+                party_id=test_party.id,
+                receipt_date=date(2026, 7, 25),
+                items=[{
+                    "commodity_id": test_commodity.id,
+                    "initial_qty": 100,
+                    "lot_number": bogus_lot
+                }]
+            )
+            assert grn.lots.first().lot_number.startswith("LOT-")
+        else:
+            with pytest.raises(ValidationError) as exc:
+                create_grn(
+                    facility_id=default_facility.id,
+                    party_id=test_party.id,
+                    receipt_date=date(2026, 7, 25),
+                    items=[{
+                        "commodity_id": test_commodity.id,
+                        "initial_qty": 100,
+                        "lot_number": bogus_lot
+                    }]
+                )
+            assert "Invalid lot number format" in str(exc.value)
+
+
+@pytest.mark.django_db
+def test_omitting_lot_number_auto_generates(default_facility, test_party, test_commodity):
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+        }]
+    )
+    assert grn.lots.first().lot_number == "LOT-000001"

@@ -1,5 +1,6 @@
 import { lotsList } from './generated/sdk.gen'
 import type { LotOutput } from './generated/types.gen'
+import { apiFetch } from './client'
 
 export type { LotOutput }
 
@@ -44,6 +45,30 @@ export async function fetchLots(params: {
     throw new Error(extractErrorMessage(res.error, 'Failed to fetch inventory lots'))
   }
   return (res.data ?? []) as LotOutput[]
+}
+
+export async function reserveLotNumber(facilityId: number): Promise<string> {
+  const res = await apiFetch('/api/lots/reserve-number/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ facility_id: facilityId })
+  })
+
+  if (!res.ok) {
+    let errorDetail = 'Failed to reserve lot number'
+    try {
+      const errorJson = await res.json()
+      errorDetail = extractErrorMessage(errorJson, errorDetail)
+    } catch {
+      // ignore
+    }
+    throw new Error(errorDetail)
+  }
+
+  const data = await res.json()
+  return data.lot_number as string
 }
 
 

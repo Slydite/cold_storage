@@ -167,3 +167,11 @@ class GRNOutputSerializer(serializers.ModelSerializer):
 class LotWithdrawalInputSerializer(serializers.Serializer):
     qty = serializers.IntegerField(min_value=1)
 
+
+class LotReserveNumberInputSerializer(serializers.Serializer):
+    facility_id = serializers.IntegerField()
+
+
+class LotReserveNumberOutputSerializer(serializers.Serializer):
+    lot_number = serializers.CharField()
+

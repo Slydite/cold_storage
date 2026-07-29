@@ -383,6 +383,14 @@ export type LotOutput = {
     readonly updated_at: string;
 };
 
+export type LotReserveNumberInput = {
+    facility_id: number;
+};
+
+export type LotReserveNumberOutput = {
+    lot_number: string;
+};
+
 export type LotWithdrawalInput = {
     qty: number;
 };
@@ -1963,6 +1971,26 @@ export type LotsWithdrawCreateResponses = {
 };
 
 export type LotsWithdrawCreateResponse = LotsWithdrawCreateResponses[keyof LotsWithdrawCreateResponses];
+
+export type LotsReserveNumberCreateData = {
+    body: LotReserveNumberInput;
+    path?: never;
+    query?: never;
+    url: '/api/lots/reserve-number/';
+};
+
+export type LotsReserveNumberCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type LotsReserveNumberCreateResponses = {
+    201: LotReserveNumberOutput;
+};
+
+export type LotsReserveNumberCreateResponse = LotsReserveNumberCreateResponses[keyof LotsReserveNumberCreateResponses];
 
 export type PartiesListData = {
     body?: never;

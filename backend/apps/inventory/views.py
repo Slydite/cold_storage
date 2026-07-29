@@ -34,7 +34,9 @@ from .serializers import (
     GRNCreateInputSerializer,
     GRNOutputSerializer,
     LotOutputSerializer,
-    LotWithdrawalInputSerializer
+    LotWithdrawalInputSerializer,
+    LotReserveNumberInputSerializer,
+    LotReserveNumberOutputSerializer
 )
 from .models import Commodity, GRN, Lot
 
@@ -335,3 +337,25 @@ class LotViewSet(ViewSet):
 
         output_serializer = LotOutputSerializer(updated_lot)
         return Response(output_serializer.data)
+
+    @extend_schema(
+        request=LotReserveNumberInputSerializer,
+        responses={201: LotReserveNumberOutputSerializer, 400: None},
+        summary="Reserve a sequential lot number for a facility"
+    )
+    @action(detail=False, methods=['post'], url_path='reserve-number')
+    def reserve_number(self, request):
+        serializer = LotReserveNumberInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        facility_id = serializer.validated_data['facility_id']
+
+        try:
+            from libs.sequences import get_next_sequence_number
+            from libs.lookups import get_facility_or_raise
+            facility = get_facility_or_raise(facility_id)
+            lot_number = get_next_sequence_number(facility=facility, sequence_type='LOT')
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        output_serializer = LotReserveNumberOutputSerializer({"lot_number": lot_number})
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
