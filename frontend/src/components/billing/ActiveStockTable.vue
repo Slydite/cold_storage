@@ -193,113 +193,160 @@ const handleExport = () => {
         <p>{{ t('common.noRecordsFound') }}</p>
       </div>
 
-      <DataTable
-        v-else
-        :value="filteredLots"
-        v-model:filters="filters"
-        :filterDisplay="showFilterRow ? 'row' : 'menu'"
-        size="small"
-        stripedRows
-        paginator
-        :rows="8"
-        :rowsPerPageOptions="[8, 20, 50]"
-        responsiveLayout="scroll"
-        class="custom-datatable"
-      >
-        <Column :header="t('common.actions')" style="width: 80px">
-          <template #body="{ data }">
-            <button
-              class="icon-btn"
-              :disabled="fetchingLotId !== null"
-              :title="t('common.details')"
-              type="button"
-              @click="handleViewGrn(data)"
-            >
-              <i v-if="fetchingLotId === data.id" class="pi pi-spin pi-spinner" style="font-size: 1rem"></i>
-              <Eye v-else :size="16" />
-            </button>
-          </template>
-        </Column>
+      <template v-else>
+        <div class="hide-on-mobile">
+          <DataTable
+            :value="filteredLots"
+            v-model:filters="filters"
+            :filterDisplay="showFilterRow ? 'row' : 'menu'"
+            size="small"
+            stripedRows
+            paginator
+            :rows="8"
+            :rowsPerPageOptions="[8, 20, 50]"
+            responsiveLayout="scroll"
+            class="custom-datatable"
+          >
+            <Column :header="t('common.actions')" style="width: 80px">
+              <template #body="{ data }">
+                <button
+                  class="icon-btn"
+                  :disabled="fetchingLotId !== null"
+                  :title="t('common.details')"
+                  type="button"
+                  @click="handleViewGrn(data)"
+                >
+                  <i v-if="fetchingLotId === data.id" class="pi pi-spin pi-spinner" style="font-size: 1rem"></i>
+                  <Eye v-else :size="16" />
+                </button>
+              </template>
+            </Column>
 
-        <Column field="lot_number" :header="t('inventory.lotNo')" sortable>
-          <template #body="{ data }">
-            <span class="code-link clickable" @click="handleViewGrn(data)">{{ data.lot_number }}</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              :placeholder="t('common.filter')"
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+            <Column field="lot_number" :header="t('inventory.lotNo')" sortable>
+              <template #body="{ data }">
+                <span class="code-link clickable" @click="handleViewGrn(data)">{{ data.lot_number }}</span>
+              </template>
+              <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                  v-model="filterModel.value"
+                  type="text"
+                  @input="filterCallback()"
+                  :placeholder="t('common.filter')"
+                  class="p-column-filter"
+                  size="small"
+                />
+              </template>
+            </Column>
 
-        <Column field="party_name" :header="t('inventory.party')" sortable>
-          <template #body="{ data }">
-            <strong>{{ data.party_name || '—' }}</strong>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              :placeholder="t('common.filter')"
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+            <Column field="party_name" :header="t('inventory.party')" sortable>
+              <template #body="{ data }">
+                <strong>{{ data.party_name || '—' }}</strong>
+              </template>
+              <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                  v-model="filterModel.value"
+                  type="text"
+                  @input="filterCallback()"
+                  :placeholder="t('common.filter')"
+                  class="p-column-filter"
+                  size="small"
+                />
+              </template>
+            </Column>
 
-        <Column field="commodity_name" :header="t('grn.commodityProduct')" sortable>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              :placeholder="t('common.filter')"
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+            <Column field="commodity_name" :header="t('grn.commodityProduct')" sortable>
+              <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                  v-model="filterModel.value"
+                  type="text"
+                  @input="filterCallback()"
+                  :placeholder="t('common.filter')"
+                  class="p-column-filter"
+                  size="small"
+                />
+              </template>
+            </Column>
 
-        <Column :header="t('inventory.location')">
-          <template #body="{ data }">
-            <span>{{ data.location_display || [data.chamber_name || data.chamber, data.floor_name || data.floor].filter(Boolean).join(' / ') || '—' }}</span>
-          </template>
-        </Column>
+            <Column :header="t('inventory.location')">
+              <template #body="{ data }">
+                <span>{{ data.location_display || [data.chamber_name || data.chamber, data.floor_name || data.floor].filter(Boolean).join(' / ') || '—' }}</span>
+              </template>
+            </Column>
 
-        <Column field="inward_date" :header="t('inventory.inDate')" sortable>
-          <template #filter="{ filterModel, filterCallback }">
-            <DatePicker
-              v-model="filterModel.value"
-              @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
-              dateFormat="yy-mm-dd"
-              placeholder="YYYY-MM-DD"
-              class="p-column-filter"
-              size="small"
-              showClear
-            />
-          </template>
-        </Column>
+            <Column field="inward_date" :header="t('inventory.inDate')" sortable>
+              <template #filter="{ filterModel, filterCallback }">
+                <DatePicker
+                  v-model="filterModel.value"
+                  @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
+                  dateFormat="yy-mm-dd"
+                  placeholder="YYYY-MM-DD"
+                  class="p-column-filter"
+                  size="small"
+                  showClear
+                />
+              </template>
+            </Column>
 
-        <Column field="remaining_qty" :header="t('inventory.remainingQty')">
-          <template #body="{ data }">
-            <strong class="num-val">{{ formatQty(data.remaining_qty, 0) }} {{ data.commodity_unit ? t(`units.${data.commodity_unit}`, data.commodity_unit) : '' }}</strong>
-          </template>
-        </Column>
+            <Column field="remaining_qty" :header="t('inventory.remainingQty')">
+              <template #body="{ data }">
+                <strong class="num-val">{{ formatQty(data.remaining_qty, 0) }} {{ data.commodity_unit ? t(`units.${data.commodity_unit}`, data.commodity_unit) : '' }}</strong>
+              </template>
+            </Column>
 
-        <Column field="rent_rate_per_unit" :header="t('billing.agreedRentRate')">
-          <template #body="{ data }">
-            <span class="num-val">
-              {{ data.rent_rate_per_unit ? t('billing.rentRatePerUnit', { rate: formatCurrency(Number(data.rent_rate_per_unit)) }) : '—' }}
-            </span>
-          </template>
-        </Column>
-      </DataTable>
+            <Column field="rent_rate_per_unit" :header="t('billing.agreedRentRate')">
+              <template #body="{ data }">
+                <span class="num-val">
+                  {{ data.rent_rate_per_unit ? t('billing.rentRatePerUnit', { rate: formatCurrency(Number(data.rent_rate_per_unit)) }) : '—' }}
+                </span>
+              </template>
+            </Column>
+          </DataTable>
+        </div>
+
+        <!-- Mobile Card Layout -->
+        <div class="mobile-list-cards show-on-mobile">
+          <div v-for="data in filteredLots" :key="data.id" class="mobile-list-card">
+            <div class="card-header clickable" @click="handleViewGrn(data)">
+              <span class="card-title">{{ data.lot_number }}</span>
+            </div>
+            <div class="card-body">
+              <div class="card-row">
+                <span class="card-label">{{ t('inventory.party') }}:</span>
+                <span class="card-value">{{ data.party_name || '—' }}</span>
+              </div>
+              <div class="card-row">
+                <span class="card-label">{{ t('grn.commodityProduct') }}:</span>
+                <span class="card-value">{{ data.commodity_name }}</span>
+              </div>
+              <div class="card-row">
+                <span class="card-label">{{ t('inventory.location') }}:</span>
+                <span class="card-value">{{ data.location_display || [data.chamber_name || data.chamber, data.floor_name || data.floor].filter(Boolean).join(' / ') || '—' }}</span>
+              </div>
+              <div class="card-row">
+                <span class="card-label">{{ t('inventory.remainingQty') }}:</span>
+                <span class="card-value num-val">{{ formatQty(data.remaining_qty, 0) }} {{ data.commodity_unit ? t(`units.${data.commodity_unit}`, data.commodity_unit) : '' }}</span>
+              </div>
+              <div class="card-row">
+                <span class="card-label">{{ t('billing.agreedRentRate') }}:</span>
+                <span class="card-value num-val">{{ data.rent_rate_per_unit ? t('billing.rentRatePerUnit', { rate: formatCurrency(Number(data.rent_rate_per_unit)) }) : '—' }}</span>
+              </div>
+            </div>
+            <div class="card-actions">
+              <button
+                class="btn-outlined btn-sm"
+                :disabled="fetchingLotId !== null"
+                :title="t('common.details')"
+                type="button"
+                @click="handleViewGrn(data)"
+              >
+                <i v-if="fetchingLotId === data.id" class="pi pi-spin pi-spinner mr-1"></i>
+                <Eye v-else :size="15" />
+                <span>{{ t('common.details') }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
 
     <!-- GRN Detail Dialog -->

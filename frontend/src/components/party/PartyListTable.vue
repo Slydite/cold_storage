@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
@@ -15,11 +15,13 @@ import {
   Plus,
   AlertCircle,
   RefreshCw,
-  Users
+  Users,
+  Eye
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters } from '../../composables/useTableFilters'
+import PartyDetailDialog from './PartyDetailDialog.vue'
 import type { PartyOutput } from '../../api/party'
 
 interface Props {
@@ -41,6 +43,14 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const selectedParty = ref<PartyOutput | null>(null)
+const isDetailOpen = ref(false)
+
+function openDetail(party: PartyOutput) {
+  selectedParty.value = party
+  isDetailOpen.value = true
+}
 
 const typeFilterOptions = computed(() => [
   { label: t('common.allTypes'), value: 'all' },
@@ -204,97 +214,151 @@ const getTypeSeverity = (type?: string) => {
       </button>
     </div>
 
-    <!-- DataTable View -->
-    <div v-else class="table-card">
-      <DataTable
-        :value="props.parties"
-        v-model:filters="filters"
-        :filterDisplay="showFilterRow ? 'row' : 'menu'"
-        paginator
-        :rows="10"
-        :rowsPerPageOptions="[10, 25, 50]"
-        sortMode="multiple"
-        removableSort
-        size="small"
-        stripedRows
-        dataKey="id"
-        responsiveLayout="scroll"
-        class="custom-datatable"
-      >
-        <Column field="code" :header="t('parties.code')" sortable>
-          <template #body="{ data }">
-            <span class="code-link">{{ data.code }}</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              placeholder="Filter..."
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+    <!-- DataTable View & Mobile Cards -->
+    <template v-else>
+      <div class="table-card hide-on-mobile">
+        <DataTable
+          :value="props.parties"
+          v-model:filters="filters"
+          :filterDisplay="showFilterRow ? 'row' : 'menu'"
+          paginator
+          :rows="10"
+          :rowsPerPageOptions="[10, 25, 50]"
+          sortMode="multiple"
+          removableSort
+          size="small"
+          stripedRows
+          dataKey="id"
+          responsiveLayout="scroll"
+          class="custom-datatable"
+        >
+          <Column :header="t('common.actions')" style="width: 80px">
+            <template #body="{ data }">
+              <button
+                class="icon-btn"
+                type="button"
+                :title="t('common.details')"
+                @click="openDetail(data)"
+              >
+                <Eye :size="16" />
+              </button>
+            </template>
+          </Column>
 
-        <Column field="name" :header="t('parties.partyName')" sortable>
-          <template #body="{ data }">
-            <strong class="party-name">{{ data.name }}</strong>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              placeholder="Filter..."
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+          <Column field="code" :header="t('parties.code')" sortable>
+            <template #body="{ data }">
+              <span class="code-link">{{ data.code }}</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText
+                v-model="filterModel.value"
+                type="text"
+                @input="filterCallback()"
+                placeholder="Filter..."
+                class="p-column-filter"
+                size="small"
+              />
+            </template>
+          </Column>
 
-        <Column field="type" :header="t('parties.partyType')" sortable>
-          <template #body="{ data }">
-            <Tag
-              :value="t(`partyType.${data.type}`, data.type)"
-              :severity="getTypeSeverity(data.type)"
-            />
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <Select
-              v-model="filterModel.value"
-              @change="filterCallback()"
-              :options="typeFilterOptions.filter(o => o.value !== 'all')"
-              optionLabel="label"
-              optionValue="value"
-              :placeholder="t('parties.partyType')"
-              class="p-column-filter"
-              size="small"
-              showClear
-            />
-          </template>
-        </Column>
+          <Column field="name" :header="t('parties.partyName')" sortable>
+            <template #body="{ data }">
+              <strong class="party-name">{{ data.name }}</strong>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText
+                v-model="filterModel.value"
+                type="text"
+                @input="filterCallback()"
+                placeholder="Filter..."
+                class="p-column-filter"
+                size="small"
+              />
+            </template>
+          </Column>
 
-        <Column field="phone" :header="t('parties.phone')" sortable>
-          <template #body="{ data }">
-            <span>{{ data.phone || '—' }}</span>
-          </template>
-        </Column>
+          <Column field="type" :header="t('parties.partyType')" sortable>
+            <template #body="{ data }">
+              <Tag
+                :value="t(`partyType.${data.type}`, data.type)"
+                :severity="getTypeSeverity(data.type)"
+              />
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <Select
+                v-model="filterModel.value"
+                @change="filterCallback()"
+                :options="typeFilterOptions.filter(o => o.value !== 'all')"
+                optionLabel="label"
+                optionValue="value"
+                :placeholder="t('parties.partyType')"
+                class="p-column-filter"
+                size="small"
+                showClear
+              />
+            </template>
+          </Column>
 
-        <Column field="email" :header="t('parties.email')" sortable>
-          <template #body="{ data }">
-            <span>{{ data.email || '—' }}</span>
-          </template>
-        </Column>
+          <Column field="phone" :header="t('parties.phone')" sortable>
+            <template #body="{ data }">
+              <span>{{ data.phone || '—' }}</span>
+            </template>
+          </Column>
 
-        <Column field="gstin" :header="t('parties.gstin')" sortable>
-          <template #body="{ data }">
-            <span class="code-link">{{ data.gstin || '—' }}</span>
-          </template>
-        </Column>
-      </DataTable>
-    </div>
+          <Column field="email" :header="t('parties.email')" sortable>
+            <template #body="{ data }">
+              <span>{{ data.email || '—' }}</span>
+            </template>
+          </Column>
+
+          <Column field="gstin" :header="t('parties.gstin')" sortable>
+            <template #body="{ data }">
+              <span class="code-link">{{ data.gstin || '—' }}</span>
+            </template>
+          </Column>
+        </DataTable>
+      </div>
+
+      <!-- Mobile Card Layout -->
+      <div class="mobile-list-cards show-on-mobile">
+        <div v-for="data in props.parties" :key="data.id" class="mobile-list-card">
+          <div class="card-header">
+            <span class="card-title">{{ data.name }}</span>
+            <div class="card-header-right">
+              <Tag
+                :value="t(`partyType.${data.type}`, data.type)"
+                :severity="getTypeSeverity(data.type)"
+              />
+              <button
+                class="icon-btn"
+                type="button"
+                :title="t('common.details')"
+                @click="openDetail(data)"
+              >
+                <Eye :size="16" />
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-row">
+              <span class="card-label">{{ t('parties.code') }}:</span>
+              <span class="card-value">{{ data.code }}</span>
+            </div>
+            <div class="card-row">
+              <span class="card-label">{{ t('parties.phone') }}:</span>
+              <span class="card-value">{{ data.phone || '—' }}</span>
+            </div>
+            <div class="card-row">
+              <span class="card-label">{{ t('parties.gstin') }}:</span>
+              <span class="card-value">{{ data.gstin || '—' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
+
+  <PartyDetailDialog v-model:visible="isDetailOpen" :party="selectedParty" />
 </template>
 
 <style scoped>

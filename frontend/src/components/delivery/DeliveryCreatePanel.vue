@@ -235,7 +235,7 @@ const lotOptions = computed(() => {
       <div class="items-section">
         <h4 class="section-subtitle">{{ t('delivery.deliveryItems') }}</h4>
 
-        <div class="items-table-wrapper">
+        <div class="items-table-wrapper hide-on-mobile">
           <table class="items-table">
             <thead>
               <tr>
@@ -290,6 +290,59 @@ const lotOptions = computed(() => {
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Mobile Card Layout -->
+        <div class="mobile-items-cards show-on-mobile">
+          <div class="mobile-item-card" v-for="(line, idx) in lines" :key="idx">
+            <div class="card-header">
+              <span class="card-index">#{{ idx + 1 }}</span>
+              <button
+                class="icon-btn danger-hover"
+                type="button"
+                @click="removeLineRow(idx)"
+                :title="t('common.delete')"
+              >
+                <Trash2 :size="15" />
+              </button>
+            </div>
+
+            <div class="card-body-grid">
+              <div class="card-field full-width">
+                <label class="card-field-label">{{ t('delivery.availableLot') }} <span class="req">*</span></label>
+                <Select
+                  v-model="line.lot_id"
+                  :options="lotOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  :placeholder="t('common.select')"
+                  :loading="lotsQuery.isLoading.value"
+                  class="w-full input-sm-select"
+                />
+                <small v-if="getLineQtyError(idx)" class="field-error block mt-1">
+                  {{ getLineQtyError(idx) }}
+                </small>
+              </div>
+
+              <div class="card-field">
+                <label class="card-field-label">{{ t('delivery.availableStock') }}</label>
+                <span class="num-val">
+                  {{ getLotAvailable(line.lot_id) !== null ? formatQty(getLotAvailable(line.lot_id)!, 0) : '-' }}
+                </span>
+              </div>
+
+              <div class="card-field">
+                <label class="card-field-label">{{ t('delivery.dispatchQty') }} <span class="req">*</span></label>
+                <input
+                  type="number"
+                  min="1"
+                  v-model.number="line.qty"
+                  class="p-inputtext p-component w-full input-sm"
+                  :class="{ 'p-invalid': getLineQtyError(idx) !== null }"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <button class="btn-outlined add-item-btn" type="button" @click="addLineRow">
@@ -466,6 +519,9 @@ const lotOptions = computed(() => {
 .num-align {
   text-align: right;
 }
+.num-val {
+  font-feature-settings: "tnum";
+}
 .add-item-btn {
   align-self: flex-start;
   font-size: 12.5px;
@@ -501,6 +557,11 @@ const lotOptions = computed(() => {
   color: var(--accent-primary);
   font-size: 20px;
 }
+@media (min-width: 769px) {
+  .show-on-mobile {
+    display: none !important;
+  }
+}
 @media (max-width: 900px) {
   .detail-split-panel {
     position: fixed;
@@ -515,6 +576,9 @@ const lotOptions = computed(() => {
   }
 }
 @media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -532,6 +596,52 @@ const lotOptions = computed(() => {
   .panel-totals-bar {
     justify-content: space-between;
     gap: 16px;
+  }
+  .mobile-items-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .mobile-item-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 10px;
+  }
+  .card-index {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent-primary);
+    flex-shrink: 0;
+  }
+  .card-body-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .card-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .card-field.full-width {
+    grid-column: span 2;
+  }
+  .card-field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
   }
 }
 </style>

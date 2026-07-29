@@ -246,115 +246,149 @@ const handleExport = () => {
       </button>
     </div>
 
-    <!-- DataTable View -->
-    <div v-else class="table-card">
-      <DataTable
-        :value="props.grns"
-        v-model:filters="filters"
-        :filterDisplay="showFilterRow ? 'row' : 'menu'"
-        paginator
-        :rows="10"
-        :rowsPerPageOptions="[10, 25, 50]"
-        sortMode="multiple"
-        removableSort
-        size="small"
-        stripedRows
-        dataKey="id"
-        responsiveLayout="scroll"
-        class="custom-datatable"
-      >
-        <Column :header="t('common.actions')">
-          <template #body="{ data }">
-            <div class="row-actions">
-              <button class="icon-btn" :title="t('common.details')" type="button" @click="emit('view', data)">
-                <Eye :size="16" />
-              </button>
-              <button
-                v-if="data.status === 'DRAFT'"
-                class="icon-btn"
-                :title="t('grn.postTooltip')"
-                type="button"
-                @click="emit('post', data.id)"
+    <!-- DataTable View & Mobile Cards -->
+    <template v-else>
+      <div class="table-card hide-on-mobile">
+        <DataTable
+          :value="props.grns"
+          v-model:filters="filters"
+          :filterDisplay="showFilterRow ? 'row' : 'menu'"
+          paginator
+          :rows="10"
+          :rowsPerPageOptions="[10, 25, 50]"
+          sortMode="multiple"
+          removableSort
+          size="small"
+          stripedRows
+          dataKey="id"
+          responsiveLayout="scroll"
+          class="custom-datatable"
+        >
+          <Column :header="t('common.actions')">
+            <template #body="{ data }">
+              <div class="row-actions">
+                <button class="icon-btn" :title="t('common.details')" type="button" @click="emit('view', data)">
+                  <Eye :size="16" />
+                </button>
+                <button
+                  v-if="data.status === 'DRAFT'"
+                  class="icon-btn"
+                  :title="t('grn.postTooltip')"
+                  type="button"
+                  @click="emit('post', data.id)"
+                >
+                  <FileCheck :size="16" />
+                </button>
+                <button
+                  v-if="data.status === 'DRAFT'"
+                  class="icon-btn danger-hover"
+                  :title="t('grn.cancelTooltip')"
+                  type="button"
+                  @click="emit('cancel', data.id)"
+                >
+                  <XCircle :size="16" />
+                </button>
+                <button
+                  class="icon-btn"
+                  title="PDF"
+                  aria-label="PDF"
+                  type="button"
+                  :disabled="downloadingId === data.id"
+                  @click="handleDownloadPdf(data.id, data.grn_number)"
+                >
+                  <Printer :size="16" />
+                </button>
+              </div>
+            </template>
+          </Column>
+
+          <Column field="grn_number" :header="t('grn.grnNumber')" sortable>
+            <template #body="{ data }">
+              <span class="code-link clickable" @click="emit('view', data)">{{ data.grn_number }}</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText
+                v-model="filterModel.value"
+                type="text"
+                @input="filterCallback()"
+                :placeholder="t('grn.filterPlaceholder')"
+                class="p-column-filter"
+                size="small"
+              />
+            </template>
+          </Column>
+
+          <Column field="receipt_date" :header="t('common.date')" sortable>
+            <template #filter="{ filterModel, filterCallback }">
+              <DatePicker
+                v-model="filterModel.value"
+                @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
+                dateFormat="yy-mm-dd"
+                placeholder="YYYY-MM-DD"
+                class="p-column-filter"
+                size="small"
+                showClear
+              />
+            </template>
+          </Column>
+
+          <Column field="party_name" :header="t('grn.party')" sortable>
+            <template #body="{ data }">
+              <span class="party-name">{{ data.party_name }}</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText
+                v-model="filterModel.value"
+                type="text"
+                @input="filterCallback()"
+                placeholder="Filter..."
+                class="p-column-filter"
+                size="small"
+              />
+            </template>
+          </Column>
+
+          <Column :header="t('grn.totalNetWeightMt')">
+            <template #body="{ data }">
+              <span class="num-val">{{ formatQty(computeNetWeight(data)) }}</span>
+            </template>
+          </Column>
+
+          <Column field="status" :header="t('common.status')" sortable>
+            <template #body="{ data }">
+              <span
+                class="status-pill"
+                :class="{
+                  success: data.status === 'POSTED',
+                  warning: data.status === 'DRAFT',
+                  danger: data.status === 'CANCELLED'
+                }"
               >
-                <FileCheck :size="16" />
-              </button>
-              <button
-                v-if="data.status === 'DRAFT'"
-                class="icon-btn danger-hover"
-                :title="t('grn.cancelTooltip')"
-                type="button"
-                @click="emit('cancel', data.id)"
-              >
-                <XCircle :size="16" />
-              </button>
-              <button
-                class="icon-btn"
-                title="PDF"
-                aria-label="PDF"
-                type="button"
-                :disabled="downloadingId === data.id"
-                @click="handleDownloadPdf(data.id, data.grn_number)"
-              >
-                <Printer :size="16" />
-              </button>
-            </div>
-          </template>
-        </Column>
+                {{ t(`status.${(data.status || 'draft').toLowerCase()}`) }}
+              </span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <Select
+                v-model="filterModel.value"
+                @change="filterCallback()"
+                :options="statusFilterOptions"
+                optionLabel="label"
+                optionValue="value"
+                :placeholder="t('common.status')"
+                class="p-column-filter"
+                size="small"
+                showClear
+              />
+            </template>
+          </Column>
+        </DataTable>
+      </div>
 
-        <Column field="grn_number" :header="t('grn.grnNumber')" sortable>
-          <template #body="{ data }">
-            <span class="code-link clickable" @click="emit('view', data)">{{ data.grn_number }}</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              :placeholder="t('grn.filterPlaceholder')"
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
-
-        <Column field="receipt_date" :header="t('common.date')" sortable>
-          <template #filter="{ filterModel, filterCallback }">
-            <DatePicker
-              v-model="filterModel.value"
-              @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
-              dateFormat="yy-mm-dd"
-              placeholder="YYYY-MM-DD"
-              class="p-column-filter"
-              size="small"
-              showClear
-            />
-          </template>
-        </Column>
-
-        <Column field="party_name" :header="t('grn.party')" sortable>
-          <template #body="{ data }">
-            <span class="party-name">{{ data.party_name }}</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              placeholder="Filter..."
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
-
-        <Column :header="t('grn.totalNetWeightMt')">
-          <template #body="{ data }">
-            <span class="num-val">{{ formatQty(computeNetWeight(data)) }}</span>
-          </template>
-        </Column>
-
-        <Column field="status" :header="t('common.status')" sortable>
-          <template #body="{ data }">
+      <!-- Mobile Card Layout -->
+      <div class="mobile-list-cards show-on-mobile">
+        <div v-for="data in props.grns" :key="data.id" class="mobile-list-card">
+          <div class="card-header clickable" @click="emit('view', data)">
+            <span class="card-title">{{ data.grn_number }}</span>
             <span
               class="status-pill"
               :class="{
@@ -365,23 +399,61 @@ const handleExport = () => {
             >
               {{ t(`status.${(data.status || 'draft').toLowerCase()}`) }}
             </span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <Select
-              v-model="filterModel.value"
-              @change="filterCallback()"
-              :options="statusFilterOptions"
-              optionLabel="label"
-              optionValue="value"
-              :placeholder="t('common.status')"
-              class="p-column-filter"
-              size="small"
-              showClear
-            />
-          </template>
-        </Column>
-      </DataTable>
-    </div>
+          </div>
+          <div class="card-body">
+            <div class="card-row">
+              <span class="card-label">{{ t('common.date') }}:</span>
+              <span class="card-value">{{ data.receipt_date }}</span>
+            </div>
+            <div class="card-row">
+              <span class="card-label">{{ t('grn.party') }}:</span>
+              <span class="card-value">{{ data.party_name }}</span>
+            </div>
+            <div class="card-row">
+              <span class="card-label">{{ t('grn.totalNetWeightMt') }}:</span>
+              <span class="card-value num-val">{{ formatQty(computeNetWeight(data)) }}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-outlined btn-sm" :title="t('common.details')" type="button" @click="emit('view', data)">
+              <Eye :size="15" />
+              <span>{{ t('common.details') }}</span>
+            </button>
+            <button
+              v-if="data.status === 'DRAFT'"
+              class="btn-outlined btn-sm"
+              :title="t('grn.postTooltip')"
+              type="button"
+              @click="emit('post', data.id)"
+            >
+              <FileCheck :size="15" />
+              <span>{{ t('grn.postTooltip') }}</span>
+            </button>
+            <button
+              v-if="data.status === 'DRAFT'"
+              class="btn-outlined btn-sm danger-hover"
+              :title="t('grn.cancelTooltip')"
+              type="button"
+              @click="emit('cancel', data.id)"
+            >
+              <XCircle :size="15" />
+              <span>{{ t('grn.cancelTooltip') }}</span>
+            </button>
+            <button
+              class="btn-outlined btn-sm"
+              title="PDF"
+              aria-label="PDF"
+              type="button"
+              :disabled="downloadingId === data.id"
+              @click="handleDownloadPdf(data.id, data.grn_number)"
+            >
+              <Printer :size="15" />
+              <span>{{ downloadingId === data.id ? '...' : 'PDF' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 

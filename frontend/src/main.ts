@@ -15,6 +15,7 @@ import App from './App.vue'
 import router from './router'
 import i18n from './i18n'
 import { useLocaleStore } from './stores/locale'
+import { hydrateToken } from './api/authToken'
 
 // Open-Source MIT Custom PrimeVue Preset
 const ColdStoragePreset = definePreset(Aura, {
@@ -42,6 +43,9 @@ app.use(i18n)
 
 // Initialize locale store pre-mount to sync locale and document.documentElement.lang
 useLocaleStore()
+
+// Hydrate token before installing router to ensure route guards see it
+await hydrateToken()
 
 app.use(router)
 // Explicit query defaults.
@@ -89,6 +93,7 @@ app.use(ConfirmationService)
 // App.vue fell through to the authenticated branch and rendered the full app
 // chrome (sidebar, header) for a beat before bouncing to the login screen.
 // isReady() resolves after the guard, so the first paint is already correct.
-router.isReady().then(() => {
+router.isReady().then(async () => {
+  await hydrateToken()
   app.mount('#app')
 })

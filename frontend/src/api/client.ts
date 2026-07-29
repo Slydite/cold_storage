@@ -1,5 +1,6 @@
+import { Capacitor } from '@capacitor/core'
 import { client } from './generated/client.gen'
-import { getToken } from './authToken'
+import { getToken, clearToken } from './authToken'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -32,6 +33,20 @@ client.interceptors.request.use((request) => {
   return request
 })
 
+client.interceptors.response.use((response) => {
+  if (Capacitor.isNativePlatform() && (response.status === 401 || response.status === 403)) {
+    clearToken()
+    import('../stores/auth').then((m) => {
+      const authStore = m.useAuthStore()
+      authStore.user = null
+    })
+    import('../router').then((m) => {
+      m.default.push({ name: 'login' })
+    })
+  }
+  return response
+})
+
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const baseUrlClean = API_BASE_URL.replace(/\/$/, '')
   const pathClean = path.startsWith('/') ? path : `/${path}`
@@ -51,10 +66,22 @@ export async function apiFetch(path: string, init?: RequestInit): Promise<Respon
     }
   }
 
-  return fetch(url, {
+  const response = await fetch(url, {
     ...init,
     headers,
     credentials: 'include'
   })
-}
 
+  if (Capacitor.isNativePlatform() && (response.status === 401 || response.status === 403)) {
+    clearToken()
+    import('../stores/auth').then((m) => {
+      const authStore = m.useAuthStore()
+      authStore.user = null
+    })
+    import('../router').then((m) => {
+      m.default.push({ name: 'login' })
+    })
+  }
+
+  return response
+}

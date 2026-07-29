@@ -306,154 +306,202 @@ const handleExport = () => {
       <p class="state-desc">{{ t('inventory.noLotsDesc') }}</p>
     </div>
 
-    <!-- Happy Path: DataTable View -->
-    <div v-else class="table-card">
-      <DataTable
-        :value="props.lots"
-        v-model:filters="filters"
-        :filterDisplay="showFilterRow ? 'row' : 'menu'"
-        paginator
-        :rows="10"
-        :rowsPerPageOptions="[10, 25, 50]"
-        sortMode="multiple"
-        removableSort
-        size="small"
-        stripedRows
-        dataKey="id"
-        responsiveLayout="scroll"
-        class="custom-datatable"
-      >
-        <Column :header="t('common.actions')" style="width: 80px">
-          <template #body="{ data }">
-            <button
-              class="icon-btn"
-              :disabled="fetchingLotId !== null"
-              :title="t('common.details')"
-              type="button"
-              @click="handleViewGrn(data)"
-            >
-              <i v-if="fetchingLotId === data.id" class="pi pi-spin pi-spinner" style="font-size: 1rem"></i>
-              <Eye v-else :size="16" />
-            </button>
-          </template>
-        </Column>
+    <!-- Happy Path: DataTable View & Mobile Cards -->
+    <template v-else>
+      <div class="table-card hide-on-mobile">
+        <DataTable
+          :value="props.lots"
+          v-model:filters="filters"
+          :filterDisplay="showFilterRow ? 'row' : 'menu'"
+          paginator
+          :rows="10"
+          :rowsPerPageOptions="[10, 25, 50]"
+          sortMode="multiple"
+          removableSort
+          size="small"
+          stripedRows
+          dataKey="id"
+          responsiveLayout="scroll"
+          class="custom-datatable"
+        >
+          <Column :header="t('common.actions')" style="width: 80px">
+            <template #body="{ data }">
+              <button
+                class="icon-btn"
+                :disabled="fetchingLotId !== null"
+                :title="t('common.details')"
+                type="button"
+                @click="handleViewGrn(data)"
+              >
+                <i v-if="fetchingLotId === data.id" class="pi pi-spin pi-spinner" style="font-size: 1rem"></i>
+                <Eye v-else :size="16" />
+              </button>
+            </template>
+          </Column>
 
-        <Column field="lot_number" :header="t('inventory.lotNo')" sortable>
-          <template #body="{ data }">
-            <span class="code-link clickable" @click="handleViewGrn(data)">{{ data.lot_number }}</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              :placeholder="`${t('common.filter')} ${t('inventory.lotNo')}`"
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+          <Column field="lot_number" :header="t('inventory.lotNo')" sortable>
+            <template #body="{ data }">
+              <span class="code-link clickable" @click="handleViewGrn(data)">{{ data.lot_number }}</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText
+                v-model="filterModel.value"
+                type="text"
+                @input="filterCallback()"
+                :placeholder="`${t('common.filter')} ${t('inventory.lotNo')}`"
+                class="p-column-filter"
+                size="small"
+              />
+            </template>
+          </Column>
 
-        <Column field="facility_name" :header="t('inventory.coldStorage')" sortable>
-          <template #body="{ data }">
-            <span>{{ data.facility_name || '-' }}</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              :placeholder="`${t('common.filter')} ${t('inventory.coldStorage')}`"
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+          <Column field="facility_name" :header="t('inventory.coldStorage')" sortable>
+            <template #body="{ data }">
+              <span>{{ data.facility_name || '-' }}</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText
+                v-model="filterModel.value"
+                type="text"
+                @input="filterCallback()"
+                :placeholder="`${t('common.filter')} ${t('inventory.coldStorage')}`"
+                class="p-column-filter"
+                size="small"
+              />
+            </template>
+          </Column>
 
-        <Column field="party_name" :header="t('inventory.party')" sortable>
-          <template #body="{ data }">
-            <span class="party-name" v-if="data.party_name">{{ data.party_name }}</span>
-            <span v-else>-</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              :placeholder="`${t('common.filter')} ${t('inventory.party')}`"
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+          <Column field="party_name" :header="t('inventory.party')" sortable>
+            <template #body="{ data }">
+              <span class="party-name" v-if="data.party_name">{{ data.party_name }}</span>
+              <span v-else>-</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText
+                v-model="filterModel.value"
+                type="text"
+                @input="filterCallback()"
+                :placeholder="`${t('common.filter')} ${t('inventory.party')}`"
+                class="p-column-filter"
+                size="small"
+              />
+            </template>
+          </Column>
 
-        <Column field="commodity_name" :header="t('inventory.itemProduct')" sortable>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              :placeholder="`${t('common.filter')} ${t('common.commodity')}`"
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+          <Column field="commodity_name" :header="t('inventory.itemProduct')" sortable>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText
+                v-model="filterModel.value"
+                type="text"
+                @input="filterCallback()"
+                :placeholder="`${t('common.filter')} ${t('common.commodity')}`"
+                class="p-column-filter"
+                size="small"
+              />
+            </template>
+          </Column>
 
-        <Column field="location_display" :header="t('inventory.location')" sortable>
-          <template #body="{ data }">
-            <span>{{ data.location_display || '—' }}</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              :placeholder="`${t('common.filter')} ${t('inventory.location')}`"
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+          <Column field="location_display" :header="t('inventory.location')" sortable>
+            <template #body="{ data }">
+              <span>{{ data.location_display || '—' }}</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText
+                v-model="filterModel.value"
+                type="text"
+                @input="filterCallback()"
+                :placeholder="`${t('common.filter')} ${t('inventory.location')}`"
+                class="p-column-filter"
+                size="small"
+              />
+            </template>
+          </Column>
 
-        <Column field="inward_date" :header="t('inventory.inDate')" sortable>
-          <template #filter="{ filterModel, filterCallback }">
-            <DatePicker
-              v-model="filterModel.value"
-              @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
-              dateFormat="yy-mm-dd"
-              placeholder="YYYY-MM-DD"
-              class="p-column-filter"
-              size="small"
-              showClear
-            />
-          </template>
-        </Column>
+          <Column field="inward_date" :header="t('inventory.inDate')" sortable>
+            <template #filter="{ filterModel, filterCallback }">
+              <DatePicker
+                v-model="filterModel.value"
+                @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
+                dateFormat="yy-mm-dd"
+                placeholder="YYYY-MM-DD"
+                class="p-column-filter"
+                size="small"
+                showClear
+              />
+            </template>
+          </Column>
 
-        <Column field="initial_qty" :header="t('inventory.inQty')" sortable>
-          <template #body="{ data }">
-            <span class="num-val">{{ formatQty(data.initial_qty) }}</span>
-          </template>
-        </Column>
+          <Column field="initial_qty" :header="t('inventory.inQty')" sortable>
+            <template #body="{ data }">
+              <span class="num-val">{{ formatQty(data.initial_qty) }}</span>
+            </template>
+          </Column>
 
-        <Column field="remaining_qty" :header="t('inventory.remainingQty')" sortable>
-          <template #body="{ data }">
-            <span class="num-val text-bold">{{ formatQty(data.remaining_qty) }}</span>
-          </template>
-        </Column>
+          <Column field="remaining_qty" :header="t('inventory.remainingQty')" sortable>
+            <template #body="{ data }">
+              <span class="num-val text-bold">{{ formatQty(data.remaining_qty) }}</span>
+            </template>
+          </Column>
 
-        <Column :header="t('common.status')">
-          <template #body="{ data }">
+          <Column :header="t('common.status')">
+            <template #body="{ data }">
+              <span
+                class="status-pill"
+                :class="data.remaining_qty > 0 ? 'success' : 'danger'"
+              >
+                {{ data.remaining_qty > 0 ? t('status.active') : t('inventory.consumed') }}
+              </span>
+            </template>
+          </Column>
+        </DataTable>
+      </div>
+
+      <!-- Mobile Card Layout -->
+      <div class="mobile-list-cards show-on-mobile">
+        <div v-for="data in props.lots" :key="data.id" class="mobile-list-card">
+          <div class="card-header clickable" @click="handleViewGrn(data)">
+            <span class="card-title">{{ data.lot_number }}</span>
             <span
               class="status-pill"
               :class="data.remaining_qty > 0 ? 'success' : 'danger'"
             >
               {{ data.remaining_qty > 0 ? t('status.active') : t('inventory.consumed') }}
             </span>
-          </template>
-        </Column>
-      </DataTable>
-    </div>
+          </div>
+          <div class="card-body">
+            <div class="card-row">
+              <span class="card-label">{{ t('inventory.party') }}:</span>
+              <span class="card-value">{{ data.party_name || '-' }}</span>
+            </div>
+            <div class="card-row">
+              <span class="card-label">{{ t('inventory.itemProduct') }}:</span>
+              <span class="card-value">{{ data.commodity_name }}</span>
+            </div>
+            <div class="card-row">
+              <span class="card-label">{{ t('inventory.location') }}:</span>
+              <span class="card-value">{{ data.location_display || '—' }}</span>
+            </div>
+            <div class="card-row">
+              <span class="card-label">{{ t('inventory.remainingQty') }}:</span>
+              <span class="card-value num-val text-bold">{{ formatQty(data.remaining_qty) }}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button
+              class="btn-outlined btn-sm"
+              :disabled="fetchingLotId !== null"
+              :title="t('common.details')"
+              type="button"
+              @click="handleViewGrn(data)"
+            >
+              <i v-if="fetchingLotId === data.id" class="pi pi-spin pi-spinner mr-1"></i>
+              <Eye v-else :size="15" />
+              <span>{{ t('common.details') }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
 
     <!-- GRN Detail Dialog -->
     <GrnDetailDialog

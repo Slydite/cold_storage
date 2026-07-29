@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Cold Storage</string>
+    <string name="title_activity_main">Cold Storage</string>
+    <string name="package_name">in.crystalcubes.coldstorage</string>
+    <string name="custom_url_scheme">in.crystalcubes.coldstorage</string>
+</resources>

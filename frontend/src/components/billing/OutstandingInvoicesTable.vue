@@ -187,105 +187,141 @@ const getPaymentSeverity = (status?: string) => {
         <p>{{ t('common.noRecordsFound') }}</p>
       </div>
 
-      <DataTable
-        v-else
-        :value="filteredInvoices"
-        v-model:filters="filters"
-        :filterDisplay="showFilterRow ? 'row' : 'menu'"
-        paginator
-        :rows="10"
-        :rowsPerPageOptions="[10, 25, 50]"
-        size="small"
-        stripedRows
-        responsiveLayout="scroll"
-        class="custom-datatable"
-      >
-        <Column :header="t('common.actions')" style="width: 80px">
-          <template #body="{ data }">
-            <button
-              class="icon-btn"
-              :title="t('common.details')"
-              type="button"
-              @click="handleOpenDetail(data)"
-            >
-              <Eye :size="16" />
-            </button>
-          </template>
-        </Column>
+      <template v-else>
+        <div class="hide-on-mobile">
+          <DataTable
+            :value="filteredInvoices"
+            v-model:filters="filters"
+            :filterDisplay="showFilterRow ? 'row' : 'menu'"
+            paginator
+            :rows="10"
+            :rowsPerPageOptions="[10, 25, 50]"
+            size="small"
+            stripedRows
+            responsiveLayout="scroll"
+            class="custom-datatable"
+          >
+            <Column :header="t('common.actions')" style="width: 80px">
+              <template #body="{ data }">
+                <button
+                  class="icon-btn"
+                  :title="t('common.details')"
+                  type="button"
+                  @click="handleOpenDetail(data)"
+                >
+                  <Eye :size="16" />
+                </button>
+              </template>
+            </Column>
 
-        <Column field="invoice_number" :header="t('invoicing.invoiceNumber')" sortable>
-          <template #body="{ data }">
-            <span class="code-link clickable" @click="handleOpenDetail(data)">{{ data.invoice_number }}</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              :placeholder="t('common.filter')"
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+            <Column field="invoice_number" :header="t('invoicing.invoiceNumber')" sortable>
+              <template #body="{ data }">
+                <span class="code-link clickable" @click="handleOpenDetail(data)">{{ data.invoice_number }}</span>
+              </template>
+              <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                  v-model="filterModel.value"
+                  type="text"
+                  @input="filterCallback()"
+                  :placeholder="t('common.filter')"
+                  class="p-column-filter"
+                  size="small"
+                />
+              </template>
+            </Column>
 
-        <Column field="party_name" :header="t('grn.party')" sortable>
-          <template #body="{ data }">
-            <strong>{{ data.party_name }}</strong>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              :placeholder="t('common.filter')"
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+            <Column field="party_name" :header="t('grn.party')" sortable>
+              <template #body="{ data }">
+                <strong>{{ data.party_name }}</strong>
+              </template>
+              <template #filter="{ filterModel, filterCallback }">
+                <InputText
+                  v-model="filterModel.value"
+                  type="text"
+                  @input="filterCallback()"
+                  :placeholder="t('common.filter')"
+                  class="p-column-filter"
+                  size="small"
+                />
+              </template>
+            </Column>
 
-        <Column field="invoice_date" :header="t('invoicing.invoiceDate')" sortable>
-          <template #filter="{ filterModel, filterCallback }">
-            <DatePicker
-              v-model="filterModel.value"
-              @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
-              dateFormat="yy-mm-dd"
-              placeholder="YYYY-MM-DD"
-              class="p-column-filter"
-              size="small"
-              showClear
-            />
-          </template>
-        </Column>
+            <Column field="invoice_date" :header="t('invoicing.invoiceDate')" sortable>
+              <template #filter="{ filterModel, filterCallback }">
+                <DatePicker
+                  v-model="filterModel.value"
+                  @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
+                  dateFormat="yy-mm-dd"
+                  placeholder="YYYY-MM-DD"
+                  class="p-column-filter"
+                  size="small"
+                  showClear
+                />
+              </template>
+            </Column>
 
-        <Column field="total_amount" :header="t('invoicing.total')">
-          <template #body="{ data }">
-            <span class="num-val">{{ formatCurrency(Number(data.total_amount || 0)) }}</span>
-          </template>
-        </Column>
+            <Column field="total_amount" :header="t('invoicing.total')">
+              <template #body="{ data }">
+                <span class="num-val">{{ formatCurrency(Number(data.total_amount || 0)) }}</span>
+              </template>
+            </Column>
 
-        <Column field="amount_paid" :header="t('invoicing.paid')">
-          <template #body="{ data }">
-            <span class="num-val text-success">{{ formatCurrency(Number(data.amount_paid || 0)) }}</span>
-          </template>
-        </Column>
+            <Column field="amount_paid" :header="t('invoicing.paid')">
+              <template #body="{ data }">
+                <span class="num-val text-success">{{ formatCurrency(Number(data.amount_paid || 0)) }}</span>
+              </template>
+            </Column>
 
-        <Column field="amount_due" :header="t('invoicing.due')">
-          <template #body="{ data }">
-            <strong class="num-val text-danger">{{ formatCurrency(Number(data.amount_due || 0)) }}</strong>
-          </template>
-        </Column>
+            <Column field="amount_due" :header="t('invoicing.due')">
+              <template #body="{ data }">
+                <strong class="num-val text-danger">{{ formatCurrency(Number(data.amount_due || 0)) }}</strong>
+              </template>
+            </Column>
 
-        <Column field="payment_status" :header="t('invoicing.paymentStatus')" sortable>
-          <template #body="{ data }">
-            <Tag
-              :value="t(`status.${(data.payment_status || 'UNPAID').toLowerCase()}`)"
-              :severity="getPaymentSeverity(data.payment_status)"
-            />
-          </template>
-        </Column>
-      </DataTable>
+            <Column field="payment_status" :header="t('invoicing.paymentStatus')" sortable>
+              <template #body="{ data }">
+                <Tag
+                  :value="t(`status.${(data.payment_status || 'UNPAID').toLowerCase()}`)"
+                  :severity="getPaymentSeverity(data.payment_status)"
+                />
+              </template>
+            </Column>
+          </DataTable>
+        </div>
+
+        <!-- Mobile Card Layout -->
+        <div class="mobile-list-cards show-on-mobile">
+          <div v-for="data in filteredInvoices" :key="data.id" class="mobile-list-card">
+            <div class="card-header clickable" @click="handleOpenDetail(data)">
+              <span class="card-title">{{ data.invoice_number }}</span>
+              <Tag
+                :value="t(`status.${(data.payment_status || 'UNPAID').toLowerCase()}`)"
+                :severity="getPaymentSeverity(data.payment_status)"
+              />
+            </div>
+            <div class="card-body">
+              <div class="card-row">
+                <span class="card-label">{{ t('grn.party') }}:</span>
+                <span class="card-value">{{ data.party_name }}</span>
+              </div>
+              <div class="card-row">
+                <span class="card-label">{{ t('invoicing.total') }}:</span>
+                <span class="card-value num-val">{{ formatCurrency(Number(data.total_amount || 0)) }}</span>
+              </div>
+              <div class="card-row">
+                <span class="card-label">{{ t('invoicing.due') }}:</span>
+                <span class="card-value num-val text-danger">{{ formatCurrency(Number(data.amount_due || 0)) }}</span>
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-outlined btn-sm" :title="t('common.details')" type="button" @click="handleOpenDetail(data)">
+                <Eye :size="15" />
+                <span>{{ t('common.details') }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
 
     <!-- Detail Dialog -->

@@ -10,6 +10,11 @@
   --bg-surface: #FFFFFF;
   --bg-surface-hover: #F4F4F8;
   --border-subtle: rgba(15, 15, 25, 0.08);
+  /* Outline borders on containers and interactive controls. Light mode already
+     separates surfaces with a shadow and a real page/surface luminance gap, so
+     this stays gentle - it exists mainly so the token resolves in both themes.
+     Dark mode has neither of those cues and leans on it much harder. */
+  --border-strong: rgba(15, 15, 25, 0.16);
   --text-primary: #1B1B23;
   --text-secondary: #6B6B7A;
   --accent-primary: #F97316;
@@ -43,42 +48,43 @@
 }
 
 [data-theme="dark"] {
-  /* Dark Theme Matching Target Mockup */
+  /* Dark Theme with open elevation ramp and high contrast boundaries */
   --bg-page: #0B0719;
-  --bg-sidebar: #120B24;
-  --bg-surface: #18112F;
-  --bg-surface-hover: #221842;
-  --border-subtle: rgba(255, 255, 255, 0.07);
+  --bg-sidebar: #150F2C;
+  --bg-surface: #2F225C;
+  --bg-surface-hover: #3B2C70;
+  --border-subtle: rgba(255, 255, 255, 0.18);
+  --border-strong: rgba(255, 255, 255, 0.35);
   --text-primary: #F5F3FF;
-  --text-secondary: #8E84B0;
-  --accent-primary: #8B5CF6;
-  --accent-primary-hover: #7C3AED;
-  --accent-primary-light: rgba(139, 92, 246, 0.18);
+  --text-secondary: #A59DBE;
+  --accent-primary: #A78BFA;
+  --accent-primary-hover: #C4B5FD;
+  --accent-primary-light: rgba(167, 139, 250, 0.18);
 
-  /* Shared Semantic Tokens - Dark */
+  /* Shared Semantic Tokens - Dark (with high contrast) */
   --status-success-color: #22C55E;
   --status-success-bg: rgba(34, 197, 94, 0.15);
 
   --status-warning-color: #F5B700;
   --status-warning-bg: rgba(245, 183, 0, 0.15);
 
-  --status-danger-color: #F43F5E;
-  --status-danger-bg: rgba(244, 63, 94, 0.15);
+  --status-danger-color: #FF5C7C;
+  --status-danger-bg: rgba(255, 92, 124, 0.15);
 
-  --status-info-color: #3B82F6;
-  --status-info-bg: rgba(59, 130, 246, 0.15);
+  --status-info-color: #60A5FA;
+  --status-info-bg: rgba(96, 165, 250, 0.15);
 
   /* Card Icon Badges */
-  --badge-blue-bg: rgba(59, 130, 246, 0.2);
-  --badge-blue-color: #3B82F6;
+  --badge-blue-bg: rgba(96, 165, 250, 0.2);
+  --badge-blue-color: #60A5FA;
   --badge-green-bg: rgba(34, 197, 94, 0.2);
   --badge-green-color: #22C55E;
-  --badge-violet-bg: rgba(139, 92, 246, 0.25);
-  --badge-violet-color: #A855F7;
-  --badge-red-bg: rgba(239, 68, 68, 0.2);
-  --badge-red-color: #EF4444;
+  --badge-violet-bg: rgba(192, 132, 252, 0.25);
+  --badge-violet-color: #C084FC;
+  --badge-red-bg: rgba(255, 107, 139, 0.2);
+  --badge-red-color: #FF6B8B;
 
-  --shadow-card: none;
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 *, *::before, *::after {
@@ -169,7 +175,7 @@ html, body {
   justify-content: space-between;
   gap: 12px;
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
   padding: 14px 18px;
   box-shadow: var(--shadow-card);
@@ -201,7 +207,7 @@ html, body {
   width: 100%;
   padding: 9px 12px 9px 36px;
   border-radius: 8px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-strong);
   background: var(--bg-page);
   color: var(--text-primary);
   font-size: 13px;
@@ -247,7 +253,7 @@ html, body {
   border-radius: 10px;
   background-color: var(--bg-surface);
   color: var(--text-primary);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-strong);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -308,7 +314,7 @@ html, body {
 /* Shared Table Card */
 .table-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
   padding: 12px;
   box-shadow: var(--shadow-card);
@@ -388,3 +394,90 @@ html, body {
 .icon-btn.danger-hover:hover {
   color: var(--status-danger-color);
 }
+
+/* Responsive visibility utilities */
+@media (min-width: 769px) {
+  .show-on-mobile {
+    display: none !important;
+  }
+}
+@media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+}
+
+/* Mobile List Cards Styling */
+.mobile-list-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+.mobile-list-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mobile-list-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 8px;
+}
+.mobile-list-card .card-header.clickable {
+  cursor: pointer;
+}
+/* Trailing cluster in a card header (status tag + row actions). Without this
+   the wrapper is a block and stacks its children vertically. */
+.mobile-list-card .card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.mobile-list-card .card-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--accent-primary);
+}
+.mobile-list-card .card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mobile-list-card .card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+.mobile-list-card .card-label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.mobile-list-card .card-value {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.mobile-list-card .card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+.mobile-list-card .btn-sm {
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  border-radius: 6px !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+

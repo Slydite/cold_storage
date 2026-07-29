@@ -224,129 +224,199 @@ const handleExport = () => {
       </button>
     </div>
 
-    <!-- DataTable View -->
-    <div v-else class="table-card">
-      <DataTable
-        :value="props.deliveries"
-        v-model:filters="filters"
-        :filterDisplay="showFilterRow ? 'row' : 'menu'"
-        paginator
-        :rows="10"
-        :rowsPerPageOptions="[10, 25, 50]"
-        sortMode="multiple"
-        removableSort
-        size="small"
-        stripedRows
-        dataKey="id"
-        responsiveLayout="scroll"
-        class="custom-datatable"
-      >
-        <Column :header="t('common.actions')">
-          <template #body="{ data }">
-            <div class="row-actions">
-              <button class="icon-btn" :title="t('common.details')" type="button" @click="emit('view', data)">
-                <Eye :size="16" />
-              </button>
-              <button
-                v-if="data.status === 'DRAFT'"
-                class="icon-btn"
-                :title="t('delivery.postTooltip')"
-                type="button"
-                @click="emit('post', data.id)"
-              >
-                <FileCheck :size="16" />
-              </button>
-              <button
-                v-if="data.status === 'DRAFT'"
-                class="icon-btn danger-hover"
-                :title="t('delivery.cancelTooltip')"
-                type="button"
-                @click="emit('cancel', data.id)"
-              >
-                <XCircle :size="16" />
-              </button>
-              <button
-                class="icon-btn"
-                title="PDF"
-                aria-label="PDF"
-                type="button"
-                :disabled="downloadingId === data.id"
-                @click="handleDownloadPdf(data.id, data.dn_number)"
-              >
-                <Printer :size="16" />
-              </button>
-            </div>
-          </template>
-        </Column>
+    <!-- DataTable View & Mobile Cards -->
+    <template v-else>
+      <div class="table-card hide-on-mobile">
+        <DataTable
+          :value="props.deliveries"
+          v-model:filters="filters"
+          :filterDisplay="showFilterRow ? 'row' : 'menu'"
+          paginator
+          :rows="10"
+          :rowsPerPageOptions="[10, 25, 50]"
+          sortMode="multiple"
+          removableSort
+          size="small"
+          stripedRows
+          dataKey="id"
+          responsiveLayout="scroll"
+          class="custom-datatable"
+        >
+          <Column :header="t('common.actions')">
+            <template #body="{ data }">
+              <div class="row-actions">
+                <button class="icon-btn" :title="t('common.details')" type="button" @click="emit('view', data)">
+                  <Eye :size="16" />
+                </button>
+                <button
+                  v-if="data.status === 'DRAFT'"
+                  class="icon-btn"
+                  :title="t('delivery.postTooltip')"
+                  type="button"
+                  @click="emit('post', data.id)"
+                >
+                  <FileCheck :size="16" />
+                </button>
+                <button
+                  v-if="data.status === 'DRAFT'"
+                  class="icon-btn danger-hover"
+                  :title="t('delivery.cancelTooltip')"
+                  type="button"
+                  @click="emit('cancel', data.id)"
+                >
+                  <XCircle :size="16" />
+                </button>
+                <button
+                  class="icon-btn"
+                  title="PDF"
+                  aria-label="PDF"
+                  type="button"
+                  :disabled="downloadingId === data.id"
+                  @click="handleDownloadPdf(data.id, data.dn_number)"
+                >
+                  <Printer :size="16" />
+                </button>
+              </div>
+            </template>
+          </Column>
 
-        <Column field="dn_number" :header="t('delivery.deliveryNumber')" sortable>
-          <template #body="{ data }">
-            <span class="code-link clickable" @click="emit('view', data)">{{ data.dn_number }}</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              placeholder="Filter..."
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+          <Column field="dn_number" :header="t('delivery.deliveryNumber')" sortable>
+            <template #body="{ data }">
+              <span class="code-link clickable" @click="emit('view', data)">{{ data.dn_number }}</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText
+                v-model="filterModel.value"
+                type="text"
+                @input="filterCallback()"
+                placeholder="Filter..."
+                class="p-column-filter"
+                size="small"
+              />
+            </template>
+          </Column>
 
-        <Column field="dispatch_date" :header="t('delivery.dispatchDate')" sortable>
-          <template #filter="{ filterModel, filterCallback }">
-            <DatePicker
-              v-model="filterModel.value"
-              @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
-              dateFormat="yy-mm-dd"
-              placeholder="YYYY-MM-DD"
-              class="p-column-filter"
-              size="small"
-              showClear
-            />
-          </template>
-        </Column>
+          <Column field="dispatch_date" :header="t('delivery.dispatchDate')" sortable>
+            <template #filter="{ filterModel, filterCallback }">
+              <DatePicker
+                v-model="filterModel.value"
+                @update:modelValue="(val) => { filterModel.value = formatDateFilter(val); filterCallback() }"
+                dateFormat="yy-mm-dd"
+                placeholder="YYYY-MM-DD"
+                class="p-column-filter"
+                size="small"
+                showClear
+              />
+            </template>
+          </Column>
 
-        <Column field="party_name" :header="t('delivery.customerParty')" sortable>
-          <template #body="{ data }">
-            <span class="party-name">{{ data.party_name }}</span>
-          </template>
-          <template #filter="{ filterModel, filterCallback }">
-            <InputText
-              v-model="filterModel.value"
-              type="text"
-              @input="filterCallback()"
-              placeholder="Filter..."
-              class="p-column-filter"
-              size="small"
-            />
-          </template>
-        </Column>
+          <Column field="party_name" :header="t('delivery.customerParty')" sortable>
+            <template #body="{ data }">
+              <span class="party-name">{{ data.party_name }}</span>
+            </template>
+            <template #filter="{ filterModel, filterCallback }">
+              <InputText
+                v-model="filterModel.value"
+                type="text"
+                @input="filterCallback()"
+                placeholder="Filter..."
+                class="p-column-filter"
+                size="small"
+              />
+            </template>
+          </Column>
 
-        <Column field="vehicle_number" :header="t('delivery.vehicleNo')" sortable>
-          <template #body="{ data }">
-            <span>{{ data.vehicle_number || '-' }}</span>
-          </template>
-        </Column>
+          <Column field="vehicle_number" :header="t('delivery.vehicleNo')" sortable>
+            <template #body="{ data }">
+              <span>{{ data.vehicle_number || '-' }}</span>
+            </template>
+          </Column>
 
-        <Column :header="t('delivery.totalDispatchQty')">
-          <template #body="{ data }">
-            <strong class="num-val">{{ formatQty(computeTotalQuantity(data), 0) }}</strong>
-          </template>
-        </Column>
+          <Column :header="t('delivery.totalDispatchQty')">
+            <template #body="{ data }">
+              <strong class="num-val">{{ formatQty(computeTotalQuantity(data), 0) }}</strong>
+            </template>
+          </Column>
 
-        <Column field="status" :header="t('common.status')" sortable>
-          <template #body="{ data }">
+          <Column field="status" :header="t('common.status')" sortable>
+            <template #body="{ data }">
+              <Tag
+                :value="t(`status.${(data.status || 'draft').toLowerCase()}`)"
+                :severity="data.status === 'POSTED' ? 'success' : data.status === 'CANCELLED' ? 'danger' : 'warn'"
+              />
+            </template>
+          </Column>
+        </DataTable>
+      </div>
+
+      <!-- Mobile Card Layout -->
+      <div class="mobile-list-cards show-on-mobile">
+        <div v-for="data in props.deliveries" :key="data.id" class="mobile-list-card">
+          <div class="card-header clickable" @click="emit('view', data)">
+            <span class="card-title">{{ data.dn_number }}</span>
             <Tag
               :value="t(`status.${(data.status || 'draft').toLowerCase()}`)"
               :severity="data.status === 'POSTED' ? 'success' : data.status === 'CANCELLED' ? 'danger' : 'warn'"
             />
-          </template>
-        </Column>
-      </DataTable>
-    </div>
+          </div>
+          <div class="card-body">
+            <div class="card-row">
+              <span class="card-label">{{ t('delivery.dispatchDate') }}:</span>
+              <span class="card-value">{{ data.dispatch_date }}</span>
+            </div>
+            <div class="card-row">
+              <span class="card-label">{{ t('delivery.customerParty') }}:</span>
+              <span class="card-value">{{ data.party_name }}</span>
+            </div>
+            <div class="card-row">
+              <span class="card-label">{{ t('delivery.vehicleNo') }}:</span>
+              <span class="card-value">{{ data.vehicle_number || '-' }}</span>
+            </div>
+            <div class="card-row">
+              <span class="card-label">{{ t('delivery.totalDispatchQty') }}:</span>
+              <span class="card-value num-val">{{ formatQty(computeTotalQuantity(data), 0) }}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn-outlined btn-sm" :title="t('common.details')" type="button" @click="emit('view', data)">
+              <Eye :size="15" />
+              <span>{{ t('common.details') }}</span>
+            </button>
+            <button
+              v-if="data.status === 'DRAFT'"
+              class="btn-outlined btn-sm"
+              :title="t('delivery.postTooltip')"
+              type="button"
+              @click="emit('post', data.id)"
+            >
+              <FileCheck :size="15" />
+              <span>{{ t('delivery.postTooltip') }}</span>
+            </button>
+            <button
+              v-if="data.status === 'DRAFT'"
+              class="btn-outlined btn-sm danger-hover"
+              :title="t('delivery.cancelTooltip')"
+              type="button"
+              @click="emit('cancel', data.id)"
+            >
+              <XCircle :size="15" />
+              <span>{{ t('delivery.cancelTooltip') }}</span>
+            </button>
+            <button
+              class="btn-outlined btn-sm"
+              title="PDF"
+              aria-label="PDF"
+              type="button"
+              :disabled="downloadingId === data.id"
+              @click="handleDownloadPdf(data.id, data.dn_number)"
+            >
+              <Printer :size="15" />
+              <span>{{ downloadingId === data.id ? '...' : 'PDF' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 

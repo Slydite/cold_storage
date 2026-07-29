@@ -873,13 +873,18 @@ const onFloorChange = (itemIdx: number) => {
   }
   .card-body-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    /* minmax(0, 1fr), not 1fr: plain `1fr` is minmax(auto, 1fr), and `auto`
+       refuses to shrink below the content's min-content width. A long
+       commodity name inside a Select then forces the column wider than the
+       screen and the whole card overflows horizontally. */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
   .card-field {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    min-width: 0;
   }
   .card-field.full-width {
     grid-column: span 2;

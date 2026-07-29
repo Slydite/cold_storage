@@ -1,5 +1,6 @@
 allowBuilds:
   esbuild: true
+  sharp: true
   vue-demi: true
 minimumReleaseAgeExclude:
   - '@vue/devtools-core@8.2.1'
