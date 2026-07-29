@@ -93,7 +93,6 @@ app.use(ConfirmationService)
 // App.vue fell through to the authenticated branch and rendered the full app
 // chrome (sidebar, header) for a beat before bouncing to the login screen.
 // isReady() resolves after the guard, so the first paint is already correct.
-router.isReady().then(async () => {
-  await hydrateToken()
+router.isReady().then(() => {
   app.mount('#app')
 })
