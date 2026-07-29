@@ -58,3 +58,9 @@ class UserUpdateInputSerializer(serializers.Serializer):
     # deactivated the account. Activation state changes go through the
     # explicit activate/deactivate actions instead.
 
+
+class TokenAuthOutputSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    user = CurrentUserOutputSerializer()
+
+

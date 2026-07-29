@@ -1,3 +1,5 @@
+import { apiFetch } from '../api/client'
+
 /**
  * Download a server-generated PDF.
  *
@@ -19,9 +21,8 @@
  * for safe methods).
  */
 export async function downloadPdf(url: string, fallbackFilename: string): Promise<void> {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method: 'GET',
-    credentials: 'include',
     headers: { Accept: 'application/pdf' }
   })
 

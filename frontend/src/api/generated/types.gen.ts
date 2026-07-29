@@ -476,6 +476,11 @@ export type RoleEnum = 'ADMIN';
  */
 export type StatusEnum = 'DRAFT' | 'POSTED' | 'CANCELLED';
 
+export type TokenAuthOutput = {
+    token: string;
+    user: CurrentUserOutput;
+};
+
 /**
  * * `DEPOSITOR` - Depositor/Customer
  * * `VENDOR` - Vendor
@@ -691,6 +696,11 @@ export type PaymentRegisterResponseWritable = {
     total_amount: string;
 };
 
+export type TokenAuthOutputWritable = {
+    token: string;
+    user: CurrentUserOutputWritable;
+};
+
 export type UserCreateInputWritable = {
     username: string;
     password: string;
@@ -794,6 +804,42 @@ export type AuthMeRetrieveResponses = {
 };
 
 export type AuthMeRetrieveResponse = AuthMeRetrieveResponses[keyof AuthMeRetrieveResponses];
+
+export type AuthTokenCreateData = {
+    body: LoginInputWritable;
+    path?: never;
+    query?: never;
+    url: '/api/auth/token/';
+};
+
+export type AuthTokenCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type AuthTokenCreateResponses = {
+    200: TokenAuthOutput;
+};
+
+export type AuthTokenCreateResponse = AuthTokenCreateResponses[keyof AuthTokenCreateResponses];
+
+export type AuthTokenRevokeCreateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/token/revoke/';
+};
+
+export type AuthTokenRevokeCreateResponses = {
+    /**
+     * No response body
+     */
+    204: void;
+};
+
+export type AuthTokenRevokeCreateResponse = AuthTokenRevokeCreateResponses[keyof AuthTokenRevokeCreateResponses];
 
 export type BlocksListData = {
     body?: never;

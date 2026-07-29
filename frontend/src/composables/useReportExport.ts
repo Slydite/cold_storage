@@ -1,3 +1,5 @@
+import { apiFetch } from '../api/client'
+
 export function buildQueryString(params: Record<string, string | number | undefined | null>): string {
   const searchParams = new URLSearchParams()
   for (const [key, val] of Object.entries(params)) {
@@ -17,9 +19,8 @@ export async function downloadReportCsv(
   const queryParams = { ...params, export_format: 'csv' }
   const url = `${endpoint}${buildQueryString(queryParams)}`
 
-  const response = await fetch(url, {
-    method: 'GET',
-    credentials: 'include'
+  const response = await apiFetch(url, {
+    method: 'GET'
   })
 
   if (!response.ok) {
@@ -68,9 +69,8 @@ export async function fetchReportJson<T>(
   const queryParams = { ...params, export_format: 'json' }
   const url = `${endpoint}${buildQueryString(queryParams)}`
 
-  const response = await fetch(url, {
-    method: 'GET',
-    credentials: 'include'
+  const response = await apiFetch(url, {
+    method: 'GET'
   })
 
   if (!response.ok) {

@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, BlocksCreateData, BlocksCreateErrors, BlocksCreateResponses, BlocksListData, BlocksListResponses, BlocksRetrieveData, BlocksRetrieveErrors, BlocksRetrieveResponses, BlocksUpdateData, BlocksUpdateErrors, BlocksUpdateResponses, ChambersCreateData, ChambersCreateErrors, ChambersCreateResponses, ChambersListData, ChambersListResponses, ChambersRetrieveData, ChambersRetrieveErrors, ChambersRetrieveResponses, ChambersUpdateData, ChambersUpdateErrors, ChambersUpdateResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPdfRetrieveData, DeliveryNotesPdfRetrieveErrors, DeliveryNotesPdfRetrieveResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, FloorsCreateData, FloorsCreateErrors, FloorsCreateResponses, FloorsListData, FloorsListResponses, FloorsRetrieveData, FloorsRetrieveErrors, FloorsRetrieveResponses, FloorsUpdateData, FloorsUpdateErrors, FloorsUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsListData, GrnsListResponses, GrnsPdfRetrieveData, GrnsPdfRetrieveErrors, GrnsPdfRetrieveResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPaymentsCreateData, InvoicesPaymentsCreateErrors, InvoicesPaymentsCreateResponses, InvoicesPaymentsDestroyData, InvoicesPaymentsDestroyErrors, InvoicesPaymentsDestroyResponses, InvoicesPaymentsListData, InvoicesPaymentsListErrors, InvoicesPaymentsListResponses, InvoicesPdfRetrieveData, InvoicesPdfRetrieveErrors, InvoicesPdfRetrieveResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesPreviewListData, InvoicesPreviewListResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, ReportsDnRegisterRetrieveData, ReportsDnRegisterRetrieveResponses, ReportsGrnRegisterRetrieveData, ReportsGrnRegisterRetrieveResponses, ReportsInvoicesRetrieveData, ReportsInvoicesRetrieveResponses, ReportsPaymentsRetrieveData, ReportsPaymentsRetrieveResponses, ReportsStockSummaryRetrieveData, ReportsStockSummaryRetrieveResponses, UsersActivateCreateData, UsersActivateCreateErrors, UsersActivateCreateResponses, UsersCreateData, UsersCreateErrors, UsersCreateResponses, UsersDeactivateCreateData, UsersDeactivateCreateErrors, UsersDeactivateCreateResponses, UsersListData, UsersListResponses, UsersRetrieveData, UsersRetrieveErrors, UsersRetrieveResponses, UsersUpdateData, UsersUpdateErrors, UsersUpdateResponses } from './types.gen';
+import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, AuthTokenCreateData, AuthTokenCreateErrors, AuthTokenCreateResponses, AuthTokenRevokeCreateData, AuthTokenRevokeCreateResponses, BlocksCreateData, BlocksCreateErrors, BlocksCreateResponses, BlocksListData, BlocksListResponses, BlocksRetrieveData, BlocksRetrieveErrors, BlocksRetrieveResponses, BlocksUpdateData, BlocksUpdateErrors, BlocksUpdateResponses, ChambersCreateData, ChambersCreateErrors, ChambersCreateResponses, ChambersListData, ChambersListResponses, ChambersRetrieveData, ChambersRetrieveErrors, ChambersRetrieveResponses, ChambersUpdateData, ChambersUpdateErrors, ChambersUpdateResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPdfRetrieveData, DeliveryNotesPdfRetrieveErrors, DeliveryNotesPdfRetrieveResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, FloorsCreateData, FloorsCreateErrors, FloorsCreateResponses, FloorsListData, FloorsListResponses, FloorsRetrieveData, FloorsRetrieveErrors, FloorsRetrieveResponses, FloorsUpdateData, FloorsUpdateErrors, FloorsUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsListData, GrnsListResponses, GrnsPdfRetrieveData, GrnsPdfRetrieveErrors, GrnsPdfRetrieveResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPaymentsCreateData, InvoicesPaymentsCreateErrors, InvoicesPaymentsCreateResponses, InvoicesPaymentsDestroyData, InvoicesPaymentsDestroyErrors, InvoicesPaymentsDestroyResponses, InvoicesPaymentsListData, InvoicesPaymentsListErrors, InvoicesPaymentsListResponses, InvoicesPdfRetrieveData, InvoicesPdfRetrieveErrors, InvoicesPdfRetrieveResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesPreviewListData, InvoicesPreviewListResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsListData, LotsListResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, ReportsDnRegisterRetrieveData, ReportsDnRegisterRetrieveResponses, ReportsGrnRegisterRetrieveData, ReportsGrnRegisterRetrieveResponses, ReportsInvoicesRetrieveData, ReportsInvoicesRetrieveResponses, ReportsPaymentsRetrieveData, ReportsPaymentsRetrieveResponses, ReportsStockSummaryRetrieveData, ReportsStockSummaryRetrieveResponses, UsersActivateCreateData, UsersActivateCreateErrors, UsersActivateCreateResponses, UsersCreateData, UsersCreateErrors, UsersCreateResponses, UsersDeactivateCreateData, UsersDeactivateCreateErrors, UsersDeactivateCreateResponses, UsersListData, UsersListResponses, UsersRetrieveData, UsersRetrieveErrors, UsersRetrieveResponses, UsersUpdateData, UsersUpdateErrors, UsersUpdateResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -22,11 +22,15 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  * Get CSRF token cookie
  */
 export const authCsrfRetrieve = <ThrowOnError extends boolean = false>(options?: Options<AuthCsrfRetrieveData, ThrowOnError>): RequestResult<AuthCsrfRetrieveResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AuthCsrfRetrieveResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/auth/csrf/',
     ...options
 });
@@ -35,11 +39,15 @@ export const authCsrfRetrieve = <ThrowOnError extends boolean = false>(options?:
  * Log in user and establish session
  */
 export const authLoginCreate = <ThrowOnError extends boolean = false>(options: Options<AuthLoginCreateData, ThrowOnError>): RequestResult<AuthLoginCreateResponses, AuthLoginCreateErrors, ThrowOnError> => (options.client ?? client).post<AuthLoginCreateResponses, AuthLoginCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/auth/login/',
     ...options,
     headers: {
@@ -52,11 +60,15 @@ export const authLoginCreate = <ThrowOnError extends boolean = false>(options: O
  * Log out current user
  */
 export const authLogoutCreate = <ThrowOnError extends boolean = false>(options?: Options<AuthLogoutCreateData, ThrowOnError>): RequestResult<AuthLogoutCreateResponses, unknown, ThrowOnError> => (options?.client ?? client).post<AuthLogoutCreateResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/auth/logout/',
     ...options
 });
@@ -65,12 +77,54 @@ export const authLogoutCreate = <ThrowOnError extends boolean = false>(options?:
  * Get current authenticated user
  */
 export const authMeRetrieve = <ThrowOnError extends boolean = false>(options?: Options<AuthMeRetrieveData, ThrowOnError>): RequestResult<AuthMeRetrieveResponses, unknown, ThrowOnError> => (options?.client ?? client).get<AuthMeRetrieveResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/auth/me/',
+    ...options
+});
+
+/**
+ * Obtain auth token using username and password
+ */
+export const authTokenCreate = <ThrowOnError extends boolean = false>(options: Options<AuthTokenCreateData, ThrowOnError>): RequestResult<AuthTokenCreateResponses, AuthTokenCreateErrors, ThrowOnError> => (options.client ?? client).post<AuthTokenCreateResponses, AuthTokenCreateErrors, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
+    url: '/api/auth/token/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Revoke token for current authenticated user
+ */
+export const authTokenRevokeCreate = <ThrowOnError extends boolean = false>(options?: Options<AuthTokenRevokeCreateData, ThrowOnError>): RequestResult<AuthTokenRevokeCreateResponses, unknown, ThrowOnError> => (options?.client ?? client).post<AuthTokenRevokeCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
+    url: '/api/auth/token/revoke/',
     ...options
 });
 
@@ -78,11 +132,15 @@ export const authMeRetrieve = <ThrowOnError extends boolean = false>(options?: O
  * List blocks
  */
 export const blocksList = <ThrowOnError extends boolean = false>(options?: Options<BlocksListData, ThrowOnError>): RequestResult<BlocksListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<BlocksListResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/blocks/',
     ...options
 });
@@ -91,11 +149,15 @@ export const blocksList = <ThrowOnError extends boolean = false>(options?: Optio
  * Create a new block
  */
 export const blocksCreate = <ThrowOnError extends boolean = false>(options: Options<BlocksCreateData, ThrowOnError>): RequestResult<BlocksCreateResponses, BlocksCreateErrors, ThrowOnError> => (options.client ?? client).post<BlocksCreateResponses, BlocksCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/blocks/',
     ...options,
     headers: {
@@ -108,11 +170,15 @@ export const blocksCreate = <ThrowOnError extends boolean = false>(options: Opti
  * Retrieve a block by ID
  */
 export const blocksRetrieve = <ThrowOnError extends boolean = false>(options: Options<BlocksRetrieveData, ThrowOnError>): RequestResult<BlocksRetrieveResponses, BlocksRetrieveErrors, ThrowOnError> => (options.client ?? client).get<BlocksRetrieveResponses, BlocksRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/blocks/{id}/',
     ...options
 });
@@ -121,11 +187,15 @@ export const blocksRetrieve = <ThrowOnError extends boolean = false>(options: Op
  * Update an existing block
  */
 export const blocksUpdate = <ThrowOnError extends boolean = false>(options: Options<BlocksUpdateData, ThrowOnError>): RequestResult<BlocksUpdateResponses, BlocksUpdateErrors, ThrowOnError> => (options.client ?? client).put<BlocksUpdateResponses, BlocksUpdateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/blocks/{id}/',
     ...options,
     headers: {
@@ -138,11 +208,15 @@ export const blocksUpdate = <ThrowOnError extends boolean = false>(options: Opti
  * List chambers
  */
 export const chambersList = <ThrowOnError extends boolean = false>(options?: Options<ChambersListData, ThrowOnError>): RequestResult<ChambersListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ChambersListResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/chambers/',
     ...options
 });
@@ -151,11 +225,15 @@ export const chambersList = <ThrowOnError extends boolean = false>(options?: Opt
  * Create a new chamber
  */
 export const chambersCreate = <ThrowOnError extends boolean = false>(options: Options<ChambersCreateData, ThrowOnError>): RequestResult<ChambersCreateResponses, ChambersCreateErrors, ThrowOnError> => (options.client ?? client).post<ChambersCreateResponses, ChambersCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/chambers/',
     ...options,
     headers: {
@@ -168,11 +246,15 @@ export const chambersCreate = <ThrowOnError extends boolean = false>(options: Op
  * Retrieve a chamber by ID
  */
 export const chambersRetrieve = <ThrowOnError extends boolean = false>(options: Options<ChambersRetrieveData, ThrowOnError>): RequestResult<ChambersRetrieveResponses, ChambersRetrieveErrors, ThrowOnError> => (options.client ?? client).get<ChambersRetrieveResponses, ChambersRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/chambers/{id}/',
     ...options
 });
@@ -181,11 +263,15 @@ export const chambersRetrieve = <ThrowOnError extends boolean = false>(options: 
  * Update an existing chamber
  */
 export const chambersUpdate = <ThrowOnError extends boolean = false>(options: Options<ChambersUpdateData, ThrowOnError>): RequestResult<ChambersUpdateResponses, ChambersUpdateErrors, ThrowOnError> => (options.client ?? client).put<ChambersUpdateResponses, ChambersUpdateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/chambers/{id}/',
     ...options,
     headers: {
@@ -198,11 +284,15 @@ export const chambersUpdate = <ThrowOnError extends boolean = false>(options: Op
  * List all commodities for a facility
  */
 export const commoditiesList = <ThrowOnError extends boolean = false>(options: Options<CommoditiesListData, ThrowOnError>): RequestResult<CommoditiesListResponses, unknown, ThrowOnError> => (options.client ?? client).get<CommoditiesListResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/commodities/',
     ...options
 });
@@ -211,11 +301,15 @@ export const commoditiesList = <ThrowOnError extends boolean = false>(options: O
  * Create a new commodity (code is auto-generated server-side)
  */
 export const commoditiesCreate = <ThrowOnError extends boolean = false>(options: Options<CommoditiesCreateData, ThrowOnError>): RequestResult<CommoditiesCreateResponses, CommoditiesCreateErrors, ThrowOnError> => (options.client ?? client).post<CommoditiesCreateResponses, CommoditiesCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/commodities/',
     ...options,
     headers: {
@@ -228,11 +322,15 @@ export const commoditiesCreate = <ThrowOnError extends boolean = false>(options:
  * Retrieve a commodity by ID
  */
 export const commoditiesRetrieve = <ThrowOnError extends boolean = false>(options: Options<CommoditiesRetrieveData, ThrowOnError>): RequestResult<CommoditiesRetrieveResponses, CommoditiesRetrieveErrors, ThrowOnError> => (options.client ?? client).get<CommoditiesRetrieveResponses, CommoditiesRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/commodities/{id}/',
     ...options
 });
@@ -241,11 +339,15 @@ export const commoditiesRetrieve = <ThrowOnError extends boolean = false>(option
  * Update an existing commodity
  */
 export const commoditiesUpdate = <ThrowOnError extends boolean = false>(options: Options<CommoditiesUpdateData, ThrowOnError>): RequestResult<CommoditiesUpdateResponses, CommoditiesUpdateErrors, ThrowOnError> => (options.client ?? client).put<CommoditiesUpdateResponses, CommoditiesUpdateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/commodities/{id}/',
     ...options,
     headers: {
@@ -258,11 +360,15 @@ export const commoditiesUpdate = <ThrowOnError extends boolean = false>(options:
  * List Delivery Notes
  */
 export const deliveryNotesList = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesListData, ThrowOnError>): RequestResult<DeliveryNotesListResponses, unknown, ThrowOnError> => (options.client ?? client).get<DeliveryNotesListResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/delivery-notes/',
     ...options
 });
@@ -271,11 +377,15 @@ export const deliveryNotesList = <ThrowOnError extends boolean = false>(options:
  * Create a new Delivery Note
  */
 export const deliveryNotesCreate = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesCreateData, ThrowOnError>): RequestResult<DeliveryNotesCreateResponses, DeliveryNotesCreateErrors, ThrowOnError> => (options.client ?? client).post<DeliveryNotesCreateResponses, DeliveryNotesCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/delivery-notes/',
     ...options,
     headers: {
@@ -288,11 +398,15 @@ export const deliveryNotesCreate = <ThrowOnError extends boolean = false>(option
  * Retrieve a Delivery Note by ID
  */
 export const deliveryNotesRetrieve = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesRetrieveData, ThrowOnError>): RequestResult<DeliveryNotesRetrieveResponses, DeliveryNotesRetrieveErrors, ThrowOnError> => (options.client ?? client).get<DeliveryNotesRetrieveResponses, DeliveryNotesRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/delivery-notes/{id}/',
     ...options
 });
@@ -301,11 +415,15 @@ export const deliveryNotesRetrieve = <ThrowOnError extends boolean = false>(opti
  * Cancel a DRAFT Delivery Note
  */
 export const deliveryNotesCancelCreate = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesCancelCreateData, ThrowOnError>): RequestResult<DeliveryNotesCancelCreateResponses, DeliveryNotesCancelCreateErrors, ThrowOnError> => (options.client ?? client).post<DeliveryNotesCancelCreateResponses, DeliveryNotesCancelCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/delivery-notes/{id}/cancel/',
     ...options
 });
@@ -314,11 +432,15 @@ export const deliveryNotesCancelCreate = <ThrowOnError extends boolean = false>(
  * Stream PDF for a Delivery Note
  */
 export const deliveryNotesPdfRetrieve = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesPdfRetrieveData, ThrowOnError>): RequestResult<DeliveryNotesPdfRetrieveResponses, DeliveryNotesPdfRetrieveErrors, ThrowOnError> => (options.client ?? client).get<DeliveryNotesPdfRetrieveResponses, DeliveryNotesPdfRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/delivery-notes/{id}/pdf/',
     ...options
 });
@@ -327,11 +449,15 @@ export const deliveryNotesPdfRetrieve = <ThrowOnError extends boolean = false>(o
  * Post a DRAFT Delivery Note
  */
 export const deliveryNotesPostCreate = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesPostCreateData, ThrowOnError>): RequestResult<DeliveryNotesPostCreateResponses, DeliveryNotesPostCreateErrors, ThrowOnError> => (options.client ?? client).post<DeliveryNotesPostCreateResponses, DeliveryNotesPostCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/delivery-notes/{id}/post/',
     ...options
 });
@@ -340,11 +466,15 @@ export const deliveryNotesPostCreate = <ThrowOnError extends boolean = false>(op
  * List all facilities
  */
 export const facilitiesList = <ThrowOnError extends boolean = false>(options?: Options<FacilitiesListData, ThrowOnError>): RequestResult<FacilitiesListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<FacilitiesListResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/facilities/',
     ...options
 });
@@ -353,11 +483,15 @@ export const facilitiesList = <ThrowOnError extends boolean = false>(options?: O
  * Create a new facility (code is auto-generated server-side)
  */
 export const facilitiesCreate = <ThrowOnError extends boolean = false>(options: Options<FacilitiesCreateData, ThrowOnError>): RequestResult<FacilitiesCreateResponses, FacilitiesCreateErrors, ThrowOnError> => (options.client ?? client).post<FacilitiesCreateResponses, FacilitiesCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/facilities/',
     ...options,
     headers: {
@@ -370,11 +504,15 @@ export const facilitiesCreate = <ThrowOnError extends boolean = false>(options: 
  * Retrieve a facility by ID
  */
 export const facilitiesRetrieve = <ThrowOnError extends boolean = false>(options: Options<FacilitiesRetrieveData, ThrowOnError>): RequestResult<FacilitiesRetrieveResponses, FacilitiesRetrieveErrors, ThrowOnError> => (options.client ?? client).get<FacilitiesRetrieveResponses, FacilitiesRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/facilities/{id}/',
     ...options
 });
@@ -383,11 +521,15 @@ export const facilitiesRetrieve = <ThrowOnError extends boolean = false>(options
  * Update an existing facility
  */
 export const facilitiesUpdate = <ThrowOnError extends boolean = false>(options: Options<FacilitiesUpdateData, ThrowOnError>): RequestResult<FacilitiesUpdateResponses, FacilitiesUpdateErrors, ThrowOnError> => (options.client ?? client).put<FacilitiesUpdateResponses, FacilitiesUpdateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/facilities/{id}/',
     ...options,
     headers: {
@@ -400,11 +542,15 @@ export const facilitiesUpdate = <ThrowOnError extends boolean = false>(options: 
  * List all floors
  */
 export const floorsList = <ThrowOnError extends boolean = false>(options?: Options<FloorsListData, ThrowOnError>): RequestResult<FloorsListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<FloorsListResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/floors/',
     ...options
 });
@@ -413,11 +559,15 @@ export const floorsList = <ThrowOnError extends boolean = false>(options?: Optio
  * Create a new floor
  */
 export const floorsCreate = <ThrowOnError extends boolean = false>(options: Options<FloorsCreateData, ThrowOnError>): RequestResult<FloorsCreateResponses, FloorsCreateErrors, ThrowOnError> => (options.client ?? client).post<FloorsCreateResponses, FloorsCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/floors/',
     ...options,
     headers: {
@@ -430,11 +580,15 @@ export const floorsCreate = <ThrowOnError extends boolean = false>(options: Opti
  * Retrieve a floor by ID
  */
 export const floorsRetrieve = <ThrowOnError extends boolean = false>(options: Options<FloorsRetrieveData, ThrowOnError>): RequestResult<FloorsRetrieveResponses, FloorsRetrieveErrors, ThrowOnError> => (options.client ?? client).get<FloorsRetrieveResponses, FloorsRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/floors/{id}/',
     ...options
 });
@@ -443,11 +597,15 @@ export const floorsRetrieve = <ThrowOnError extends boolean = false>(options: Op
  * Update an existing floor
  */
 export const floorsUpdate = <ThrowOnError extends boolean = false>(options: Options<FloorsUpdateData, ThrowOnError>): RequestResult<FloorsUpdateResponses, FloorsUpdateErrors, ThrowOnError> => (options.client ?? client).put<FloorsUpdateResponses, FloorsUpdateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/floors/{id}/',
     ...options,
     headers: {
@@ -460,11 +618,15 @@ export const floorsUpdate = <ThrowOnError extends boolean = false>(options: Opti
  * List Goods Receipt Notes (GRNs)
  */
 export const grnsList = <ThrowOnError extends boolean = false>(options: Options<GrnsListData, ThrowOnError>): RequestResult<GrnsListResponses, unknown, ThrowOnError> => (options.client ?? client).get<GrnsListResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/grns/',
     ...options
 });
@@ -473,11 +635,15 @@ export const grnsList = <ThrowOnError extends boolean = false>(options: Options<
  * Create a new Goods Receipt Note (GRN)
  */
 export const grnsCreate = <ThrowOnError extends boolean = false>(options: Options<GrnsCreateData, ThrowOnError>): RequestResult<GrnsCreateResponses, GrnsCreateErrors, ThrowOnError> => (options.client ?? client).post<GrnsCreateResponses, GrnsCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/grns/',
     ...options,
     headers: {
@@ -490,11 +656,15 @@ export const grnsCreate = <ThrowOnError extends boolean = false>(options: Option
  * Retrieve a GRN by ID
  */
 export const grnsRetrieve = <ThrowOnError extends boolean = false>(options: Options<GrnsRetrieveData, ThrowOnError>): RequestResult<GrnsRetrieveResponses, GrnsRetrieveErrors, ThrowOnError> => (options.client ?? client).get<GrnsRetrieveResponses, GrnsRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/grns/{id}/',
     ...options
 });
@@ -503,11 +673,15 @@ export const grnsRetrieve = <ThrowOnError extends boolean = false>(options: Opti
  * Cancel a DRAFT GRN
  */
 export const grnsCancelCreate = <ThrowOnError extends boolean = false>(options: Options<GrnsCancelCreateData, ThrowOnError>): RequestResult<GrnsCancelCreateResponses, GrnsCancelCreateErrors, ThrowOnError> => (options.client ?? client).post<GrnsCancelCreateResponses, GrnsCancelCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/grns/{id}/cancel/',
     ...options
 });
@@ -516,11 +690,15 @@ export const grnsCancelCreate = <ThrowOnError extends boolean = false>(options: 
  * Stream PDF for a GRN
  */
 export const grnsPdfRetrieve = <ThrowOnError extends boolean = false>(options: Options<GrnsPdfRetrieveData, ThrowOnError>): RequestResult<GrnsPdfRetrieveResponses, GrnsPdfRetrieveErrors, ThrowOnError> => (options.client ?? client).get<GrnsPdfRetrieveResponses, GrnsPdfRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/grns/{id}/pdf/',
     ...options
 });
@@ -529,11 +707,15 @@ export const grnsPdfRetrieve = <ThrowOnError extends boolean = false>(options: O
  * Post a DRAFT GRN
  */
 export const grnsPostCreate = <ThrowOnError extends boolean = false>(options: Options<GrnsPostCreateData, ThrowOnError>): RequestResult<GrnsPostCreateResponses, GrnsPostCreateErrors, ThrowOnError> => (options.client ?? client).post<GrnsPostCreateResponses, GrnsPostCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/grns/{id}/post/',
     ...options
 });
@@ -542,11 +724,15 @@ export const grnsPostCreate = <ThrowOnError extends boolean = false>(options: Op
  * List invoices for a facility
  */
 export const invoicesList = <ThrowOnError extends boolean = false>(options: Options<InvoicesListData, ThrowOnError>): RequestResult<InvoicesListResponses, unknown, ThrowOnError> => (options.client ?? client).get<InvoicesListResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/invoices/',
     ...options
 });
@@ -555,11 +741,15 @@ export const invoicesList = <ThrowOnError extends boolean = false>(options: Opti
  * Generate invoices for uninvoiced stock withdrawals
  */
 export const invoicesCreate = <ThrowOnError extends boolean = false>(options: Options<InvoicesCreateData, ThrowOnError>): RequestResult<InvoicesCreateResponses, InvoicesCreateErrors, ThrowOnError> => (options.client ?? client).post<InvoicesCreateResponses, InvoicesCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/invoices/',
     ...options,
     headers: {
@@ -572,11 +762,15 @@ export const invoicesCreate = <ThrowOnError extends boolean = false>(options: Op
  * Retrieve an invoice by ID
  */
 export const invoicesRetrieve = <ThrowOnError extends boolean = false>(options: Options<InvoicesRetrieveData, ThrowOnError>): RequestResult<InvoicesRetrieveResponses, InvoicesRetrieveErrors, ThrowOnError> => (options.client ?? client).get<InvoicesRetrieveResponses, InvoicesRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/invoices/{id}/',
     ...options
 });
@@ -585,11 +779,15 @@ export const invoicesRetrieve = <ThrowOnError extends boolean = false>(options: 
  * Cancel a DRAFT invoice
  */
 export const invoicesCancelCreate = <ThrowOnError extends boolean = false>(options: Options<InvoicesCancelCreateData, ThrowOnError>): RequestResult<InvoicesCancelCreateResponses, InvoicesCancelCreateErrors, ThrowOnError> => (options.client ?? client).post<InvoicesCancelCreateResponses, InvoicesCancelCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/invoices/{id}/cancel/',
     ...options
 });
@@ -598,11 +796,15 @@ export const invoicesCancelCreate = <ThrowOnError extends boolean = false>(optio
  * List payments for an invoice
  */
 export const invoicesPaymentsList = <ThrowOnError extends boolean = false>(options: Options<InvoicesPaymentsListData, ThrowOnError>): RequestResult<InvoicesPaymentsListResponses, InvoicesPaymentsListErrors, ThrowOnError> => (options.client ?? client).get<InvoicesPaymentsListResponses, InvoicesPaymentsListErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/invoices/{id}/payments/',
     ...options
 });
@@ -611,11 +813,15 @@ export const invoicesPaymentsList = <ThrowOnError extends boolean = false>(optio
  * Record a payment for an invoice
  */
 export const invoicesPaymentsCreate = <ThrowOnError extends boolean = false>(options: Options<InvoicesPaymentsCreateData, ThrowOnError>): RequestResult<InvoicesPaymentsCreateResponses, InvoicesPaymentsCreateErrors, ThrowOnError> => (options.client ?? client).post<InvoicesPaymentsCreateResponses, InvoicesPaymentsCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/invoices/{id}/payments/',
     ...options,
     headers: {
@@ -628,11 +834,15 @@ export const invoicesPaymentsCreate = <ThrowOnError extends boolean = false>(opt
  * Delete a payment for an invoice
  */
 export const invoicesPaymentsDestroy = <ThrowOnError extends boolean = false>(options: Options<InvoicesPaymentsDestroyData, ThrowOnError>): RequestResult<InvoicesPaymentsDestroyResponses, InvoicesPaymentsDestroyErrors, ThrowOnError> => (options.client ?? client).delete<InvoicesPaymentsDestroyResponses, InvoicesPaymentsDestroyErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/invoices/{id}/payments/{payment_id}/',
     ...options
 });
@@ -641,11 +851,15 @@ export const invoicesPaymentsDestroy = <ThrowOnError extends boolean = false>(op
  * Stream PDF for an invoice
  */
 export const invoicesPdfRetrieve = <ThrowOnError extends boolean = false>(options: Options<InvoicesPdfRetrieveData, ThrowOnError>): RequestResult<InvoicesPdfRetrieveResponses, InvoicesPdfRetrieveErrors, ThrowOnError> => (options.client ?? client).get<InvoicesPdfRetrieveResponses, InvoicesPdfRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/invoices/{id}/pdf/',
     ...options
 });
@@ -654,11 +868,15 @@ export const invoicesPdfRetrieve = <ThrowOnError extends boolean = false>(option
  * Post a DRAFT invoice
  */
 export const invoicesPostCreate = <ThrowOnError extends boolean = false>(options: Options<InvoicesPostCreateData, ThrowOnError>): RequestResult<InvoicesPostCreateResponses, InvoicesPostCreateErrors, ThrowOnError> => (options.client ?? client).post<InvoicesPostCreateResponses, InvoicesPostCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/invoices/{id}/post/',
     ...options
 });
@@ -667,11 +885,15 @@ export const invoicesPostCreate = <ThrowOnError extends boolean = false>(options
  * Preview uninvoiced charges for a facility
  */
 export const invoicesPreviewList = <ThrowOnError extends boolean = false>(options: Options<InvoicesPreviewListData, ThrowOnError>): RequestResult<InvoicesPreviewListResponses, unknown, ThrowOnError> => (options.client ?? client).get<InvoicesPreviewListResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/invoices/preview/',
     ...options
 });
@@ -680,11 +902,15 @@ export const invoicesPreviewList = <ThrowOnError extends boolean = false>(option
  * List inventory lots
  */
 export const lotsList = <ThrowOnError extends boolean = false>(options?: Options<LotsListData, ThrowOnError>): RequestResult<LotsListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<LotsListResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/lots/',
     ...options
 });
@@ -693,11 +919,15 @@ export const lotsList = <ThrowOnError extends boolean = false>(options?: Options
  * Retrieve a lot by ID
  */
 export const lotsRetrieve = <ThrowOnError extends boolean = false>(options: Options<LotsRetrieveData, ThrowOnError>): RequestResult<LotsRetrieveResponses, LotsRetrieveErrors, ThrowOnError> => (options.client ?? client).get<LotsRetrieveResponses, LotsRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/lots/{id}/',
     ...options
 });
@@ -706,11 +936,15 @@ export const lotsRetrieve = <ThrowOnError extends boolean = false>(options: Opti
  * Withdraw stock from a lot
  */
 export const lotsWithdrawCreate = <ThrowOnError extends boolean = false>(options: Options<LotsWithdrawCreateData, ThrowOnError>): RequestResult<LotsWithdrawCreateResponses, LotsWithdrawCreateErrors, ThrowOnError> => (options.client ?? client).post<LotsWithdrawCreateResponses, LotsWithdrawCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/lots/{id}/withdraw/',
     ...options,
     headers: {
@@ -723,11 +957,15 @@ export const lotsWithdrawCreate = <ThrowOnError extends boolean = false>(options
  * List all parties in a facility
  */
 export const partiesList = <ThrowOnError extends boolean = false>(options: Options<PartiesListData, ThrowOnError>): RequestResult<PartiesListResponses, unknown, ThrowOnError> => (options.client ?? client).get<PartiesListResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/parties/',
     ...options
 });
@@ -736,11 +974,15 @@ export const partiesList = <ThrowOnError extends boolean = false>(options: Optio
  * Create a new party (code is auto-generated server-side)
  */
 export const partiesCreate = <ThrowOnError extends boolean = false>(options: Options<PartiesCreateData, ThrowOnError>): RequestResult<PartiesCreateResponses, PartiesCreateErrors, ThrowOnError> => (options.client ?? client).post<PartiesCreateResponses, PartiesCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/parties/',
     ...options,
     headers: {
@@ -753,11 +995,15 @@ export const partiesCreate = <ThrowOnError extends boolean = false>(options: Opt
  * Retrieve a party by ID
  */
 export const partiesRetrieve = <ThrowOnError extends boolean = false>(options: Options<PartiesRetrieveData, ThrowOnError>): RequestResult<PartiesRetrieveResponses, PartiesRetrieveErrors, ThrowOnError> => (options.client ?? client).get<PartiesRetrieveResponses, PartiesRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/parties/{id}/',
     ...options
 });
@@ -766,11 +1012,15 @@ export const partiesRetrieve = <ThrowOnError extends boolean = false>(options: O
  * Update an existing party
  */
 export const partiesUpdate = <ThrowOnError extends boolean = false>(options: Options<PartiesUpdateData, ThrowOnError>): RequestResult<PartiesUpdateResponses, PartiesUpdateErrors, ThrowOnError> => (options.client ?? client).put<PartiesUpdateResponses, PartiesUpdateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/parties/{id}/',
     ...options,
     headers: {
@@ -783,11 +1033,15 @@ export const partiesUpdate = <ThrowOnError extends boolean = false>(options: Opt
  * List Delivery Notes (DN) report
  */
 export const reportsDnRegisterRetrieve = <ThrowOnError extends boolean = false>(options: Options<ReportsDnRegisterRetrieveData, ThrowOnError>): RequestResult<ReportsDnRegisterRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<ReportsDnRegisterRetrieveResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/reports/dn-register/',
     ...options
 });
@@ -796,11 +1050,15 @@ export const reportsDnRegisterRetrieve = <ThrowOnError extends boolean = false>(
  * List Goods Receipt Notes (GRN) report
  */
 export const reportsGrnRegisterRetrieve = <ThrowOnError extends boolean = false>(options: Options<ReportsGrnRegisterRetrieveData, ThrowOnError>): RequestResult<ReportsGrnRegisterRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<ReportsGrnRegisterRetrieveResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/reports/grn-register/',
     ...options
 });
@@ -809,11 +1067,15 @@ export const reportsGrnRegisterRetrieve = <ThrowOnError extends boolean = false>
  * List Invoices report
  */
 export const reportsInvoicesRetrieve = <ThrowOnError extends boolean = false>(options: Options<ReportsInvoicesRetrieveData, ThrowOnError>): RequestResult<ReportsInvoicesRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<ReportsInvoicesRetrieveResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/reports/invoices/',
     ...options
 });
@@ -822,11 +1084,15 @@ export const reportsInvoicesRetrieve = <ThrowOnError extends boolean = false>(op
  * List Payment Register report
  */
 export const reportsPaymentsRetrieve = <ThrowOnError extends boolean = false>(options: Options<ReportsPaymentsRetrieveData, ThrowOnError>): RequestResult<ReportsPaymentsRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<ReportsPaymentsRetrieveResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/reports/payments/',
     ...options
 });
@@ -835,11 +1101,15 @@ export const reportsPaymentsRetrieve = <ThrowOnError extends boolean = false>(op
  * Stock summary report grouped by commodity and chamber
  */
 export const reportsStockSummaryRetrieve = <ThrowOnError extends boolean = false>(options?: Options<ReportsStockSummaryRetrieveData, ThrowOnError>): RequestResult<ReportsStockSummaryRetrieveResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ReportsStockSummaryRetrieveResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/reports/stock-summary/',
     ...options
 });
@@ -853,11 +1123,15 @@ export const reportsStockSummaryRetrieve = <ThrowOnError extends boolean = false
  * Must be revisited when role-based access control (RBAC) is expanded.
  */
 export const usersList = <ThrowOnError extends boolean = false>(options?: Options<UsersListData, ThrowOnError>): RequestResult<UsersListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<UsersListResponses, unknown, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/users/',
     ...options
 });
@@ -871,11 +1145,15 @@ export const usersList = <ThrowOnError extends boolean = false>(options?: Option
  * Must be revisited when role-based access control (RBAC) is expanded.
  */
 export const usersCreate = <ThrowOnError extends boolean = false>(options: Options<UsersCreateData, ThrowOnError>): RequestResult<UsersCreateResponses, UsersCreateErrors, ThrowOnError> => (options.client ?? client).post<UsersCreateResponses, UsersCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/users/',
     ...options,
     headers: {
@@ -893,11 +1171,15 @@ export const usersCreate = <ThrowOnError extends boolean = false>(options: Optio
  * Must be revisited when role-based access control (RBAC) is expanded.
  */
 export const usersRetrieve = <ThrowOnError extends boolean = false>(options: Options<UsersRetrieveData, ThrowOnError>): RequestResult<UsersRetrieveResponses, UsersRetrieveErrors, ThrowOnError> => (options.client ?? client).get<UsersRetrieveResponses, UsersRetrieveErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/users/{id}/',
     ...options
 });
@@ -911,11 +1193,15 @@ export const usersRetrieve = <ThrowOnError extends boolean = false>(options: Opt
  * Must be revisited when role-based access control (RBAC) is expanded.
  */
 export const usersUpdate = <ThrowOnError extends boolean = false>(options: Options<UsersUpdateData, ThrowOnError>): RequestResult<UsersUpdateResponses, UsersUpdateErrors, ThrowOnError> => (options.client ?? client).put<UsersUpdateResponses, UsersUpdateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/users/{id}/',
     ...options,
     headers: {
@@ -933,11 +1219,15 @@ export const usersUpdate = <ThrowOnError extends boolean = false>(options: Optio
  * Must be revisited when role-based access control (RBAC) is expanded.
  */
 export const usersActivateCreate = <ThrowOnError extends boolean = false>(options: Options<UsersActivateCreateData, ThrowOnError>): RequestResult<UsersActivateCreateResponses, UsersActivateCreateErrors, ThrowOnError> => (options.client ?? client).post<UsersActivateCreateResponses, UsersActivateCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/users/{id}/activate/',
     ...options
 });
@@ -951,11 +1241,15 @@ export const usersActivateCreate = <ThrowOnError extends boolean = false>(option
  * Must be revisited when role-based access control (RBAC) is expanded.
  */
 export const usersDeactivateCreate = <ThrowOnError extends boolean = false>(options: Options<UsersDeactivateCreateData, ThrowOnError>): RequestResult<UsersDeactivateCreateResponses, UsersDeactivateCreateErrors, ThrowOnError> => (options.client ?? client).post<UsersDeactivateCreateResponses, UsersDeactivateCreateErrors, ThrowOnError>({
-    security: [{
+    security: [
+        {
             in: 'cookie',
             name: 'sessionid',
             type: 'apiKey'
-        }, { scheme: 'basic', type: 'http' }],
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
     url: '/api/users/{id}/deactivate/',
     ...options
 });

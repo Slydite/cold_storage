@@ -106,6 +106,10 @@ def deactivate_user(*, user_id: int) -> User:
 
     user.is_active = False
     user.save()
+
+    from rest_framework.authtoken.models import Token
+    Token.objects.filter(user=user).delete()
+
     return user
 
 
@@ -126,4 +130,28 @@ def activate_user(*, user_id: int) -> User:
     user.is_active = True
     user.save()
     return user
+
+
+@transaction.atomic
+def get_or_create_user_token(*, username: str, password: str) -> tuple[str, User]:
+    """
+    Authenticate a user with credentials and return/create their auth token.
+    """
+    user = authenticate(username=username, password=password)
+    if user is None or not user.is_active:
+        raise ValidationError("Invalid username or password.")
+
+    from rest_framework.authtoken.models import Token
+    token, _ = Token.objects.get_or_create(user=user)
+    return token.key, user
+
+
+@transaction.atomic
+def revoke_user_token(*, user: User) -> None:
+    """
+    Revoke (delete) the auth token for the given user.
+    """
+    from rest_framework.authtoken.models import Token
+    Token.objects.filter(user=user).delete()
+
 

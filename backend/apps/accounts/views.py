@@ -22,7 +22,8 @@ from .serializers import (
     LoginInputSerializer,
     UserListOutputSerializer,
     UserCreateInputSerializer,
-    UserUpdateInputSerializer
+    UserUpdateInputSerializer,
+    TokenAuthOutputSerializer
 )
 from .services import (
     login_user,
@@ -30,7 +31,9 @@ from .services import (
     create_user_account,
     update_user_account,
     deactivate_user,
-    activate_user
+    activate_user,
+    get_or_create_user_token,
+    revoke_user_token
 )
 
 User = get_user_model()
@@ -94,6 +97,45 @@ class CsrfView(APIView):
     )
     def get(self, request):
         get_token(request)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class TokenLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=LoginInputSerializer,
+        responses={200: TokenAuthOutputSerializer, 400: None},
+        summary="Obtain auth token using username and password"
+    )
+    def post(self, request):
+        serializer = LoginInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            token_key, user = get_or_create_user_token(
+                username=serializer.validated_data['username'],
+                password=serializer.validated_data['password']
+            )
+        except DjangoValidationError as e:
+            msg = e.message if hasattr(e, 'message') else str(e)
+            return Response({"detail": str(msg)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            "token": token_key,
+            "user": CurrentUserOutputSerializer(user).data
+        }, status=status.HTTP_200_OK)
+
+
+class TokenRevokeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={204: None},
+        summary="Revoke token for current authenticated user"
+    )
+    def post(self, request):
+        revoke_user_token(user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
