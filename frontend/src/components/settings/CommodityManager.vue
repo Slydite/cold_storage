@@ -33,6 +33,11 @@ const createCommodityMutation = useCreateCommodity()
 const updateCommodityMutation = useUpdateCommodity()
 
 const isDialogOpen = ref(false)
+
+import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
+useHistoryDismiss(isDialogOpen, () => {
+  isDialogOpen.value = false
+})
 const editingCommodity = ref<CommodityOutput | null>(null)
 
 const unitOptions = computed(() => [

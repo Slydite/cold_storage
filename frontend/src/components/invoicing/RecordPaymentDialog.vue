@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, computed } from 'vue'
+import { watch, computed, toRef } from 'vue'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { useToast } from 'primevue/usetoast'
 import { useCreateInvoicePayment } from '../../composables/useInvoices'
 import { formatCurrency } from '../../utils/format'
+import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 import type { InvoiceOutput } from '../../api/invoicing'
 import type { MethodEnum } from '../../api/generated/types.gen'
 
@@ -26,6 +27,11 @@ const emit = defineEmits<{
   'update:visible': [visible: boolean]
   success: []
 }>()
+
+const visibleRef = toRef(props, 'visible')
+useHistoryDismiss(visibleRef, () => {
+  emit('update:visible', false)
+})
 
 const { t } = useI18n()
 const toast = useToast()

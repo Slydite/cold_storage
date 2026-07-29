@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, computed } from 'vue'
+import { watch, computed, toRef } from 'vue'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
@@ -9,6 +9,7 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
 import { useCreateFacility } from '../../composables/useFacilities'
+import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 
 interface Props {
   visible: boolean
@@ -20,6 +21,11 @@ const emit = defineEmits<{
   'update:visible': [visible: boolean]
   created: []
 }>()
+
+const visibleRef = toRef(props, 'visible')
+useHistoryDismiss(visibleRef, () => {
+  emit('update:visible', false)
+})
 
 const { t } = useI18n()
 const toast = useToast()

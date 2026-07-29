@@ -1,17 +1,28 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './AppSidebar.vue'
 import AppHeader from './AppHeader.vue'
+import AppBottomNav from './AppBottomNav.vue'
+import MoreSheet from './MoreSheet.vue'
 import { useSidebar } from '../../composables/useSidebar'
 
 const route = useRoute()
 const { isOpen, close } = useSidebar()
 
+const isMoreOpen = ref(false)
+const toggleMore = () => {
+  isMoreOpen.value = !isMoreOpen.value
+}
+const closeMore = () => {
+  isMoreOpen.value = false
+}
+
 watch(
   () => route.fullPath,
   () => {
     close()
+    closeMore()
   }
 )
 </script>
@@ -34,6 +45,12 @@ watch(
         <slot />
       </main>
     </div>
+
+    <!-- Bottom Navigation for Mobile -->
+    <AppBottomNav @toggle-more="toggleMore" />
+
+    <!-- More Sheet for Mobile -->
+    <MoreSheet :is-open="isMoreOpen" @close="closeMore" />
   </div>
 </template>
 
@@ -77,6 +94,7 @@ watch(
   }
   .content-area {
     padding: 16px;
+    padding-bottom: calc(60px + 16px + env(safe-area-inset-bottom));
   }
 }
 </style>

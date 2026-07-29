@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, toRef } from 'vue'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { fetchParties } from '../../api/party'
 import { useGenerateInvoices, useInvoicePreview } from '../../composables/useInvoices'
 import PartyPreviewSection from './PartyPreviewSection.vue'
+import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 import type { InvoiceOutput } from '../../api/invoicing'
 
 interface Props {
@@ -23,6 +24,11 @@ const emit = defineEmits<{
   success: [createdInvoices: InvoiceOutput[]]
   error: [message: string]
 }>()
+
+const visibleRef = toRef(props, 'visible')
+useHistoryDismiss(visibleRef, () => {
+  emit('update:visible', false)
+})
 
 const { t } = useI18n()
 const selectedPartyId = ref<number | null>(null)

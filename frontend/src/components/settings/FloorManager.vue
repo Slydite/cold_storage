@@ -46,6 +46,11 @@ const createFloorMutation = useCreateFloor()
 const updateFloorMutation = useUpdateFloor()
 
 const isDialogOpen = ref(false)
+
+import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
+useHistoryDismiss(isDialogOpen, () => {
+  isDialogOpen.value = false
+})
 const editingFloor = ref<FloorOutput | null>(null)
 
 const chamberOptions = computed(() => {

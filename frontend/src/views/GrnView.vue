@@ -8,6 +8,7 @@ import { useFacility } from '../composables/useFacility'
 import { useGrnList, usePostGrn, useCancelGrn } from '../composables/useGrns'
 import { useChamberList } from '../composables/useLocations'
 import { useSearchFilter } from '../composables/useSearchFilter'
+import { useHistoryDismiss } from '../composables/useHistoryDismiss'
 import { fetchParties } from '../api/party'
 import { fetchCommodities } from '../api/commodity'
 import GrnListTable from '../components/grn/GrnListTable.vue'
@@ -26,6 +27,10 @@ const selectedPeriod = ref('this_month')
 const isPanelOpen = ref(false)
 const selectedGrn = ref<GrnOutput | null>(null)
 const isDetailOpen = ref(false)
+
+// Hardware/browser Back closes an open panel or dialog instead of leaving the page.
+useHistoryDismiss(isPanelOpen, () => { isPanelOpen.value = false })
+useHistoryDismiss(isDetailOpen, () => { isDetailOpen.value = false })
 
 const grnsQuery = useGrnList(facilityId)
 const postMutation = usePostGrn()

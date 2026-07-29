@@ -36,6 +36,11 @@ const deactivateUserMutation = useDeactivateUser()
 const activateUserMutation = useActivateUser()
 
 const isDialogOpen = ref(false)
+
+import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
+useHistoryDismiss(isDialogOpen, () => {
+  isDialogOpen.value = false
+})
 const editingUser = ref<UserListOutput | null>(null)
 
 const roleOptions = computed(() => [

@@ -39,6 +39,11 @@ const createChamberMutation = useCreateChamber()
 const updateChamberMutation = useUpdateChamber()
 
 const isDialogOpen = ref(false)
+
+import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
+useHistoryDismiss(isDialogOpen, () => {
+  isDialogOpen.value = false
+})
 const editingChamber = ref<ChamberOutput | null>(null)
 
 const chamberSchema = computed(() =>

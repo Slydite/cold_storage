@@ -11,6 +11,7 @@ import {
 } from '../composables/useDeliveryNotes'
 import { usePartyList } from '../composables/useParties'
 import { useSearchFilter } from '../composables/useSearchFilter'
+import { useHistoryDismiss } from '../composables/useHistoryDismiss'
 import DeliveryListTable from '../components/delivery/DeliveryListTable.vue'
 import DeliveryCreatePanel from '../components/delivery/DeliveryCreatePanel.vue'
 import DeliveryDetailDialog from '../components/delivery/DeliveryDetailDialog.vue'
@@ -25,6 +26,10 @@ const selectedStatus = ref('all')
 const isPanelOpen = ref(false)
 const selectedDelivery = ref<DeliveryNoteOutput | null>(null)
 const isDetailOpen = ref(false)
+
+// Hardware/browser Back closes an open panel or dialog instead of leaving the page.
+useHistoryDismiss(isPanelOpen, () => { isPanelOpen.value = false })
+useHistoryDismiss(isDetailOpen, () => { isDetailOpen.value = false })
 
 const deliveryFilters = computed(() => ({
   status: selectedStatus.value

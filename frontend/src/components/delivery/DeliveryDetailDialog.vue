@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, toRef } from 'vue'
 import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -9,6 +9,7 @@ import { Download, Printer } from 'lucide-vue-next'
 import { formatQty, formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { downloadPdf } from '../../utils/downloadPdf'
+import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 import type { DeliveryNoteOutput } from '../../api/delivery'
 
 interface Props {
@@ -21,6 +22,11 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
 }>()
+
+const visibleRef = toRef(props, 'visible')
+useHistoryDismiss(visibleRef, () => {
+  emit('update:visible', false)
+})
 
 const handleClose = () => {
   emit('update:visible', false)

@@ -103,6 +103,14 @@ const en = {
     parties: 'Parties',
     reports: 'Reports',
     settings: 'Settings',
+    more: 'More',
+    // Short forms for the mobile bottom bar, where each slot is ~64px wide at
+    // 360px. The full sidebar labels ("Delivery / Outward") truncate to
+    // ellipsis there, and the Hindi ones truncate worse.
+    dashboardShort: 'Home',
+    grnShort: 'GRN',
+    deliveryShort: 'Delivery',
+    inventoryShort: 'Stock',
     workingFacility: 'Working Facility',
     signOut: 'Sign out',
     toggleMenu: 'Toggle Navigation Menu',

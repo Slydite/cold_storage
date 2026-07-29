@@ -302,9 +302,6 @@ const menuItems = computed(() => [
   .app-header {
     padding: 0 16px;
   }
-  .hamburger-btn {
-    display: flex;
-  }
   .page-title {
     font-size: 18px;
   }

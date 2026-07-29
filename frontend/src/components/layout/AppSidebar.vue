@@ -376,12 +376,7 @@ const navigate = (path: string) => {
 
 @media (max-width: 768px) {
   .app-sidebar {
-    transform: translateX(-100%);
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
-  }
-
-  .app-sidebar.open {
-    transform: translateX(0);
+    display: none !important;
   }
 }
 </style>

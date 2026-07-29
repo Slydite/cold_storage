@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toRef } from 'vue'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
@@ -8,6 +8,7 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
 import { useI18n } from 'vue-i18n'
+import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 import type { TypeEnum } from '../../api/party'
 
 interface Props {
@@ -30,6 +31,11 @@ const emit = defineEmits<{
     }
   ]
 }>()
+
+const visibleRef = toRef(props, 'visible')
+useHistoryDismiss(visibleRef, () => {
+  emit('update:visible', false)
+})
 
 const { t } = useI18n()
 

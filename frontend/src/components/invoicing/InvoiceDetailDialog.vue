@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, toRef } from 'vue'
 import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -11,6 +11,7 @@ import { Trash2, CreditCard } from 'lucide-vue-next'
 import { formatCurrency, formatQty } from '../../utils/format'
 import { useDeleteInvoicePayment } from '../../composables/useInvoices'
 import RecordPaymentDialog from './RecordPaymentDialog.vue'
+import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 import type { InvoiceOutput } from '../../api/invoicing'
 import type { PaymentOutput } from '../../api/generated/types.gen'
 
@@ -25,6 +26,11 @@ const emit = defineEmits<{
   'update:visible': [visible: boolean]
   refresh: []
 }>()
+
+const visibleRef = toRef(props, 'visible')
+useHistoryDismiss(visibleRef, () => {
+  emit('update:visible', false)
+})
 
 const { t } = useI18n()
 const confirm = useConfirm()

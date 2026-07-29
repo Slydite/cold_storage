@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, toRef } from 'vue'
 import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -10,6 +10,7 @@ import { Printer } from 'lucide-vue-next'
 import { formatCurrency, formatQty } from '../../utils/format'
 import { downloadPdf } from '../../utils/downloadPdf'
 import { exportToCsv } from '../../utils/csvExport'
+import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 import type { GrnOutput } from '../../api/grn'
 
 const props = defineProps<{
@@ -20,6 +21,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
 }>()
+
+const visibleRef = toRef(props, 'visible')
+useHistoryDismiss(visibleRef, () => {
+  emit('update:visible', false)
+})
 
 const toast = useToast()
 const { t } = useI18n()

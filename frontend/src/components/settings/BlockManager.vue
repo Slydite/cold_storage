@@ -57,6 +57,11 @@ const updateBlockMutation = useUpdateBlock()
 const isDialogOpen = ref(false)
 const editingBlock = ref<BlockOutput | null>(null)
 
+import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
+useHistoryDismiss(isDialogOpen, () => {
+  isDialogOpen.value = false
+})
+
 const chamberOptions = computed(() => {
   if (!chambers.value) return []
   return chambers.value.map((c) => ({ label: c.name, value: c.id }))
