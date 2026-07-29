@@ -94,6 +94,23 @@ const onCommodityChange = (itemIdx: number, commId: number | null) => {
     item.unit = comm.unit
   }
 }
+
+// Clear the child selections when a parent location changes. Without this the
+// stale floor/block ids survive - the dropdowns re-filter and *look* empty, but
+// the old ids are still submitted, and the backend rejects the GRN with
+// "Floor with ID x does not belong to chamber y". That 400 is what the owner hit.
+const onChamberChange = (itemIdx: number) => {
+  const item = items.value[itemIdx]
+  if (!item) return
+  item.floor_id = null
+  item.block_id = null
+}
+
+const onFloorChange = (itemIdx: number) => {
+  const item = items.value[itemIdx]
+  if (!item) return
+  item.block_id = null
+}
 </script>
 
 <template>
@@ -286,6 +303,7 @@ const onCommodityChange = (itemIdx: number, commId: number | null) => {
                 <td>
                   <Select
                     v-model="item.chamber_id"
+                    @update:modelValue="onChamberChange(idx)"
                     :options="chamberOptions"
                     optionLabel="label"
                     optionValue="value"
@@ -297,6 +315,7 @@ const onCommodityChange = (itemIdx: number, commId: number | null) => {
                 <td>
                   <Select
                     v-model="item.floor_id"
+                    @update:modelValue="onFloorChange(idx)"
                     :options="getFloorsForChamber(item.chamber_id)"
                     optionLabel="label"
                     optionValue="value"
