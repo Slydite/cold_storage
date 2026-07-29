@@ -26,6 +26,7 @@ class DeliveryNote(models.Model):
     loading_charge_mode = models.CharField(max_length=20, choices=ChargeMode.choices, default=ChargeMode.FLAT)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     loading_charge_invoiced_at = models.DateTimeField(null=True, blank=True)
+    last_emailed_at = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

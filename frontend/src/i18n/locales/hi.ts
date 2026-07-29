@@ -93,7 +93,14 @@ const hi: MessageSchema = {
     required: 'अनिवार्य',
     commodity: 'जिंस',
     clearFilters: 'फ़िल्टर साफ़ करें',
-    sortOrder: 'क्रम'
+    sortOrder: 'क्रम',
+    emailToClient: 'ग्राहक को ईमेल करें',
+    lastEmailed: 'अंतिम बार ईमेल किया गया: {date}',
+    emailSentSuccess: 'ईमेल सफलतापूर्वक भेजा गया।',
+    emailSentSuccessDetail: 'दस्तावेज़ ग्राहक को ईमेल कर दिया गया है।',
+    emailSendFailed: 'ईमेल भेजना विफल रहा',
+    emailSendFailedDetail: 'दस्तावेज़ स्वयं ठीक है, लेकिन ईमेल भेजना विफल रहा: {error}',
+    noClientEmailTooltip: 'ग्राहक को ईमेल नहीं भेजा जा सकता: इस पार्टी का कोई ईमेल पता रिकॉर्ड में नहीं है।'
   },
   nav: {
     dashboard: 'डैशबोर्ड',

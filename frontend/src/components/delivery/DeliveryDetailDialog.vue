@@ -5,11 +5,12 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
-import { Download, Printer } from 'lucide-vue-next'
+import { Download, Printer, Mail } from 'lucide-vue-next'
 import { formatQty, formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { downloadPdf } from '../../utils/downloadPdf'
 import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
+import { emailDeliveryNote } from '../../api/delivery'
 import type { DeliveryNoteOutput } from '../../api/delivery'
 
 interface Props {
@@ -21,6 +22,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
+  refresh: []
 }>()
 
 const visibleRef = toRef(props, 'visible')
@@ -35,6 +37,51 @@ const handleClose = () => {
 const { t } = useI18n()
 const toast = useToast()
 const downloadingId = ref<number | null>(null)
+const emailing = ref(false)
+
+function formatDateTime(d?: string | null): string {
+  if (!d) return t('common.never')
+  try {
+    return new Date(d).toLocaleString()
+  } catch {
+    return d || ''
+  }
+}
+
+async function handleEmailToClient() {
+  if (!props.deliveryNote) return
+  emailing.value = true
+  try {
+    await emailDeliveryNote(props.deliveryNote.id)
+    toast.add({
+      severity: 'success',
+      summary: t('common.emailSentSuccess'),
+      detail: t('common.emailSentSuccessDetail'),
+      life: 5000
+    })
+    emit('refresh')
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : t('errors.generic')
+    if (message.includes('Failed to send email')) {
+      toast.add({
+        severity: 'error',
+        summary: t('common.emailSendFailed'),
+        detail: t('common.emailSendFailedDetail', { error: message }),
+        life: 7000
+      })
+    } else {
+      toast.add({
+        severity: 'warn',
+        summary: t('common.error'),
+        detail: message,
+        life: 5000
+      })
+    }
+  } finally {
+    emailing.value = false
+  }
+}
+
 
 async function handleDownloadPdf(id: number, docNumber: string) {
   downloadingId.value = id
@@ -123,6 +170,10 @@ const handleExportLines = () => {
         <div class="info-item">
           <span class="info-label">{{ t('delivery.transporter') }}</span>
           <span class="info-val">{{ props.deliveryNote.transporter || '—' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">{{ t('common.lastEmailed') }}</span>
+          <span class="info-val">{{ formatDateTime(props.deliveryNote.last_emailed_at) }}</span>
         </div>
         <div class="info-item highlight-summary">
           <span class="info-label">{{ t('delivery.totalQty') }}</span>
@@ -228,6 +279,17 @@ const handleExportLines = () => {
           >
             <Printer :size="15" />
             <span>PDF</span>
+          </button>
+          <button
+            v-if="props.deliveryNote"
+            class="btn-outlined"
+            type="button"
+            :disabled="!props.deliveryNote.party_email || emailing"
+            :title="!props.deliveryNote.party_email ? t('common.noClientEmailTooltip') : t('common.emailToClient')"
+            @click="handleEmailToClient"
+          >
+            <Mail :size="15" />
+            <span>{{ emailing ? t('common.loading') : t('common.emailToClient') }}</span>
           </button>
         </div>
         <button class="btn-outlined" type="button" @click="handleClose">{{ t('common.close') }}</button>

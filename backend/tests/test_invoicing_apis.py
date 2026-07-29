@@ -239,3 +239,69 @@ def test_invoice_preview_api_endpoint(auth_client, default_facility, test_party,
     assert rent_line['days_stored'] == 31
 
 
+@pytest.mark.django_db
+def test_invoice_email_api_workflow(auth_client, default_facility, test_party):
+    # Unauthenticated access is covered separately by
+    # test_invoice_email_action_genuinely_unauthenticated: requesting both
+    # auth_client and api_client in one test resolves to the SAME already-
+    # authenticated instance (auth_client's own fixture depends on api_client),
+    # so an "unauthenticated" assertion here would silently pass for the
+    # wrong reason.
+    from django.core import mail
+    from apps.parties.models import Party
+
+    inv = Invoice.objects.create(
+        facility=default_facility,
+        invoice_number="INV-EMAIL-001",
+        party=test_party,
+        invoice_date=date(2026, 7, 1),
+        total_amount=Decimal('1000.00')
+    )
+
+    # 1. Party has blank email by default -> 400, does not send
+    mail.outbox.clear()
+    res_blank = auth_client.post(f'/api/invoices/{inv.id}/email/')
+    assert res_blank.status_code == status.HTTP_400_BAD_REQUEST
+    assert "does not have an email address on file" in res_blank.data['detail']
+    assert len(mail.outbox) == 0
+
+    # 3. Update party to have email
+    p_obj = Party.objects.get(pk=test_party.id)
+    p_obj.email = "invoice_client@example.com"
+    p_obj.save()
+
+    # 4. Email invoice -> 200, sends mail, updates last_emailed_at
+    mail.outbox.clear()
+    res_success = auth_client.post(f'/api/invoices/{inv.id}/email/')
+    assert res_success.status_code == status.HTTP_200_OK
+    assert res_success.data['last_emailed_at'] is not None
+
+    # Check email sent
+    assert len(mail.outbox) == 1
+    msg = mail.outbox[0]
+    assert msg.to == ["invoice_client@example.com"]
+    assert "Invoice" in msg.subject
+    assert len(msg.attachments) == 1
+    filename, content, mimetype = msg.attachments[0]
+    assert filename.endswith('.pdf')
+    assert mimetype == 'application/pdf'
+    assert content.startswith(b'%PDF')
+
+
+
+
+
+@pytest.mark.django_db
+def test_invoice_email_action_genuinely_unauthenticated():
+    """
+    Isolated from test_invoice_email_api_workflow deliberately: that test
+    requests both auth_client and api_client fixtures in one function, and
+    since auth_client's own fixture dependency resolves api_client first,
+    pytest caches and hands back the SAME already-authenticated instance to
+    both parameters within one test call. So its "unauthenticated" assertion
+    was silently exercising an authenticated client.
+    """
+    from rest_framework.test import APIClient
+    fresh_client = APIClient()
+    res = fresh_client.post('/api/invoices/1/email/')
+    assert res.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)

@@ -19,7 +19,8 @@ from .services import (
     create_delivery_note,
     post_delivery_note,
     cancel_delivery_note,
-    build_delivery_note_pdf
+    build_delivery_note_pdf,
+    email_delivery_note_to_party
 )
 from .serializers import (
     DeliveryNoteCreateInputSerializer,
@@ -144,4 +145,21 @@ class DeliveryNoteViewSet(ViewSet):
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{dn.dn_number}.pdf"'
         return response
+
+    @extend_schema(
+        request=None,
+        responses={200: DeliveryNoteOutputSerializer, 400: OpenApiTypes.OBJECT, 502: OpenApiTypes.OBJECT},
+        summary="Email Delivery Note PDF to the client/party"
+    )
+    @action(detail=True, methods=['post'], url_path='email')
+    def email(self, request, pk=None):
+        try:
+            email_delivery_note_to_party(delivery_note_id=pk)
+            dn = get_delivery_note_by_id(pk)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"detail": f"Failed to send email: {str(e)}"}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(DeliveryNoteOutputSerializer(dn).data)
+
 

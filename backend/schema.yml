@@ -621,6 +621,44 @@ paths:
           description: ''
         '400':
           description: No response body
+  /api/delivery-notes/{id}/email/:
+    post:
+      operationId: delivery_notes_email_create
+      summary: Email Delivery Note PDF to the client/party
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Delivery Note.
+        required: true
+      tags:
+      - delivery-notes
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryNoteOutput'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '502':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/delivery-notes/{id}/pdf/:
     get:
       operationId: delivery_notes_pdf_retrieve
@@ -1033,6 +1071,44 @@ paths:
           description: ''
         '400':
           description: No response body
+  /api/grns/{id}/email/:
+    post:
+      operationId: grns_email_create
+      summary: Email GRN PDF to the client/party
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Goods Receipt Note.
+        required: true
+      tags:
+      - grns
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GRNOutput'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '502':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/grns/{id}/pdf/:
     get:
       operationId: grns_pdf_retrieve
@@ -1213,6 +1289,44 @@ paths:
           description: ''
         '400':
           description: No response body
+  /api/invoices/{id}/email/:
+    post:
+      operationId: invoices_email_create
+      summary: Email Invoice PDF to the client/party
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Invoice.
+        required: true
+      tags:
+      - invoices
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceOutput'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '502':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/invoices/{id}/payments/:
     get:
       operationId: invoices_payments_list
@@ -2499,6 +2613,9 @@ components:
         party_code:
           type: string
           readOnly: true
+        party_email:
+          type: string
+          readOnly: true
         dispatch_date:
           type: string
           format: date
@@ -2528,6 +2645,10 @@ components:
           readOnly: true
         status:
           $ref: '#/components/schemas/StatusEnum'
+        last_emailed_at:
+          type: string
+          format: date-time
+          nullable: true
         lines:
           type: array
           items:
@@ -2550,6 +2671,7 @@ components:
       - id
       - lines
       - party_code
+      - party_email
       - party_id
       - party_name
       - updated_at
@@ -2804,6 +2926,9 @@ components:
         party_code:
           type: string
           readOnly: true
+        party_email:
+          type: string
+          readOnly: true
         receipt_date:
           type: string
           format: date
@@ -2847,6 +2972,10 @@ components:
           nullable: true
         status:
           $ref: '#/components/schemas/StatusEnum'
+        last_emailed_at:
+          type: string
+          format: date-time
+          nullable: true
         lots:
           type: array
           items:
@@ -2868,6 +2997,7 @@ components:
       - id
       - lots
       - party_code
+      - party_email
       - party_id
       - party_name
       - receipt_date
@@ -2931,6 +3061,9 @@ components:
         party_name:
           type: string
           readOnly: true
+        party_email:
+          type: string
+          readOnly: true
         party_gstin_snapshot:
           type: string
           maxLength: 15
@@ -2987,6 +3120,10 @@ components:
           items:
             $ref: '#/components/schemas/InvoiceLineOutput'
           readOnly: true
+        last_emailed_at:
+          type: string
+          format: date-time
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -3004,6 +3141,7 @@ components:
       - invoice_date
       - invoice_number
       - lines
+      - party_email
       - party_id
       - party_name
       - payment_status

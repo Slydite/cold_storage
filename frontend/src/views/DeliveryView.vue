@@ -96,6 +96,16 @@ const handleView = (dn: DeliveryNoteOutput) => {
   isDetailOpen.value = true
 }
 
+const handleRefresh = async () => {
+  await deliveriesQuery.refetch()
+  if (selectedDelivery.value) {
+    const updated = deliveryList.value.find(item => item.id === selectedDelivery.value?.id)
+    if (updated) {
+      selectedDelivery.value = updated
+    }
+  }
+}
+
 const handleCreated = (dnNumber: string, status: string) => {
   isPanelOpen.value = false
   const isDraft = status === 'DRAFT'
@@ -138,7 +148,7 @@ onMounted(() => {
       :class="{ 'shrink-list': isPanelOpen }"
     />
 
-    <DeliveryDetailDialog v-model:visible="isDetailOpen" :deliveryNote="selectedDelivery" />
+    <DeliveryDetailDialog v-model:visible="isDetailOpen" :deliveryNote="selectedDelivery" @refresh="handleRefresh" />
 
     <transition name="panel-slide">
       <DeliveryCreatePanel

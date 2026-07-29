@@ -6,11 +6,12 @@ import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
-import { Printer } from 'lucide-vue-next'
+import { Printer, Mail } from 'lucide-vue-next'
 import { formatCurrency, formatQty } from '../../utils/format'
 import { downloadPdf } from '../../utils/downloadPdf'
 import { exportToCsv } from '../../utils/csvExport'
 import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
+import { emailGrn } from '../../api/grn'
 import type { GrnOutput } from '../../api/grn'
 
 const props = defineProps<{
@@ -20,6 +21,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
+  refresh: []
 }>()
 
 const visibleRef = toRef(props, 'visible')
@@ -30,6 +32,50 @@ useHistoryDismiss(visibleRef, () => {
 const toast = useToast()
 const { t } = useI18n()
 const downloadingPdf = ref(false)
+const emailing = ref(false)
+
+function formatDateTime(d?: string | null): string {
+  if (!d) return t('common.never')
+  try {
+    return new Date(d).toLocaleString()
+  } catch {
+    return d || ''
+  }
+}
+
+async function handleEmailToClient() {
+  if (!props.grn) return
+  emailing.value = true
+  try {
+    await emailGrn(props.grn.id)
+    toast.add({
+      severity: 'success',
+      summary: t('common.emailSentSuccess'),
+      detail: t('common.emailSentSuccessDetail'),
+      life: 5000
+    })
+    emit('refresh')
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : t('errors.generic')
+    if (message.includes('Failed to send email')) {
+      toast.add({
+        severity: 'error',
+        summary: t('common.emailSendFailed'),
+        detail: t('common.emailSendFailedDetail', { error: message }),
+        life: 7000
+      })
+    } else {
+      toast.add({
+        severity: 'warn',
+        summary: t('common.error'),
+        detail: message,
+        life: 5000
+      })
+    }
+  } finally {
+    emailing.value = false
+  }
+}
 
 async function handleDownloadPdf() {
   if (!props.grn) return
@@ -89,15 +135,27 @@ function handleExportLotsCsv() {
           :value="t(`status.${(grn.status || 'DRAFT').toLowerCase()}`)"
           :severity="grn.status === 'POSTED' ? 'success' : grn.status === 'CANCELLED' ? 'danger' : 'warn'"
         />
-        <button
-          class="btn-outlined btn-sm"
-          type="button"
-          :disabled="downloadingPdf"
-          @click="handleDownloadPdf"
-        >
-          <Printer :size="15" />
-          <span>PDF</span>
-        </button>
+        <div class="flex gap-2">
+          <button
+            class="btn-outlined btn-sm"
+            type="button"
+            :disabled="downloadingPdf"
+            @click="handleDownloadPdf"
+          >
+            <Printer :size="15" />
+            <span>PDF</span>
+          </button>
+          <button
+            class="btn-outlined btn-sm"
+            type="button"
+            :disabled="!grn.party_email || emailing"
+            :title="!grn.party_email ? t('common.noClientEmailTooltip') : t('common.emailToClient')"
+            @click="handleEmailToClient"
+          >
+            <Mail :size="15" />
+            <span>{{ emailing ? t('common.loading') : t('common.emailToClient') }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- Main Info Meta Grid -->
@@ -127,6 +185,10 @@ function handleExportLotsCsv() {
           <span class="meta-value">
             {{ grn.loading_charge ? formatCurrency(Number(grn.loading_charge)) : '-' }}
           </span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">{{ t('common.lastEmailed') }}</span>
+          <span class="meta-value">{{ formatDateTime(grn.last_emailed_at) }}</span>
         </div>
       </div>
 

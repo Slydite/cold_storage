@@ -4,6 +4,8 @@ from datetime import date
 from decimal import Decimal
 from django.db import transaction
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from django.core.mail import EmailMessage
 
 from libs.sequences import get_next_sequence_number, DEFAULT_PREFIXES
 from libs.lookups import get_facility_or_raise, get_party_or_raise
@@ -335,4 +337,42 @@ def build_grn_pdf(*, grn_id: int) -> bytes:
         'party': party,
     }
     return render_pdf('pdf/grn.html', context)
+
+
+@transaction.atomic
+def email_grn_to_party(*, grn_id: int) -> None:
+    """
+    Build the GRN PDF, send it to the party's email address, and record the timestamp.
+    """
+    try:
+        grn = GRN.objects.select_for_update().select_related('facility', 'party').get(pk=grn_id)
+    except GRN.DoesNotExist:
+        raise ValidationError(f"GRN with ID {grn_id} does not exist.")
+
+    party = grn.party
+    if not party.email or not party.email.strip():
+        raise ValidationError(f"Cannot email GRN: Party '{party.name}' does not have an email address on file.")
+
+    pdf_bytes = build_grn_pdf(grn_id=grn_id)
+
+    subject = f"GRN {grn.grn_number} from {grn.facility.name}"
+    body = (
+        f"Dear {party.name},\n\n"
+        f"Please find attached Goods Receipt Note (GRN) {grn.grn_number} from {grn.facility.name} "
+        f"dated {grn.receipt_date.strftime('%d-%m-%Y')}.\n\n"
+        f"Regards,\n"
+        f"{grn.facility.name}"
+    )
+
+    email = EmailMessage(
+        subject=subject,
+        body=body,
+        to=[party.email.strip()],
+    )
+    email.attach(f"{grn.grn_number}.pdf", pdf_bytes, 'application/pdf')
+    email.send()
+
+    grn.last_emailed_at = timezone.now()
+    grn.save()
+
 

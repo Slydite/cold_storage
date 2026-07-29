@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
@@ -61,6 +61,15 @@ const selectedInvoiceForPayment = ref<InvoiceOutput | null>(null)
 const showDetailDialog = ref(false)
 const showPaymentDialog = ref(false)
 const downloadingId = ref<number | null>(null)
+
+watch(() => props.invoices, (newInvoices) => {
+  if (selectedInvoiceForDetail.value) {
+    const updated = newInvoices.find(item => item.id === selectedInvoiceForDetail.value?.id)
+    if (updated) {
+      selectedInvoiceForDetail.value = updated
+    }
+  }
+}, { deep: true })
 
 async function handleDownloadPdf(id: number, docNumber: string) {
   downloadingId.value = id
@@ -500,6 +509,7 @@ const getPaymentSeverity = (status?: string) => {
       v-model:visible="showDetailDialog"
       :invoice="selectedInvoiceForDetail"
       @recordPayment="handleOpenPayment"
+      @refresh="emit('refresh')"
     />
 
     <!-- Record Payment Dialog -->

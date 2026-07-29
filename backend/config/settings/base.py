@@ -127,3 +127,15 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
+# Email Configuration
+from decouple import config
+
+EMAIL_BACKEND = config('DJANGO_EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('DJANGO_EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('DJANGO_EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('DJANGO_EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('DJANGO_EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('DJANGO_EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DJANGO_DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+

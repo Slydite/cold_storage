@@ -48,6 +48,7 @@ class DeliveryLineOutputSerializer(serializers.ModelSerializer):
 class DeliveryNoteOutputSerializer(serializers.ModelSerializer):
     party_name = serializers.CharField(source='party.name', read_only=True)
     party_code = serializers.CharField(source='party.code', read_only=True)
+    party_email = serializers.CharField(source='party.email', read_only=True)
     lines = DeliveryLineOutputSerializer(many=True, read_only=True)
     computed_loading_charge = serializers.SerializerMethodField()
 
@@ -60,6 +61,7 @@ class DeliveryNoteOutputSerializer(serializers.ModelSerializer):
             'party_id',
             'party_name',
             'party_code',
+            'party_email',
             'dispatch_date',
             'vehicle_number',
             'driver_name',
@@ -70,6 +72,7 @@ class DeliveryNoteOutputSerializer(serializers.ModelSerializer):
             'loading_charge_mode',
             'computed_loading_charge',
             'status',
+            'last_emailed_at',
             'lines',
             'created_at',
             'updated_at'

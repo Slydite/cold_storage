@@ -174,3 +174,74 @@ def test_grn_created_with_previously_reserved_lot_number(auth_client, default_fa
     res_grn = auth_client.post('/api/grns/', grn_payload, format='json')
     assert res_grn.status_code == status.HTTP_201_CREATED
     assert res_grn.data['lots'][0]['lot_number'] == reserved_number
+
+
+@pytest.mark.django_db
+def test_grn_email_api_workflow(auth_client, default_facility, party, commodity):
+    # Unauthenticated access is covered separately by
+    # test_grn_email_action_genuinely_unauthenticated: requesting both
+    # auth_client and api_client in one test resolves to the SAME already-
+    # authenticated instance (auth_client's own fixture depends on api_client),
+    # so an "unauthenticated" assertion here would silently pass for the
+    # wrong reason.
+    from django.core import mail
+    from django.utils import timezone
+    from apps.parties.models import Party
+
+    # Create GRN
+    grn_payload = {
+        "facility_id": default_facility.id,
+        "party_id": party.id,
+        "receipt_date": "2026-07-25",
+        "items": [
+            {
+                "commodity_id": commodity.id,
+                "initial_qty": 100,
+            }
+        ]
+    }
+    res_create = auth_client.post('/api/grns/', grn_payload, format='json')
+    assert res_create.status_code == status.HTTP_201_CREATED
+    grn_id = res_create.data['id']
+    assert res_create.data['last_emailed_at'] is None
+
+    # 2. Party has blank email by default -> 400 ValidationError, does not send
+    mail.outbox.clear()
+    res_email_blank = auth_client.post(f'/api/grns/{grn_id}/email/')
+    assert res_email_blank.status_code == status.HTTP_400_BAD_REQUEST
+    assert "does not have an email address on file" in res_email_blank.data['detail']
+    assert len(mail.outbox) == 0
+
+    # 3. Update party to have email
+    p_obj = Party.objects.get(pk=party.id)
+    p_obj.email = "depositor@example.com"
+    p_obj.save()
+
+    # 4. Email GRN -> 200, sends mail, updates last_emailed_at
+    mail.outbox.clear()
+    res_email_success = auth_client.post(f'/api/grns/{grn_id}/email/')
+    assert res_email_success.status_code == status.HTTP_200_OK
+    assert res_email_success.data['last_emailed_at'] is not None
+
+    # Check email sent
+    assert len(mail.outbox) == 1
+    msg = mail.outbox[0]
+    assert msg.to == ["depositor@example.com"]
+    assert "GRN" in msg.subject
+    assert len(msg.attachments) == 1
+    filename, content, mimetype = msg.attachments[0]
+    assert filename.endswith('.pdf')
+    assert mimetype == 'application/pdf'
+    assert content.startswith(b'%PDF')
+
+
+
+@pytest.mark.django_db
+def test_grn_email_action_genuinely_unauthenticated():
+    """See test_invoice_email_action_genuinely_unauthenticated for why this
+    must be a standalone client rather than reusing api_client alongside
+    auth_client in the same test."""
+    from rest_framework.test import APIClient
+    fresh_client = APIClient()
+    res = fresh_client.post('/api/grns/999/email/')
+    assert res.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)

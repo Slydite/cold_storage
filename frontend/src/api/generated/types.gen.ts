@@ -142,6 +142,7 @@ export type DeliveryNoteOutput = {
     readonly party_id: number;
     readonly party_name: string;
     readonly party_code: string;
+    readonly party_email: string;
     dispatch_date: string;
     vehicle_number?: string;
     driver_name?: string;
@@ -152,6 +153,7 @@ export type DeliveryNoteOutput = {
     loading_charge_mode?: LoadingChargeModeEnum;
     readonly computed_loading_charge: string;
     status?: StatusEnum;
+    last_emailed_at?: string | null;
     readonly lines: Array<DeliveryLineOutput>;
     readonly created_at: string;
     readonly updated_at: string;
@@ -237,6 +239,7 @@ export type GrnOutput = {
     readonly party_id: number;
     readonly party_name: string;
     readonly party_code: string;
+    readonly party_email: string;
     receipt_date: string;
     vehicle_number?: string;
     driver_name?: string;
@@ -251,6 +254,7 @@ export type GrnOutput = {
     readonly computed_loading_charge: string;
     inward_time?: string | null;
     status?: StatusEnum;
+    last_emailed_at?: string | null;
     readonly lots: Array<LotOutput>;
     readonly created_at: string;
     readonly updated_at: string;
@@ -276,6 +280,7 @@ export type InvoiceOutput = {
     invoice_number: string;
     readonly party_id: number;
     readonly party_name: string;
+    readonly party_email: string;
     party_gstin_snapshot?: string;
     party_name_snapshot?: string;
     party_address_snapshot?: string;
@@ -293,6 +298,7 @@ export type InvoiceOutput = {
     readonly payment_status: string;
     readonly payments: Array<PaymentOutput>;
     readonly lines: Array<InvoiceLineOutput>;
+    last_emailed_at?: string | null;
     readonly created_at: string;
     readonly updated_at: string;
 };
@@ -590,6 +596,7 @@ export type DeliveryNoteOutputWritable = {
     loading_unloading_rate_per_unit?: string;
     loading_charge_mode?: LoadingChargeModeEnum;
     status?: StatusEnum;
+    last_emailed_at?: string | null;
 };
 
 export type FacilityOutputWritable = {
@@ -626,6 +633,7 @@ export type GrnOutputWritable = {
     loading_charge_mode?: LoadingChargeModeEnum;
     inward_time?: string | null;
     status?: StatusEnum;
+    last_emailed_at?: string | null;
 };
 
 export type InvoiceLineOutputWritable = {
@@ -650,6 +658,7 @@ export type InvoiceOutputWritable = {
     gst_rate?: string;
     gst_amount?: string;
     total_amount?: string;
+    last_emailed_at?: string | null;
 };
 
 export type LoginInputWritable = {
@@ -1229,6 +1238,35 @@ export type DeliveryNotesCancelCreateResponses = {
 
 export type DeliveryNotesCancelCreateResponse = DeliveryNotesCancelCreateResponses[keyof DeliveryNotesCancelCreateResponses];
 
+export type DeliveryNotesEmailCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Delivery Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/delivery-notes/{id}/email/';
+};
+
+export type DeliveryNotesEmailCreateErrors = {
+    400: {
+        [key: string]: unknown;
+    };
+    502: {
+        [key: string]: unknown;
+    };
+};
+
+export type DeliveryNotesEmailCreateError = DeliveryNotesEmailCreateErrors[keyof DeliveryNotesEmailCreateErrors];
+
+export type DeliveryNotesEmailCreateResponses = {
+    200: DeliveryNoteOutput;
+};
+
+export type DeliveryNotesEmailCreateResponse = DeliveryNotesEmailCreateResponses[keyof DeliveryNotesEmailCreateResponses];
+
 export type DeliveryNotesPdfRetrieveData = {
     body?: never;
     path: {
@@ -1558,6 +1596,35 @@ export type GrnsCancelCreateResponses = {
 
 export type GrnsCancelCreateResponse = GrnsCancelCreateResponses[keyof GrnsCancelCreateResponses];
 
+export type GrnsEmailCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Goods Receipt Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/grns/{id}/email/';
+};
+
+export type GrnsEmailCreateErrors = {
+    400: {
+        [key: string]: unknown;
+    };
+    502: {
+        [key: string]: unknown;
+    };
+};
+
+export type GrnsEmailCreateError = GrnsEmailCreateErrors[keyof GrnsEmailCreateErrors];
+
+export type GrnsEmailCreateResponses = {
+    200: GrnOutput;
+};
+
+export type GrnsEmailCreateResponse = GrnsEmailCreateResponses[keyof GrnsEmailCreateResponses];
+
 export type GrnsPdfRetrieveData = {
     body?: never;
     path: {
@@ -1711,6 +1778,35 @@ export type InvoicesCancelCreateResponses = {
 };
 
 export type InvoicesCancelCreateResponse = InvoicesCancelCreateResponses[keyof InvoicesCancelCreateResponses];
+
+export type InvoicesEmailCreateData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this Invoice.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/invoices/{id}/email/';
+};
+
+export type InvoicesEmailCreateErrors = {
+    400: {
+        [key: string]: unknown;
+    };
+    502: {
+        [key: string]: unknown;
+    };
+};
+
+export type InvoicesEmailCreateError = InvoicesEmailCreateErrors[keyof InvoicesEmailCreateErrors];
+
+export type InvoicesEmailCreateResponses = {
+    200: InvoiceOutput;
+};
+
+export type InvoicesEmailCreateResponse = InvoicesEmailCreateResponses[keyof InvoicesEmailCreateResponses];
 
 export type InvoicesPaymentsListData = {
     body?: never;

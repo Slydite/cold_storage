@@ -7,9 +7,11 @@ import Tag from 'primevue/tag'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
-import { Trash2, CreditCard } from 'lucide-vue-next'
+import { Trash2, CreditCard, Printer, Mail } from 'lucide-vue-next'
 import { formatCurrency, formatQty } from '../../utils/format'
 import { useDeleteInvoicePayment } from '../../composables/useInvoices'
+import { downloadPdf } from '../../utils/downloadPdf'
+import { emailInvoice } from '../../api/invoicing'
 import RecordPaymentDialog from './RecordPaymentDialog.vue'
 import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 import type { InvoiceOutput } from '../../api/invoicing'
@@ -38,6 +40,69 @@ const toast = useToast()
 const deletePaymentMutation = useDeleteInvoicePayment()
 
 const showRecordPayment = ref(false)
+const downloadingPdf = ref(false)
+const emailing = ref(false)
+
+function formatDateTime(d?: string | null): string {
+  if (!d) return t('common.never')
+  try {
+    return new Date(d).toLocaleString()
+  } catch {
+    return d || ''
+  }
+}
+
+async function handleDownloadPdf() {
+  if (!props.invoice) return
+  downloadingPdf.value = true
+  try {
+    await downloadPdf(`/api/invoices/${props.invoice.id}/pdf/`, `${props.invoice.invoice_number}.pdf`)
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: t('common.pdfFailed'),
+      detail: err instanceof Error ? err.message : t('common.pdfFailed'),
+      life: 5000
+    })
+  } finally {
+    downloadingPdf.value = false
+  }
+}
+
+async function handleEmailToClient() {
+  if (!props.invoice) return
+  emailing.value = true
+  try {
+    await emailInvoice(props.invoice.id)
+    toast.add({
+      severity: 'success',
+      summary: t('common.emailSentSuccess'),
+      detail: t('common.emailSentSuccessDetail'),
+      life: 5000
+    })
+    emit('refresh')
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : t('errors.generic')
+    if (message.includes('Failed to send email')) {
+      toast.add({
+        severity: 'error',
+        summary: t('common.emailSendFailed'),
+        detail: t('common.emailSendFailedDetail', { error: message }),
+        life: 7000
+      })
+    } else {
+      toast.add({
+        severity: 'warn',
+        summary: t('common.error'),
+        detail: message,
+        life: 5000
+      })
+    }
+  } finally {
+    emailing.value = false
+  }
+}
+
 
 const getPaymentSeverity = (status?: string) => {
   switch (status) {
@@ -140,6 +205,11 @@ const handleDeletePayment = (payment: PaymentOutput) => {
             <div class="meta-item">
               <span class="label">{{ t('common.amountDue') }}</span>
               <strong class="val text-danger text-lg">{{ formatCurrency(Number(invoice.amount_due || 0)) }}</strong>
+            </div>
+
+            <div class="meta-item">
+              <span class="label">{{ t('common.lastEmailed') }}</span>
+              <span class="val">{{ formatDateTime(invoice.last_emailed_at) }}</span>
             </div>
           </div>
         </div>
@@ -247,6 +317,37 @@ const handleDeletePayment = (payment: PaymentOutput) => {
           </DataTable>
         </div>
       </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <div class="pdf-action-group">
+            <button
+              v-if="invoice"
+              class="btn-primary"
+              type="button"
+              title="PDF"
+              aria-label="PDF"
+              :disabled="downloadingPdf"
+              @click="handleDownloadPdf"
+            >
+              <Printer :size="15" />
+              <span>PDF</span>
+            </button>
+            <button
+              v-if="invoice"
+              class="btn-outlined"
+              type="button"
+              :disabled="!invoice.party_email || emailing"
+              :title="!invoice.party_email ? t('common.noClientEmailTooltip') : t('common.emailToClient')"
+              @click="handleEmailToClient"
+            >
+              <Mail :size="15" />
+              <span>{{ emailing ? t('common.loading') : t('common.emailToClient') }}</span>
+            </button>
+          </div>
+          <button class="btn-outlined" type="button" @click="emit('update:visible', false)">{{ t('common.close') }}</button>
+        </div>
+      </template>
     </Dialog>
 
     <!-- Record Payment Dialog -->
@@ -355,5 +456,18 @@ const handleDeletePayment = (payment: PaymentOutput) => {
   .meta-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.pdf-action-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>

@@ -91,7 +91,14 @@ const en = {
     required: 'Required',
     commodity: 'Commodity',
     clearFilters: 'Clear Filters',
-    sortOrder: 'Order'
+    sortOrder: 'Order',
+    emailToClient: 'Email to Client',
+    lastEmailed: 'Last emailed: {date}',
+    emailSentSuccess: 'Email sent successfully.',
+    emailSentSuccessDetail: 'Document was emailed to the client.',
+    emailSendFailed: 'Email Send Failed',
+    emailSendFailedDetail: 'The document itself is fine, but sending the email failed: {error}',
+    noClientEmailTooltip: 'Cannot email client: No email address on file for this party.'
   },
   nav: {
     dashboard: 'Dashboard',

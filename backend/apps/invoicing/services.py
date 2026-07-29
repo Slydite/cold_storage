@@ -3,6 +3,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.utils import timezone
 from django.db import transaction
 from django.core.exceptions import ValidationError
+from django.core.mail import EmailMessage
 
 from libs.lookups import get_facility_or_raise
 from libs.pdf import render_pdf
@@ -456,4 +457,42 @@ def delete_payment(*, payment_id: int) -> None:
         raise ValidationError(f"Payment with ID {payment_id} does not exist.")
 
     payment.delete()
+
+
+@transaction.atomic
+def email_invoice_to_party(*, invoice_id: int) -> None:
+    """
+    Build the Invoice PDF, send it to the party's email address, and record the timestamp.
+    """
+    try:
+        invoice = Invoice.objects.select_for_update().select_related('facility', 'party').get(pk=invoice_id)
+    except Invoice.DoesNotExist:
+        raise ValidationError(f"Invoice with ID {invoice_id} does not exist.")
+
+    party = invoice.party
+    if not party.email or not party.email.strip():
+        raise ValidationError(f"Cannot email Invoice: Party '{party.name}' does not have an email address on file.")
+
+    pdf_bytes = build_invoice_pdf(invoice_id=invoice_id)
+
+    subject = f"Invoice {invoice.invoice_number} from {invoice.facility.name}"
+    body = (
+        f"Dear {party.name},\n\n"
+        f"Please find attached Invoice {invoice.invoice_number} from {invoice.facility.name} "
+        f"dated {invoice.invoice_date.strftime('%d-%m-%Y')}.\n\n"
+        f"Regards,\n"
+        f"{invoice.facility.name}"
+    )
+
+    email = EmailMessage(
+        subject=subject,
+        body=body,
+        to=[party.email.strip()],
+    )
+    email.attach(f"{invoice.invoice_number}.pdf", pdf_bytes, 'application/pdf')
+    email.send()
+
+    invoice.last_emailed_at = timezone.now()
+    invoice.save()
+
 

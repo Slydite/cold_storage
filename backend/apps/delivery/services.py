@@ -3,6 +3,8 @@ from datetime import date
 from decimal import Decimal
 from django.db import transaction
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from django.core.mail import EmailMessage
 
 from libs.sequences import get_next_sequence_number
 from libs.lookups import get_facility_or_raise, get_party_or_raise
@@ -179,4 +181,42 @@ def build_delivery_note_pdf(*, delivery_note_id: int) -> bytes:
         'total_qty': total_qty,
     }
     return render_pdf('pdf/delivery_note.html', context)
+
+
+@transaction.atomic
+def email_delivery_note_to_party(*, delivery_note_id: int) -> None:
+    """
+    Build the Delivery Note PDF, send it to the party's email address, and record the timestamp.
+    """
+    try:
+        dn = DeliveryNote.objects.select_for_update().select_related('facility', 'party').get(pk=delivery_note_id)
+    except DeliveryNote.DoesNotExist:
+        raise ValidationError(f"Delivery Note with ID {delivery_note_id} does not exist.")
+
+    party = dn.party
+    if not party.email or not party.email.strip():
+        raise ValidationError(f"Cannot email Delivery Note: Party '{party.name}' does not have an email address on file.")
+
+    pdf_bytes = build_delivery_note_pdf(delivery_note_id=delivery_note_id)
+
+    subject = f"Delivery Note {dn.dn_number} from {dn.facility.name}"
+    body = (
+        f"Dear {party.name},\n\n"
+        f"Please find attached Delivery Note {dn.dn_number} from {dn.facility.name} "
+        f"dated {dn.dispatch_date.strftime('%d-%m-%Y')}.\n\n"
+        f"Regards,\n"
+        f"{dn.facility.name}"
+    )
+
+    email = EmailMessage(
+        subject=subject,
+        body=body,
+        to=[party.email.strip()],
+    )
+    email.attach(f"{dn.dn_number}.pdf", pdf_bytes, 'application/pdf')
+    email.send()
+
+    dn.last_emailed_at = timezone.now()
+    dn.save()
+
 

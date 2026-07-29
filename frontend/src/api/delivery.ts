@@ -2,7 +2,8 @@ import {
   deliveryNotesList,
   deliveryNotesCreate,
   deliveryNotesPostCreate,
-  deliveryNotesCancelCreate
+  deliveryNotesCancelCreate,
+  deliveryNotesEmailCreate
 } from './generated/sdk.gen'
 import type {
   DeliveryNoteOutput,
@@ -96,3 +97,17 @@ export async function cancelDeliveryNote(id: number): Promise<DeliveryNoteOutput
   }
   return res.data
 }
+
+export async function emailDeliveryNote(id: number): Promise<DeliveryNoteOutput> {
+  const res = await deliveryNotesEmailCreate({
+    path: { id }
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to email Delivery Note'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from emailing Delivery Note')
+  }
+  return res.data
+}
+

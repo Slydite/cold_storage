@@ -3,7 +3,8 @@ import {
   grnsRetrieve,
   grnsCreate,
   grnsPostCreate,
-  grnsCancelCreate
+  grnsCancelCreate,
+  grnsEmailCreate
 } from './generated/sdk.gen'
 import type {
   GrnOutput,
@@ -108,3 +109,17 @@ export async function cancelGrn(id: number): Promise<GrnOutput> {
   }
   return res.data
 }
+
+export async function emailGrn(id: number): Promise<GrnOutput> {
+  const res = await grnsEmailCreate({
+    path: { id }
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to email Goods Receipt Note'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from emailing GRN')
+  }
+  return res.data
+}
+

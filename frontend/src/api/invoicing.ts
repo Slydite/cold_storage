@@ -6,7 +6,8 @@ import {
   invoicesCancelCreate,
   invoicesPaymentsCreate,
   invoicesPaymentsDestroy,
-  invoicesPreviewList
+  invoicesPreviewList,
+  invoicesEmailCreate
 } from './generated/sdk.gen'
 import type {
   InvoiceOutput,
@@ -162,4 +163,18 @@ export async function fetchInvoicePreview(params: {
   }
   return res.data ?? []
 }
+
+export async function emailInvoice(id: number): Promise<InvoiceOutput> {
+  const res = await invoicesEmailCreate({
+    path: { id }
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to email invoice'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from emailing invoice')
+  }
+  return res.data
+}
+
 

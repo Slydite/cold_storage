@@ -22,6 +22,7 @@ from .services import (
     record_payment,
     delete_payment,
     build_invoice_pdf,
+    email_invoice_to_party,
 )
 from .serializers import (
     GenerateInvoicesInputSerializer,
@@ -240,4 +241,21 @@ class InvoiceViewSet(ViewSet):
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{invoice.invoice_number}.pdf"'
         return response
+
+    @extend_schema(
+        request=None,
+        responses={200: InvoiceOutputSerializer, 400: OpenApiTypes.OBJECT, 502: OpenApiTypes.OBJECT},
+        summary="Email Invoice PDF to the client/party"
+    )
+    @action(detail=True, methods=['post'], url_path='email')
+    def email(self, request, pk=None):
+        try:
+            email_invoice_to_party(invoice_id=pk)
+            invoice = get_invoice_by_id(pk)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"detail": f"Failed to send email: {str(e)}"}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(InvoiceOutputSerializer(invoice).data)
+
 

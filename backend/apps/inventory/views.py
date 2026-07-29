@@ -26,7 +26,8 @@ from .services import (
     post_grn,
     cancel_grn,
     withdraw_stock_from_lot,
-    build_grn_pdf
+    build_grn_pdf,
+    email_grn_to_party
 )
 from .serializers import (
     CommodityInputSerializer,
@@ -250,6 +251,23 @@ class GRNViewSet(ViewSet):
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{grn.grn_number}.pdf"'
         return response
+
+    @extend_schema(
+        request=None,
+        responses={200: GRNOutputSerializer, 400: OpenApiTypes.OBJECT, 502: OpenApiTypes.OBJECT},
+        summary="Email GRN PDF to the client/party"
+    )
+    @action(detail=True, methods=['post'], url_path='email')
+    def email(self, request, pk=None):
+        try:
+            email_grn_to_party(grn_id=pk)
+            grn = get_grn_by_id(pk)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"detail": f"Failed to send email: {str(e)}"}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(GRNOutputSerializer(grn).data)
+
 
 
 class LotViewSet(ViewSet):

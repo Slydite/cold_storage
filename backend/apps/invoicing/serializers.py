@@ -43,6 +43,7 @@ class PaymentInputSerializer(serializers.Serializer):
 
 class InvoiceOutputSerializer(serializers.ModelSerializer):
     party_name = serializers.CharField(source='party.name', read_only=True)
+    party_email = serializers.CharField(source='party.email', read_only=True)
     lines = InvoiceLineOutputSerializer(many=True, read_only=True)
     amount_paid = serializers.SerializerMethodField()
     amount_due = serializers.SerializerMethodField()
@@ -57,6 +58,7 @@ class InvoiceOutputSerializer(serializers.ModelSerializer):
             'invoice_number',
             'party_id',
             'party_name',
+            'party_email',
             'party_gstin_snapshot',
             'party_name_snapshot',
             'party_address_snapshot',
@@ -74,6 +76,7 @@ class InvoiceOutputSerializer(serializers.ModelSerializer):
             'payment_status',
             'payments',
             'lines',
+            'last_emailed_at',
             'created_at',
             'updated_at',
         ]

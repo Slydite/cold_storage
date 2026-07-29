@@ -113,6 +113,16 @@ const handleView = (grn: GrnOutput) => {
   isDetailOpen.value = true
 }
 
+const handleRefresh = async () => {
+  await grnsQuery.refetch()
+  if (selectedGrn.value) {
+    const updated = grnList.value.find(item => item.id === selectedGrn.value?.id)
+    if (updated) {
+      selectedGrn.value = updated
+    }
+  }
+}
+
 const handleRetry = () => {
   refetchFacility()
   grnsQuery.refetch()
@@ -142,7 +152,7 @@ onMounted(() => {
       :class="{ 'shrink-list': isPanelOpen }"
     />
 
-    <GrnDetailDialog v-model:visible="isDetailOpen" :grn="selectedGrn" />
+    <GrnDetailDialog v-model:visible="isDetailOpen" :grn="selectedGrn" @refresh="handleRefresh" />
 
     <transition name="panel-slide">
       <GrnCreatePanel
