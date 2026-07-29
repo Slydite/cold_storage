@@ -5,6 +5,7 @@ import AppSidebar from './AppSidebar.vue'
 import AppHeader from './AppHeader.vue'
 import AppBottomNav from './AppBottomNav.vue'
 import MoreSheet from './MoreSheet.vue'
+import InstallPrompt from './InstallPrompt.vue'
 import { useSidebar } from '../../composables/useSidebar'
 
 const route = useRoute()
@@ -51,6 +52,9 @@ watch(
 
     <!-- More Sheet for Mobile -->
     <MoreSheet :is-open="isMoreOpen" @close="closeMore" />
+
+    <!-- PWA Install Prompt for Mobile -->
+    <InstallPrompt />
   </div>
 </template>
 
@@ -58,6 +62,7 @@ watch(
 .app-layout {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   background-color: var(--bg-page);
 }

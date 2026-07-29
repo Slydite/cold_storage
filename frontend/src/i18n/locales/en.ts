@@ -684,6 +684,13 @@ const en = {
     DEPOSITOR: 'Depositor / Customer',
     VENDOR: 'Vendor',
     TRANSPORTER: 'Transporter'
+  },
+  installPrompt: {
+    bannerTitle: 'Install PWA App',
+    bannerText: 'Install our application on your home screen for a full screen experience.',
+    installBtn: 'Install',
+    dismissBtn: 'Dismiss',
+    iosPrompt: 'On iOS: Tap Share icon below and select "Add to Home Screen"'
   }
 }
 

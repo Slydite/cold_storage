@@ -681,6 +681,13 @@ const hi: MessageSchema = {
     DEPOSITOR: 'जमाकर्ता / ग्राहक',
     VENDOR: 'आपूर्तिकर्ता (Vendor)',
     TRANSPORTER: 'ट्रांसपोर्टर'
+  },
+  installPrompt: {
+    bannerTitle: 'ऐप इंस्टॉल करें',
+    bannerText: 'बेहतर अनुभव के लिए अपने होम स्क्रीन पर कोल्ड स्टोरेज ऐप इंस्टॉल करें।',
+    installBtn: 'इंस्टॉल करें',
+    dismissBtn: 'हटाएं',
+    iosPrompt: 'iOS पर: नीचे शेयर आइकन पर टैप करें और "होम स्क्रीन में जोड़ें" चुनें'
   }
 }
 

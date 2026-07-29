@@ -58,8 +58,20 @@
   font-weight: normal;
 }
 
+html,
+body {
+  /* `clip`, deliberately not `hidden`: `hidden` would turn body into a scroll
+     container and break the sticky app header. Any accidental horizontal
+     overflow widens the layout viewport, and position:fixed bars (the bottom
+     nav) are sized against that layout viewport - so they render wider than the
+     screen and hang off the edge. Reported on Firefox Android. */
+  overflow-x: clip;
+  max-width: 100%;
+}
+
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   color: var(--color-text);
   background: var(--color-background);
   transition:

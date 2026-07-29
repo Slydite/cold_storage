@@ -40,6 +40,9 @@ const localizedErrorMessage = computed(() => {
       @retry="refetch"
     />
 
+    <!-- Quick Actions Section -->
+    <QuickActions />
+
     <!-- Stat Cards Grid -->
     <StatCards
       :totalStock="totalStock"
@@ -64,9 +67,6 @@ const localizedErrorMessage = computed(() => {
         :loading="isLoading"
       />
     </div>
-
-    <!-- Quick Actions Section -->
-    <QuickActions />
   </div>
 </template>
 

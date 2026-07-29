@@ -268,21 +268,34 @@ const onFloorChange = (itemIdx: number) => {
       <div class="items-section">
         <h4 class="section-subtitle">{{ t('grn.itemsInward') }}</h4>
 
-        <div class="items-table-wrapper">
+        <div class="items-table-wrapper hide-on-mobile">
           <table class="items-table">
+            <colgroup>
+              <col style="width: 35px;" />
+              <col style="width: 170px;" />
+              <col style="width: 115px;" />
+              <col style="width: 130px;" />
+              <col style="width: 120px;" />
+              <col style="width: 120px;" />
+              <col style="width: 95px;" />
+              <col style="width: 95px;" />
+              <col style="width: 95px;" />
+              <col style="width: 115px;" />
+              <col style="width: 48px;" />
+            </colgroup>
             <thead>
               <tr>
-                <th width="35">#</th>
+                <th>#</th>
                 <th>{{ t('grn.commodityProduct') }} <span class="req">*</span></th>
-                <th width="120">{{ t('inventory.lotNo') }}</th>
-                <th width="120">{{ t('grn.chamber') }}</th>
-                <th width="120">{{ t('grn.floor') }}</th>
-                <th width="120">{{ t('grn.block') }}</th>
-                <th width="90">{{ t('common.quantity') }} <span class="req">*</span></th>
-                <th width="80">{{ t('common.unit') }}</th>
-                <th width="110">{{ t('common.weight') }} (MT)</th>
-                <th width="140">{{ t('common.rate') }} / unit / month (₹)</th>
-                <th width="45"></th>
+                <th>{{ t('inventory.lotNo') }}</th>
+                <th>{{ t('grn.chamber') }}</th>
+                <th>{{ t('grn.floor') }}</th>
+                <th>{{ t('grn.block') }}</th>
+                <th>{{ t('common.quantity') }} <span class="req">*</span></th>
+                <th>{{ t('common.unit') }}</th>
+                <th>{{ t('common.weight') }} (MT)</th>
+                <th>{{ t('common.rate') }} / unit / month (₹)</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -398,6 +411,137 @@ const onFloorChange = (itemIdx: number) => {
           </table>
         </div>
 
+        <!-- Mobile Card Layout -->
+        <div class="mobile-items-cards show-on-mobile">
+          <div class="mobile-item-card" v-for="(item, idx) in items" :key="idx">
+            <div class="card-header">
+              <div class="card-header-left">
+                <span class="card-index">#{{ idx + 1 }}</span>
+                <div class="lot-no-cell">
+                  <span class="card-label-lot">{{ t('inventory.lotNo') }}:</span>
+                  <span v-if="item.lot_number_loading" class="lot-loading">
+                    <i class="pi pi-spin pi-spinner text-muted mr-1"></i>
+                    <span>{{ t('grn.reserving') }}</span>
+                  </span>
+                  <span v-else class="lot-code">
+                    {{ item.lot_number || '—' }}
+                  </span>
+                </div>
+              </div>
+              <button
+                class="icon-btn danger-hover"
+                type="button"
+                @click="removeItemRow(idx)"
+                :title="t('common.delete')"
+              >
+                <Trash2 :size="15" />
+              </button>
+            </div>
+
+            <div class="card-body-grid">
+              <div class="card-field full-width">
+                <label class="card-field-label">{{ t('grn.commodityProduct') }} <span class="req">*</span></label>
+                <Select
+                  v-model="item.commodity_id"
+                  @change="onCommodityChange(idx, item.commodity_id)"
+                  :options="props.commodities"
+                  optionLabel="name"
+                  optionValue="id"
+                  :placeholder="t('common.select')"
+                  :loading="props.loadingCommodities"
+                  class="w-full input-sm-select"
+                />
+              </div>
+
+              <div class="card-field">
+                <label class="card-field-label">{{ t('grn.chamber') }}</label>
+                <Select
+                  v-model="item.chamber_id"
+                  @update:modelValue="onChamberChange(idx)"
+                  :options="chamberOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  :placeholder="t('grn.chamber')"
+                  showClear
+                  class="w-full input-sm-select"
+                />
+              </div>
+
+              <div class="card-field">
+                <label class="card-field-label">{{ t('grn.floor') }}</label>
+                <Select
+                  v-model="item.floor_id"
+                  @update:modelValue="onFloorChange(idx)"
+                  :options="getFloorsForChamber(item.chamber_id)"
+                  optionLabel="label"
+                  optionValue="value"
+                  :placeholder="!item.chamber_id ? t('grn.selectChamberFirst') : t('grn.floor')"
+                  :disabled="!item.chamber_id"
+                  showClear
+                  class="w-full input-sm-select"
+                />
+              </div>
+
+              <div class="card-field">
+                <label class="card-field-label">{{ t('grn.block') }}</label>
+                <Select
+                  v-model="item.block_id"
+                  :options="getBlocksForFloor(item.floor_id, item.chamber_id)"
+                  optionLabel="label"
+                  optionValue="value"
+                  :placeholder="!item.floor_id ? t('grn.selectFloorFirst') : t('grn.block')"
+                  :disabled="!item.floor_id"
+                  showClear
+                  class="w-full input-sm-select"
+                />
+              </div>
+
+              <div class="card-field">
+                <label class="card-field-label">{{ t('common.quantity') }} <span class="req">*</span></label>
+                <input
+                  type="number"
+                  min="1"
+                  v-model.number="item.initial_qty"
+                  class="p-inputtext p-component w-full input-sm"
+                />
+              </div>
+
+              <div class="card-field">
+                <label class="card-field-label">{{ t('common.unit') }}</label>
+                <input
+                  type="text"
+                  v-model="item.unit"
+                  placeholder="Bags"
+                  class="p-inputtext p-component w-full input-sm"
+                />
+              </div>
+
+              <div class="card-field">
+                <label class="card-field-label">{{ t('common.weight') }} (MT)</label>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  v-model.number="item.unit_weight"
+                  class="p-inputtext p-component w-full input-sm"
+                />
+              </div>
+
+              <div class="card-field">
+                <label class="card-field-label">{{ t('common.rate') }} / unit / month (₹)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  v-model.number="item.rent_rate_per_unit"
+                  placeholder="Rate"
+                  class="p-inputtext p-component w-full input-sm"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <button class="btn-outlined add-item-btn" type="button" @click="addItemRow">
           <Plus :size="15" />
           <span>{{ t('grn.addItem') }}</span>
@@ -430,6 +574,7 @@ const onFloorChange = (itemIdx: number) => {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 120px);
+  height: calc(100dvh - 120px);
   position: sticky;
   top: 88px;
   overflow: hidden;
@@ -551,7 +696,8 @@ const onFloorChange = (itemIdx: number) => {
   width: 100%;
   border-collapse: collapse;
   font-size: 12.5px;
-  min-width: 800px;
+  min-width: 1150px;
+  table-layout: fixed;
 }
 .items-table th {
   background: var(--bg-page);
@@ -560,6 +706,12 @@ const onFloorChange = (itemIdx: number) => {
   font-weight: 600;
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border-subtle);
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.2;
+  max-height: 2.4em;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .items-table td {
   padding: 6px 8px;
@@ -618,6 +770,7 @@ const onFloorChange = (itemIdx: number) => {
   font-weight: 600;
   font-size: 13px;
   color: var(--text-primary);
+  overflow: hidden;
 }
 .lot-loading {
   display: flex;
@@ -634,6 +787,15 @@ const onFloorChange = (itemIdx: number) => {
   border-radius: 6px;
   border: 1px dashed var(--border-subtle);
   font-feature-settings: "tnum";
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+@media (min-width: 769px) {
+  .show-on-mobile {
+    display: none !important;
+  }
 }
 @media (max-width: 900px) {
   .detail-split-panel {
@@ -642,12 +804,16 @@ const onFloorChange = (itemIdx: number) => {
     z-index: 1000;
     width: 100%;
     max-width: none;
+    height: 100vh;
     height: 100dvh;
     border: none;
     border-radius: 0;
   }
 }
 @media (max-width: 768px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -665,6 +831,63 @@ const onFloorChange = (itemIdx: number) => {
   .panel-totals-bar {
     justify-content: space-between;
     gap: 16px;
+  }
+  .mobile-items-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .mobile-item-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 10px;
+  }
+  .card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+  }
+  .card-index {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent-primary);
+    flex-shrink: 0;
+  }
+  .card-label-lot {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-right: 4px;
+  }
+  .card-body-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .card-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .card-field.full-width {
+    grid-column: span 2;
+  }
+  .card-field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
   }
 }
 </style>

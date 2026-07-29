@@ -319,6 +319,7 @@ const lotOptions = computed(() => {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 120px);
+  height: calc(100dvh - 120px);
   position: sticky;
   top: 88px;
   overflow: hidden;
@@ -507,6 +508,7 @@ const lotOptions = computed(() => {
     z-index: 1000;
     width: 100%;
     max-width: none;
+    height: 100vh;
     height: 100dvh;
     border: none;
     border-radius: 0;

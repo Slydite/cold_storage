@@ -171,6 +171,7 @@ const navigate = (path: string) => {
   width: 240px;
   min-width: 240px;
   height: 100vh;
+  height: 100dvh;
   background-color: var(--bg-sidebar);
   border-right: 1px solid var(--border-subtle);
   display: flex;
