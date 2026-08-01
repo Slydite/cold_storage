@@ -54,7 +54,7 @@ def test_compute_delivery_line_rent_real_chain(default_facility, test_party, tes
     dn = create_delivery_note(
         facility_id=default_facility.id,
         party_id=test_party.id,
-        dispatch_date=date(2026, 2, 3),  # 34 days stored -> multiplier 1.5
+        dispatch_date=date(2026, 2, 3),  # 33 days stored -> multiplier 1.5
         status=DeliveryNote.Status.POSTED,
         lines=[{
             "lot_id": lot.id,
@@ -64,7 +64,7 @@ def test_compute_delivery_line_rent_real_chain(default_facility, test_party, tes
     line = dn.lines.first()
 
     rent = compute_delivery_line_rent(line)
-    # 100 bags * 12.00 rate * 1.5 multiplier (34 days) = 1800.00
+    # 100 bags * 12.00 rate * 1.5 multiplier (33 days) = 1800.00
     assert rent == Decimal('1800.00')
 
 
@@ -73,8 +73,8 @@ def test_two_withdrawals_same_lot_different_dates_different_multipliers(default_
     """
     PROVES RULE 2: Rent is charged PER WITHDRAWAL, not per lot.
     Two withdrawals from the same lot at different dates bill different multipliers:
-    - Withdrawal 1 on Day 20: 30-day minimum floor applies -> multiplier 1.0
-    - Withdrawal 2 on Day 50: 30 + 15 + 15 (50 days) -> multiplier 2.0
+    - Withdrawal 1 on Day 19 (Jan 20): 30-day minimum floor applies -> multiplier 1.0
+    - Withdrawal 2 on Day 49 (Feb 19): 49 days -> multiplier 2.0
     """
     grn = create_grn(
         facility_id=default_facility.id,
@@ -90,7 +90,7 @@ def test_two_withdrawals_same_lot_different_dates_different_multipliers(default_
     )
     lot = grn.lots.first()
 
-    # Withdrawal 1: Day 20 (Jan 20) -> 20 days stored <= 30 -> multiplier 1.0
+    # Withdrawal 1: Day 19 (Jan 20) -> 19 days stored <= 30 -> multiplier 1.0
     dn1 = create_delivery_note(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -103,7 +103,7 @@ def test_two_withdrawals_same_lot_different_dates_different_multipliers(default_
     # 100 * 10 * 1.0 = 1000.00
     assert rent1 == Decimal('1000.00')
 
-    # Withdrawal 2: Day 50 (Feb 19) -> 50 days stored -> 30 + 15 + 15 (2 slabs) -> multiplier 2.0
+    # Withdrawal 2: Day 49 (Feb 19) -> 49 days stored -> multiplier 2.0
     dn2 = create_delivery_note(
         facility_id=default_facility.id,
         party_id=test_party.id,

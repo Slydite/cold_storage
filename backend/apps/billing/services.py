@@ -1,50 +1,42 @@
-import math
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 
 
 def billable_multiplier(days_stored: int) -> Decimal:
     """
-    Calculate the rent multiplier based on days in storage (RULE 1).
+    Calculate the rent multiplier based on days in storage.
 
-    Rent Formula (Owner's Rule):
-    - Minimum 30 days floor: days_stored <= 30 (including 0 or negative for same-day/erroneous dates)
-      receives a multiplier of 1.0. Documented assumption: same-day in-and-out still pays the 30-day
-      minimum floor per the business rule "minimum 30 days".
-    - After the first 30 days, billing is charged by every 15 days minimum slab (30, 45, 60, 75, ...):
-      multiplier = Decimal('1.0') + Decimal('0.5') * Decimal(math.ceil((days_stored - 30) / 15))
-    
-    Examples:
-    - 1 to 30 days -> 1.0
-    - 31 to 45 days -> 1.5
-    - 46 to 60 days -> 2.0
-    - 61 to 75 days -> 2.5
+    A storage month is exactly 30 x 24 hours (30 days). Rent is charged in
+    half-month (15-day) steps, rounded up, with a minimum of one month.
+    A stay of exactly 30 days bills one month.
+
+    Rent is calculated as:
+    period = max(1.0, ceil(days_stored / 15) / 2)
+
+    No grace period is allowed.
     """
-    if days_stored <= 30:
-        return Decimal('1.0')
-    
-    slabs = math.ceil((days_stored - 30) / 15)
-    return Decimal('1.0') + Decimal('0.5') * Decimal(slabs)
+    if days_stored < 0:
+        days_stored = 0
+    # Use integer arithmetic for the ceiling to avoid float rounding drift:
+    # ceil(days_stored / 15) is equivalent to -(-days_stored // 15)
+    ceil_days_div_15 = -(-days_stored // 15)
+    period = Decimal(ceil_days_div_15) / Decimal('2')
+    return max(Decimal('1.0'), period)
 
 
 def days_stored(inward_date: date, out_date: date) -> int:
     """
-    Calculate the number of days stock was stored between inward_date and out_date.
+    Calculate the number of elapsed days stock was stored between inward_date and out_date.
 
-    Day Counting Decision:
-    Uses inclusive day counting: `(out_date - inward_date).days + 1`.
+    Months are defined as 30 x 24 hours (30 days). Under this rule, time is counted
+    as elapsed days from the GRN's inward_date to the delivery note's dispatch_date (out_date),
+    without including the +1 day.
 
-    Rationale:
-    In cold storage operations, both the day of receipt (GRN) and the day of dispatch (DN) involve
-    space allocation and handling overhead on those calendar days. For instance, goods received on
-    Jan 1 and withdrawn on Jan 1 were present in the storage facility for 1 calendar day.
-    Because the 30-day minimum floor guards any duration up to 30 days (multiplier 1.0), this +1
-    affects slab transitions predictably (e.g., June 1 to June 30 is 30 days inclusive; June 1 to
-    July 1 is 31 days inclusive, triggering the first 15-day slab).
+    If out_date is before inward_date, this function returns 0 days.
     """
     if out_date < inward_date:
         return 0
-    return (out_date - inward_date).days + 1
+    return (out_date - inward_date).days
 
 
 def compute_line_rent(
