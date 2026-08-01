@@ -714,6 +714,101 @@ paths:
           description: ''
         '400':
           description: No response body
+  /api/exports/invoice-register/:
+    get:
+      operationId: exports_invoice_register_retrieve
+      summary: Export Invoice Register to CSV
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+        description: Filter by invoice_date >= date_from
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+        description: Filter by invoice_date <= date_to
+      - in: query
+        name: detail
+        schema:
+          type: string
+          default: summary
+        description: 'Level of detail: ''summary'' or ''lines'''
+      - in: query
+        name: facility
+        schema:
+          type: string
+        description: Facility ID or Facility Code
+        required: true
+      - in: query
+        name: financial_year
+        schema:
+          type: string
+        description: Filter by Financial Year (e.g. 2026-27)
+      tags:
+      - exports
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/exports/tally/:
+    get:
+      operationId: exports_tally_retrieve
+      summary: Export Invoices to Tally XML
+      parameters:
+      - in: query
+        name: company_name
+        schema:
+          type: string
+        description: Override the Tally current company name
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+        description: Filter by invoice_date >= date_from
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+        description: Filter by invoice_date <= date_to
+      - in: query
+        name: facility
+        schema:
+          type: string
+        description: Facility ID or Facility Code
+        required: true
+      - in: query
+        name: financial_year
+        schema:
+          type: string
+        description: Filter by Financial Year (e.g. 2026-27)
+      tags:
+      - exports
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/xml:
+              schema:
+                type: string
+                format: binary
+          description: ''
   /api/facilities/:
     get:
       operationId: facilities_list
@@ -1176,6 +1271,11 @@ paths:
         description: Filter by Facility ID
         required: true
       - in: query
+        name: financial_year
+        schema:
+          type: string
+        description: Filter by financial year (e.g. 2026-27)
+      - in: query
         name: party_id
         schema:
           type: integer
@@ -1262,6 +1362,43 @@ paths:
                 $ref: '#/components/schemas/InvoiceOutput'
           description: ''
         '404':
+          description: No response body
+  /api/invoices/{id}/adjust/:
+    patch:
+      operationId: invoices_adjust_partial_update
+      summary: Adjust tax and discount on a DRAFT invoice
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Invoice.
+        required: true
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdjustInvoiceInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAdjustInvoiceInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAdjustInvoiceInput'
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceOutput'
+          description: ''
+        '400':
           description: No response body
   /api/invoices/{id}/cancel/:
     post:
@@ -2381,6 +2518,20 @@ components:
           type: integer
         is_active:
           type: boolean
+    ChargeTypeEnum:
+      enum:
+      - RENT
+      - LOADING_UNLOADING
+      - TRANSPORT
+      - WEIGHING
+      - OTHER
+      type: string
+      description: |-
+        * `RENT` - Rent
+        * `LOADING_UNLOADING` - Loading/Unloading
+        * `TRANSPORT` - Transport
+        * `WEIGHING` - Weighing
+        * `OTHER` - Other
     CommodityInput:
       type: object
       properties:
@@ -2604,6 +2755,9 @@ components:
         dn_number:
           type: string
           maxLength: 100
+        legacy_ref:
+          type: string
+          readOnly: true
         party_id:
           type: integer
           readOnly: true
@@ -2669,12 +2823,21 @@ components:
       - dn_number
       - facility_id
       - id
+      - legacy_ref
       - lines
       - party_code
       - party_email
       - party_id
       - party_name
       - updated_at
+    DocumentTypeEnum:
+      enum:
+      - TAX_INVOICE
+      - BILL_OF_SUPPLY
+      type: string
+      description: |-
+        * `TAX_INVOICE` - Tax Invoice
+        * `BILL_OF_SUPPLY` - Bill of Supply
     FacilityInput:
       type: object
       properties:
@@ -2708,6 +2871,15 @@ components:
         terms_and_conditions:
           type: string
           default: ''
+        state_code:
+          type: string
+          default: ''
+          maxLength: 2
+        default_gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
       required:
       - name
     FacilityOutput:
@@ -2745,6 +2917,13 @@ components:
           maxLength: 20
         terms_and_conditions:
           type: string
+        state_code:
+          type: string
+          maxLength: 2
+        default_gst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
         created_at:
           type: string
           format: date-time
@@ -2917,6 +3096,9 @@ components:
         grn_number:
           type: string
           maxLength: 100
+        legacy_ref:
+          type: string
+          readOnly: true
         party_id:
           type: integer
           readOnly: true
@@ -2995,6 +3177,7 @@ components:
       - facility_id
       - grn_number
       - id
+      - legacy_ref
       - lots
       - party_code
       - party_email
@@ -3010,8 +3193,40 @@ components:
         party_id:
           type: integer
           nullable: true
+        cgst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        sgst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        igst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        discount_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
       required:
       - facility_id
+    GstRegistrationTypeEnum:
+      enum:
+      - REGULAR
+      - COMPOSITION
+      - UNREGISTERED
+      - CONSUMER
+      type: string
+      description: |-
+        * `REGULAR` - Regular
+        * `COMPOSITION` - Composition
+        * `UNREGISTERED` - Unregistered
+        * `CONSUMER` - Consumer
     InvoiceLineOutput:
       type: object
       properties:
@@ -3038,6 +3253,19 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        charge_type:
+          $ref: '#/components/schemas/ChargeTypeEnum'
+        sac_code:
+          type: string
+          maxLength: 10
+        period_from:
+          type: string
+          format: date
+          nullable: true
+        period_to:
+          type: string
+          format: date
           nullable: true
       required:
       - amount
@@ -3085,10 +3313,19 @@ components:
           format: date
         status:
           $ref: '#/components/schemas/StatusEnum'
+        financial_year:
+          type: string
+          readOnly: true
         subtotal:
           type: string
           format: decimal
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        taxable_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
         gst_rate:
           type: string
           format: decimal
@@ -3097,10 +3334,55 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        cgst_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        sgst_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        igst_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
         total_amount:
           type: string
           format: decimal
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        discount_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        discount_reason:
+          type: string
+          maxLength: 255
+        cgst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+        sgst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+        igst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+        place_of_supply:
+          type: string
+          maxLength: 2
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeEnum'
+        is_reverse_charge:
+          type: boolean
+        exemption_reason:
+          type: string
+          maxLength: 255
         amount_paid:
           type: string
           readOnly: true
@@ -3135,9 +3417,13 @@ components:
       required:
       - amount_due
       - amount_paid
+      - cgst_amount
       - created_at
       - facility_id
+      - financial_year
+      - gst_amount
       - id
+      - igst_amount
       - invoice_date
       - invoice_number
       - lines
@@ -3146,6 +3432,9 @@ components:
       - party_name
       - payment_status
       - payments
+      - sgst_amount
+      - subtotal
+      - taxable_value
       - updated_at
     InvoicePreviewLineOutput:
       type: object
@@ -3343,6 +3632,9 @@ components:
         lot_number:
           type: string
           maxLength: 100
+        legacy_ref:
+          type: string
+          readOnly: true
         chamber:
           type: string
           maxLength: 50
@@ -3430,6 +3722,7 @@ components:
       - id
       - initial_qty
       - inward_date
+      - legacy_ref
       - location_display
       - lot_number
       - party_code
@@ -3473,6 +3766,9 @@ components:
         * `CHEQUE` - Cheque
         * `UPI` - UPI
         * `OTHER` - Other
+    NullEnum:
+      enum:
+      - null
     PartyInput:
       type: object
       properties:
@@ -3505,6 +3801,14 @@ components:
         is_active:
           type: boolean
           default: true
+        gst_registration_type:
+          allOf:
+          - $ref: '#/components/schemas/GstRegistrationTypeEnum'
+          default: UNREGISTERED
+        state_code:
+          type: string
+          default: ''
+          maxLength: 2
       required:
       - facility_id
       - name
@@ -3552,6 +3856,11 @@ components:
             maxLength: 0
         is_active:
           type: boolean
+        gst_registration_type:
+          $ref: '#/components/schemas/GstRegistrationTypeEnum'
+        state_code:
+          type: string
+          maxLength: 2
         created_at:
           type: string
           format: date-time
@@ -3570,6 +3879,48 @@ components:
       - type
       - type_display
       - updated_at
+    PatchedAdjustInvoiceInput:
+      type: object
+      description: |-
+        Manual tax and discount controls for a DRAFT invoice. Every field is
+        optional; whatever is supplied is applied and the totals are recomputed.
+      properties:
+        discount_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        discount_reason:
+          type: string
+          maxLength: 255
+        cgst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        sgst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        igst_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+        place_of_supply:
+          type: string
+          maxLength: 2
+        document_type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/DocumentTypeEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        is_reverse_charge:
+          type: boolean
+        exemption_reason:
+          type: string
+          maxLength: 255
     PaymentInput:
       type: object
       properties:

@@ -9,14 +9,16 @@ class Sequence(models.Model):
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, null=True, blank=True, related_name='sequences')
     sequence_type = models.CharField(max_length=50)  # e.g., 'GRN', 'DN', 'INV', 'PARTY', 'FACILITY'
     prefix = models.CharField(max_length=20, default='', blank=True)
+    financial_year = models.CharField(max_length=7, blank=True, db_index=True)
     current_value = models.PositiveIntegerField(default=0)
 
     class Meta:
-        unique_together = ('facility', 'sequence_type')
+        unique_together = ('facility', 'sequence_type', 'financial_year')
 
     def __str__(self):
         fac_code = self.facility.code if self.facility else "GLOBAL"
-        return f"{fac_code} - {self.sequence_type}: {self.prefix}{self.current_value}"
+        return f"{fac_code} - {self.sequence_type} - {self.financial_year or 'GLOBAL'}: {self.prefix}{self.current_value}"
+
 
 
 

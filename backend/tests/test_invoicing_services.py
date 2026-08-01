@@ -93,14 +93,14 @@ def test_generate_invoices_for_withdrawals_single_party(default_facility, test_p
     assert inv.status == Invoice.Status.DRAFT
     assert inv.party_gstin_snapshot == "27ABCDE1234F1Z5"
     
-    # Rent: 100 * 50 * 1.5 = 7500.00
+    # Rent: 100 * 50 * 1.0 = 5000.00
     # GRN Loading: 100.00
     # DN Delivery: 50.00
-    # Subtotal: 7650.00
-    assert inv.subtotal == Decimal('7650.00')
+    # Subtotal: 5150.00
+    assert inv.subtotal == Decimal('5150.00')
     assert inv.gst_rate == Decimal('18.00')
-    assert inv.gst_amount == Decimal('1377.00')
-    assert inv.total_amount == Decimal('9027.00')
+    assert inv.gst_amount == Decimal('927.00')
+    assert inv.total_amount == Decimal('6077.00')
     assert inv.invoice_number.startswith("INV-")
 
     # 3 lines: Rent, GRN Loading, DN Delivery

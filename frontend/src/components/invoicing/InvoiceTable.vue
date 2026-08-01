@@ -40,6 +40,7 @@ interface Props {
   errorDetail?: string
   searchQuery: string
   selectedStatus: string
+  selectedFinancialYear: string
 }
 
 const props = defineProps<Props>()
@@ -47,6 +48,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:searchQuery': [query: string]
   'update:selectedStatus': [status: string]
+  'update:selectedFinancialYear': [fy: string]
   openGenerate: []
   retry: []
   post: [id: number]
@@ -70,6 +72,48 @@ watch(() => props.invoices, (newInvoices) => {
     }
   }
 }, { deep: true })
+
+function getCurrentFinancialYear(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  if (month >= 3) {
+    const nextYearShort = String(year + 1).slice(-2)
+    return `${year}-${nextYearShort}`
+  } else {
+    const prevYear = year - 1
+    const currentYearShort = String(year).slice(-2)
+    return `${prevYear}-${currentYearShort}`
+  }
+}
+
+const seenFinancialYears = ref(new Set<string>())
+
+watch(
+  () => props.invoices,
+  (newInvoices) => {
+    if (newInvoices) {
+      newInvoices.forEach((inv) => {
+        if (inv.financial_year) {
+          seenFinancialYears.value.add(inv.financial_year)
+        }
+      })
+    }
+  },
+  { immediate: true, deep: true }
+)
+
+const financialYearOptions = computed(() => {
+  const currentFy = getCurrentFinancialYear()
+  const years = new Set<string>(seenFinancialYears.value)
+  years.add(currentFy)
+  
+  const sortedYears = Array.from(years).sort((a, b) => b.localeCompare(a))
+  return [
+    { label: t('invoicing.allFinancialYears'), value: '' },
+    ...sortedYears.map((fy) => ({ label: fy, value: fy }))
+  ]
+})
 
 async function handleDownloadPdf(id: number, docNumber: string) {
   downloadingId.value = id
@@ -108,6 +152,7 @@ const extraActiveCount = computed(() => {
   let count = 0
   if (props.searchQuery && props.searchQuery.trim() !== '') count++
   if (props.selectedStatus && props.selectedStatus !== '') count++
+  if (props.selectedFinancialYear && props.selectedFinancialYear !== '') count++
   return count
 })
 
@@ -124,6 +169,7 @@ function handleClearAll() {
   clearFilters()
   emit('update:searchQuery', '')
   emit('update:selectedStatus', '')
+  emit('update:selectedFinancialYear', '')
 }
 
 function handleOpenDetail(inv: InvoiceOutput) {
@@ -199,6 +245,16 @@ const getPaymentSeverity = (status?: string) => {
           :options="statusOptions"
           optionLabel="label"
           optionValue="value"
+          class="toolbar-select"
+        />
+
+        <Select
+          :modelValue="selectedFinancialYear"
+          @update:modelValue="emit('update:selectedFinancialYear', $event)"
+          :options="financialYearOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Financial Year"
           class="toolbar-select"
         />
       </div>
@@ -350,6 +406,15 @@ const getPaymentSeverity = (status?: string) => {
             </template>
           </Column>
 
+          <Column field="document_type" :header="t('invoicing.documentType')" sortable>
+            <template #body="{ data }">
+              <Tag
+                :value="data.document_type === 'TAX_INVOICE' ? t('invoicing.taxInvoice') : t('invoicing.billOfSupply')"
+                :severity="data.document_type === 'TAX_INVOICE' ? 'success' : 'info'"
+              />
+            </template>
+          </Column>
+
           <Column field="invoice_date" :header="t('invoicing.invoiceDate')" sortable>
             <template #filter="{ filterModel, filterCallback }">
               <DatePicker
@@ -436,6 +501,16 @@ const getPaymentSeverity = (status?: string) => {
             </div>
           </div>
           <div class="card-body">
+            <div class="card-row">
+              <span class="card-label">{{ t('invoicing.documentType') }}:</span>
+              <span class="card-value">
+                <Tag
+                  :value="data.document_type === 'TAX_INVOICE' ? t('invoicing.taxInvoice') : t('invoicing.billOfSupply')"
+                  :severity="data.document_type === 'TAX_INVOICE' ? 'success' : 'info'"
+                  class="text-xs"
+                />
+              </span>
+            </div>
             <div class="card-row">
               <span class="card-label">{{ t('grn.party') }}:</span>
               <span class="card-value">{{ data.party_name }}</span>

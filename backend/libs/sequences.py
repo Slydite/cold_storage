@@ -22,11 +22,19 @@ def get_next_sequence_number(
     sequence_type: str = '',
     prefix: str = None,
     facility: Facility = None,
+    financial_year: str = '',
 ) -> str:
     """
     Generate the next sequence number for a given facility and sequence type (e.g. 'GRN', 'DN', 'INV', 'PARTY', 'FACILITY')
     using select_for_update() on the Sequence model inside an atomic transaction.
-    Format example: GRN-000001, PRT-000001, FAC-000001
+
+    When `financial_year` is empty (the default), the format and behaviour are
+    **byte-for-byte identical** to the previous version — e.g. GRN-000001, LOT-000001.
+    The legacy import depends on this exact format; do not change it.
+
+    When `financial_year` is supplied (e.g. '2026-27'), the counter is scoped to
+    that FY and the number is formatted as INV-2026-27-000001 per GST Rule 46(b).
+    Only invoice sequences are FY-scoped; all other sequence types keep flat numbering.
 
     Pass an already-loaded `facility` to skip a redundant lookup when the caller
     has one on hand; otherwise pass `facility_id` and it will be fetched here.
@@ -46,6 +54,7 @@ def get_next_sequence_number(
     seq, created = Sequence.objects.select_for_update().get_or_create(
         facility=facility,
         sequence_type=sequence_type,
+        financial_year=financial_year,
         defaults={'prefix': default_prefix, 'current_value': 0}
     )
 
@@ -55,6 +64,9 @@ def get_next_sequence_number(
     seq.current_value += 1
     seq.save()
 
-    return f"{seq.prefix}{seq.current_value:06d}"
-
-
+    if financial_year:
+        # FY-scoped format: INV-2026-27-000001
+        return f"{seq.prefix}{financial_year}-{seq.current_value:06d}"
+    else:
+        # Legacy flat format: GRN-000001
+        return f"{seq.prefix}{seq.current_value:06d}"

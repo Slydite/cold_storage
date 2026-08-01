@@ -7,26 +7,29 @@ import {
   postInvoice,
   cancelInvoice,
   createInvoicePayment,
-  deleteInvoicePayment
+  deleteInvoicePayment,
+  adjustInvoice
 } from '../api/invoicing'
-import type { GenerateInvoicesInput, PaymentInput } from '../api/invoicing'
+import type { GenerateInvoicesInput, PaymentInput, PatchedAdjustInvoiceInput } from '../api/invoicing'
 
 export function useInvoiceList(
   facilityId: Ref<number | undefined> | ComputedRef<number | undefined>,
-  filters?: Ref<{ partyId?: number; status?: string }> | ComputedRef<{ partyId?: number; status?: string }>
+  filters?: Ref<{ partyId?: number; status?: string; financialYear?: string }> | ComputedRef<{ partyId?: number; status?: string; financialYear?: string }>
 ) {
   return useQuery({
     queryKey: computed(() => [
       'invoices',
       facilityId.value,
       filters?.value?.partyId,
-      filters?.value?.status
+      filters?.value?.status,
+      filters?.value?.financialYear
     ]),
     queryFn: () =>
       fetchInvoices({
         facilityId: facilityId.value!,
         partyId: filters?.value?.partyId,
-        status: filters?.value?.status
+        status: filters?.value?.status,
+        financialYear: filters?.value?.financialYear
       }),
     enabled: computed(() => !!facilityId.value)
   })
@@ -100,6 +103,18 @@ export function useDeleteInvoicePayment() {
       deleteInvoicePayment(invoiceId, paymentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
+    }
+  })
+}
+
+export function useAdjustInvoice() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: PatchedAdjustInvoiceInput }) =>
+      adjustInvoice(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['invoice-preview'] })
     }
   })
 }

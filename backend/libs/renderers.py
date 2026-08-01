@@ -21,3 +21,24 @@ class PDFRenderer(BaseRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         return data
+
+
+class CSVRenderer(BaseRenderer):
+    media_type = 'text/csv'
+    format = 'csv'
+    charset = 'utf-8'
+    render_style = 'text'
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data
+
+
+class XMLRenderer(BaseRenderer):
+    media_type = 'application/xml'
+    format = 'xml'
+    charset = 'utf-8'
+    render_style = 'text'
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data
+

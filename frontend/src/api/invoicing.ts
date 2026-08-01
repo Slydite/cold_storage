@@ -7,7 +7,8 @@ import {
   invoicesPaymentsCreate,
   invoicesPaymentsDestroy,
   invoicesPreviewList,
-  invoicesEmailCreate
+  invoicesEmailCreate,
+  invoicesAdjustPartialUpdate
 } from './generated/sdk.gen'
 import type {
   InvoiceOutput,
@@ -17,7 +18,9 @@ import type {
   PaymentOutput,
   StatusEnum,
   InvoicePreviewPartyOutput,
-  InvoicePreviewLineOutput
+  InvoicePreviewLineOutput,
+  PatchedAdjustInvoiceInput,
+  DocumentTypeEnum
 } from './generated/types.gen'
 
 export type {
@@ -28,7 +31,9 @@ export type {
   PaymentOutput,
   StatusEnum,
   InvoicePreviewPartyOutput,
-  InvoicePreviewLineOutput
+  InvoicePreviewLineOutput,
+  PatchedAdjustInvoiceInput,
+  DocumentTypeEnum
 }
 
 function extractErrorMessage(error: unknown, fallback: string): string {
@@ -51,12 +56,14 @@ export async function fetchInvoices(params: {
   facilityId: number
   partyId?: number
   status?: string
+  financialYear?: string
 }): Promise<InvoiceOutput[]> {
   const res = await invoicesList({
     query: {
       facility_id: params.facilityId,
       party_id: params.partyId,
-      status: params.status
+      status: params.status,
+      financial_year: params.financialYear
     }
   })
   if (res.error) {
@@ -173,6 +180,23 @@ export async function emailInvoice(id: number): Promise<InvoiceOutput> {
   }
   if (!res.data) {
     throw new Error('No data returned from emailing invoice')
+  }
+  return res.data
+}
+
+export async function adjustInvoice(
+  id: number,
+  body: PatchedAdjustInvoiceInput
+): Promise<InvoiceOutput> {
+  const res = await invoicesAdjustPartialUpdate({
+    path: { id },
+    body
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to adjust invoice'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from adjusting invoice')
   }
   return res.data
 }

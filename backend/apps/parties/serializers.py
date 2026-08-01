@@ -20,6 +20,8 @@ class PartyOutputSerializer(serializers.ModelSerializer):
             'address',
             'gstin',
             'is_active',
+            'gst_registration_type',
+            'state_code',
             'created_at',
             'updated_at'
         )
@@ -33,4 +35,9 @@ class PartyInputSerializer(serializers.Serializer):
     address = serializers.CharField(max_length=1000, required=False, allow_blank=True, default="")
     gstin = serializers.CharField(max_length=15, required=False, allow_blank=True, default="")
     is_active = serializers.BooleanField(required=False, default=True)
-
+    gst_registration_type = serializers.ChoiceField(
+        choices=Party.GstRegistrationType.choices,
+        required=False,
+        default=Party.GstRegistrationType.UNREGISTERED,
+    )
+    state_code = serializers.CharField(max_length=2, required=False, allow_blank=True, default="")

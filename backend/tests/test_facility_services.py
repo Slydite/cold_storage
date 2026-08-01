@@ -86,9 +86,13 @@ def test_second_facilitys_first_grn_dn_invoice_do_not_collide_with_first_facilit
     grn2, dn2, inv2 = first_document_set(fac2)
 
     # Both facilities' first documents get the same per-facility number...
+    # Invoice numbers are now FY-scoped per GST Rule 46(b): INV-YYYY-YY-NNNNNN.
     assert grn1.grn_number == grn2.grn_number == "GRN-000001"
     assert dn1.dn_number == dn2.dn_number == "DN-000001"
-    assert inv1.invoice_number == inv2.invoice_number == "INV-000001"
+    from libs.fiscal import fy_label
+    from datetime import date
+    expected_inv_num = f"INV-{fy_label(date.today())}-000001"
+    assert inv1.invoice_number == inv2.invoice_number == expected_inv_num
 
     # ...and creating the second facility's set did not raise, and both rows
     # genuinely exist and belong to their own facility.

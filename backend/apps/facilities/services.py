@@ -75,10 +75,13 @@ def update_facility(*, facility_id: int, **fields) -> Facility:
     # Update allowed fields (code is read-only / auto-generated and cannot be mutated)
     allowed_fields = [
         'name', 'address', 'gstin', 'phone',
-        'factory_phone', 'bank_account_no', 'bank_ifsc', 'terms_and_conditions'
+        'factory_phone', 'bank_account_no', 'bank_ifsc', 'terms_and_conditions',
+        'state_code', 'default_gst_rate'
     ]
     for field, value in fields.items():
-        if field in allowed_fields:
+        # A None here means "not supplied", not "set to null" - these columns
+        # are non-nullable, so skip rather than clobber.
+        if field in allowed_fields and value is not None:
             setattr(facility, field, value)
             
     facility.full_clean()

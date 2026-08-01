@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, AuthTokenCreateData, AuthTokenCreateErrors, AuthTokenCreateResponses, AuthTokenRevokeCreateData, AuthTokenRevokeCreateResponses, BlocksCreateData, BlocksCreateErrors, BlocksCreateResponses, BlocksListData, BlocksListResponses, BlocksRetrieveData, BlocksRetrieveErrors, BlocksRetrieveResponses, BlocksUpdateData, BlocksUpdateErrors, BlocksUpdateResponses, ChambersCreateData, ChambersCreateErrors, ChambersCreateResponses, ChambersListData, ChambersListResponses, ChambersRetrieveData, ChambersRetrieveErrors, ChambersRetrieveResponses, ChambersUpdateData, ChambersUpdateErrors, ChambersUpdateResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesEmailCreateData, DeliveryNotesEmailCreateErrors, DeliveryNotesEmailCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPdfRetrieveData, DeliveryNotesPdfRetrieveErrors, DeliveryNotesPdfRetrieveResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, FloorsCreateData, FloorsCreateErrors, FloorsCreateResponses, FloorsListData, FloorsListResponses, FloorsRetrieveData, FloorsRetrieveErrors, FloorsRetrieveResponses, FloorsUpdateData, FloorsUpdateErrors, FloorsUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsEmailCreateData, GrnsEmailCreateErrors, GrnsEmailCreateResponses, GrnsListData, GrnsListResponses, GrnsPdfRetrieveData, GrnsPdfRetrieveErrors, GrnsPdfRetrieveResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesEmailCreateData, InvoicesEmailCreateErrors, InvoicesEmailCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPaymentsCreateData, InvoicesPaymentsCreateErrors, InvoicesPaymentsCreateResponses, InvoicesPaymentsDestroyData, InvoicesPaymentsDestroyErrors, InvoicesPaymentsDestroyResponses, InvoicesPaymentsListData, InvoicesPaymentsListErrors, InvoicesPaymentsListResponses, InvoicesPdfRetrieveData, InvoicesPdfRetrieveErrors, InvoicesPdfRetrieveResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesPreviewListData, InvoicesPreviewListResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsListData, LotsListResponses, LotsReserveNumberCreateData, LotsReserveNumberCreateErrors, LotsReserveNumberCreateResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, ReportsDnRegisterRetrieveData, ReportsDnRegisterRetrieveResponses, ReportsGrnRegisterRetrieveData, ReportsGrnRegisterRetrieveResponses, ReportsInvoicesRetrieveData, ReportsInvoicesRetrieveResponses, ReportsPaymentsRetrieveData, ReportsPaymentsRetrieveResponses, ReportsStockSummaryRetrieveData, ReportsStockSummaryRetrieveResponses, UsersActivateCreateData, UsersActivateCreateErrors, UsersActivateCreateResponses, UsersCreateData, UsersCreateErrors, UsersCreateResponses, UsersDeactivateCreateData, UsersDeactivateCreateErrors, UsersDeactivateCreateResponses, UsersListData, UsersListResponses, UsersRetrieveData, UsersRetrieveErrors, UsersRetrieveResponses, UsersUpdateData, UsersUpdateErrors, UsersUpdateResponses } from './types.gen';
+import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, AuthTokenCreateData, AuthTokenCreateErrors, AuthTokenCreateResponses, AuthTokenRevokeCreateData, AuthTokenRevokeCreateResponses, BlocksCreateData, BlocksCreateErrors, BlocksCreateResponses, BlocksListData, BlocksListResponses, BlocksRetrieveData, BlocksRetrieveErrors, BlocksRetrieveResponses, BlocksUpdateData, BlocksUpdateErrors, BlocksUpdateResponses, ChambersCreateData, ChambersCreateErrors, ChambersCreateResponses, ChambersListData, ChambersListResponses, ChambersRetrieveData, ChambersRetrieveErrors, ChambersRetrieveResponses, ChambersUpdateData, ChambersUpdateErrors, ChambersUpdateResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesEmailCreateData, DeliveryNotesEmailCreateErrors, DeliveryNotesEmailCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPdfRetrieveData, DeliveryNotesPdfRetrieveErrors, DeliveryNotesPdfRetrieveResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, ExportsInvoiceRegisterRetrieveData, ExportsInvoiceRegisterRetrieveResponses, ExportsTallyRetrieveData, ExportsTallyRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, FloorsCreateData, FloorsCreateErrors, FloorsCreateResponses, FloorsListData, FloorsListResponses, FloorsRetrieveData, FloorsRetrieveErrors, FloorsRetrieveResponses, FloorsUpdateData, FloorsUpdateErrors, FloorsUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsEmailCreateData, GrnsEmailCreateErrors, GrnsEmailCreateResponses, GrnsListData, GrnsListResponses, GrnsPdfRetrieveData, GrnsPdfRetrieveErrors, GrnsPdfRetrieveResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, InvoicesAdjustPartialUpdateData, InvoicesAdjustPartialUpdateErrors, InvoicesAdjustPartialUpdateResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesEmailCreateData, InvoicesEmailCreateErrors, InvoicesEmailCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPaymentsCreateData, InvoicesPaymentsCreateErrors, InvoicesPaymentsCreateResponses, InvoicesPaymentsDestroyData, InvoicesPaymentsDestroyErrors, InvoicesPaymentsDestroyResponses, InvoicesPaymentsListData, InvoicesPaymentsListErrors, InvoicesPaymentsListResponses, InvoicesPdfRetrieveData, InvoicesPdfRetrieveErrors, InvoicesPdfRetrieveResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesPreviewListData, InvoicesPreviewListResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsListData, LotsListResponses, LotsReserveNumberCreateData, LotsReserveNumberCreateErrors, LotsReserveNumberCreateResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, ReportsDnRegisterRetrieveData, ReportsDnRegisterRetrieveResponses, ReportsGrnRegisterRetrieveData, ReportsGrnRegisterRetrieveResponses, ReportsInvoicesRetrieveData, ReportsInvoicesRetrieveResponses, ReportsPaymentsRetrieveData, ReportsPaymentsRetrieveResponses, ReportsStockSummaryRetrieveData, ReportsStockSummaryRetrieveResponses, UsersActivateCreateData, UsersActivateCreateErrors, UsersActivateCreateResponses, UsersCreateData, UsersCreateErrors, UsersCreateResponses, UsersDeactivateCreateData, UsersDeactivateCreateErrors, UsersDeactivateCreateResponses, UsersListData, UsersListResponses, UsersRetrieveData, UsersRetrieveErrors, UsersRetrieveResponses, UsersUpdateData, UsersUpdateErrors, UsersUpdateResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -480,6 +480,40 @@ export const deliveryNotesPostCreate = <ThrowOnError extends boolean = false>(op
 });
 
 /**
+ * Export Invoice Register to CSV
+ */
+export const exportsInvoiceRegisterRetrieve = <ThrowOnError extends boolean = false>(options: Options<ExportsInvoiceRegisterRetrieveData, ThrowOnError>): RequestResult<ExportsInvoiceRegisterRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<ExportsInvoiceRegisterRetrieveResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
+    url: '/api/exports/invoice-register/',
+    ...options
+});
+
+/**
+ * Export Invoices to Tally XML
+ */
+export const exportsTallyRetrieve = <ThrowOnError extends boolean = false>(options: Options<ExportsTallyRetrieveData, ThrowOnError>): RequestResult<ExportsTallyRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<ExportsTallyRetrieveResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
+    url: '/api/exports/tally/',
+    ...options
+});
+
+/**
  * List all facilities
  */
 export const facilitiesList = <ThrowOnError extends boolean = false>(options?: Options<FacilitiesListData, ThrowOnError>): RequestResult<FacilitiesListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<FacilitiesListResponses, unknown, ThrowOnError>({
@@ -807,6 +841,27 @@ export const invoicesRetrieve = <ThrowOnError extends boolean = false>(options: 
     ],
     url: '/api/invoices/{id}/',
     ...options
+});
+
+/**
+ * Adjust tax and discount on a DRAFT invoice
+ */
+export const invoicesAdjustPartialUpdate = <ThrowOnError extends boolean = false>(options: Options<InvoicesAdjustPartialUpdateData, ThrowOnError>): RequestResult<InvoicesAdjustPartialUpdateResponses, InvoicesAdjustPartialUpdateErrors, ThrowOnError> => (options.client ?? client).patch<InvoicesAdjustPartialUpdateResponses, InvoicesAdjustPartialUpdateErrors, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
+    url: '/api/invoices/{id}/adjust/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

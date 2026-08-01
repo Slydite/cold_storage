@@ -7,7 +7,8 @@ def get_invoices_list(
     facility_id: int,
     party_id: int = None,
     status: str = None,
-    payment_status: str = None
+    payment_status: str = None,
+    financial_year: str = None,
 ) -> list[Invoice]:
     """
     Fetch all invoices for a facility with optional party_id, status, and payment_status filters.
@@ -22,6 +23,8 @@ def get_invoices_list(
         qs = qs.filter(party_id=party_id)
     if status:
         qs = qs.filter(status=status)
+    if financial_year:
+        qs = qs.filter(financial_year=financial_year)
 
     invoices = list(qs.order_by('-invoice_date', '-id'))
 

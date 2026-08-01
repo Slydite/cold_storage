@@ -16,7 +16,6 @@ const { t } = useI18n()
 const toast = useToast()
 const { facilityId, facilities, isLoading, isError, refetch } = useFacility()
 const updateFacilityMutation = useUpdateFacility()
-
 const currentFacility = computed(() => {
   if (!facilityId.value) return null
   return facilities.value.find((f) => f.id === facilityId.value) ?? null
@@ -31,7 +30,20 @@ const facilitySchema = computed(() =>
     factory_phone: z.string().optional(),
     bank_account_no: z.string().optional(),
     bank_ifsc: z.string().optional(),
-    terms_and_conditions: z.string().optional()
+    terms_and_conditions: z.string().optional(),
+    state_code: z.string().max(2, t('validation.stateCodeMaxLength')).optional(),
+    default_gst_rate: z
+      .string()
+      .nullable()
+      .optional()
+      .refine(
+        (val) => {
+          if (!val) return true
+          const num = Number(val)
+          return !isNaN(num) && num >= 0
+        },
+        { message: t('validation.rateNotNegative') }
+      )
   })
 )
 
@@ -45,7 +57,9 @@ const { handleSubmit, errors, defineField, resetForm } = useForm({
     factory_phone: '',
     bank_account_no: '',
     bank_ifsc: '',
-    terms_and_conditions: ''
+    terms_and_conditions: '',
+    state_code: '',
+    default_gst_rate: ''
   }
 })
 
@@ -57,6 +71,8 @@ const [factory_phone, factoryPhoneProps] = defineField('factory_phone')
 const [bank_account_no, bankAccountNoProps] = defineField('bank_account_no')
 const [bank_ifsc, bankIfscProps] = defineField('bank_ifsc')
 const [terms_and_conditions, termsProps] = defineField('terms_and_conditions')
+const [state_code, stateCodeProps] = defineField('state_code')
+const [default_gst_rate, defaultGstRateProps] = defineField('default_gst_rate')
 
 watch(
   currentFacility,
@@ -71,7 +87,9 @@ watch(
           factory_phone: fac.factory_phone ?? '',
           bank_account_no: fac.bank_account_no ?? '',
           bank_ifsc: fac.bank_ifsc ?? '',
-          terms_and_conditions: fac.terms_and_conditions ?? ''
+          terms_and_conditions: fac.terms_and_conditions ?? '',
+          state_code: fac.state_code ?? '',
+          default_gst_rate: fac.default_gst_rate ?? ''
         }
       })
     }
@@ -92,7 +110,9 @@ const onSubmit = handleSubmit(async (values) => {
         factory_phone: values.factory_phone || undefined,
         bank_account_no: values.bank_account_no || undefined,
         bank_ifsc: values.bank_ifsc || undefined,
-        terms_and_conditions: values.terms_and_conditions || undefined
+        terms_and_conditions: values.terms_and_conditions || undefined,
+        state_code: values.state_code || '',
+        default_gst_rate: values.default_gst_rate || null
       }
     })
     toast.add({
@@ -119,7 +139,7 @@ const onSubmit = handleSubmit(async (values) => {
     <div v-if="isLoading" class="skeleton-container">
       <Skeleton height="32px" width="200px" class="mb-4" />
       <div class="form-grid">
-        <Skeleton height="40px" v-for="n in 8" :key="n" />
+        <Skeleton height="40px" v-for="n in 10" :key="n" />
       </div>
     </div>
 
@@ -174,6 +194,33 @@ const onSubmit = handleSubmit(async (values) => {
             :class="{ 'p-invalid': errors.gstin }"
           />
           <span v-if="errors.gstin" class="field-error">{{ errors.gstin }}</span>
+        </div>
+
+        <div class="form-group">
+          <label for="fac-state-code">{{ t('settings.stateCode') }}</label>
+          <InputText
+            id="fac-state-code"
+            v-model="state_code"
+            v-bind="stateCodeProps"
+            placeholder="e.g. 24"
+            class="w-full"
+            :class="{ 'p-invalid': errors.state_code }"
+          />
+          <span v-if="errors.state_code" class="field-error">{{ errors.state_code }}</span>
+        </div>
+
+        <div class="form-group">
+          <label for="fac-default-gst-rate">{{ t('settings.defaultGstRate') }}</label>
+          <InputText
+            id="fac-default-gst-rate"
+            v-model="default_gst_rate"
+            v-bind="defaultGstRateProps"
+            placeholder="e.g. 18.00"
+            class="w-full"
+            :class="{ 'p-invalid': errors.default_gst_rate }"
+          />
+          <span v-if="errors.default_gst_rate" class="field-error">{{ errors.default_gst_rate }}</span>
+          <span class="field-helper">{{ t('settings.defaultGstRateHelp') }}</span>
         </div>
 
         <div class="form-group">
@@ -267,7 +314,7 @@ const onSubmit = handleSubmit(async (values) => {
 
 .facility-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
   padding: 20px;
   box-shadow: var(--shadow-card);
@@ -334,6 +381,13 @@ const onSubmit = handleSubmit(async (values) => {
   color: var(--status-danger-color);
 }
 
+.field-helper {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
 .w-full {
   width: 100%;
 }
@@ -346,7 +400,7 @@ const onSubmit = handleSubmit(async (values) => {
 
 .state-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
   padding: 40px;
   text-align: center;
@@ -362,7 +416,7 @@ const onSubmit = handleSubmit(async (values) => {
 
 .skeleton-container {
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
   padding: 20px;
 }

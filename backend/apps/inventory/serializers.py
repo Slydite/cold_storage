@@ -59,6 +59,7 @@ class LotOutputSerializer(serializers.ModelSerializer):
     block_ref_id = serializers.IntegerField(source='block_ref.id', read_only=True, allow_null=True)
     block_name = serializers.SerializerMethodField()
     location_display = serializers.CharField(read_only=True)
+    legacy_ref = serializers.CharField(read_only=True)
 
     class Meta:
         model = Lot
@@ -76,6 +77,7 @@ class LotOutputSerializer(serializers.ModelSerializer):
             'commodity_code',
             'commodity_unit',
             'lot_number',
+            'legacy_ref',
             'chamber',
             'floor',
             'rack',
@@ -132,6 +134,7 @@ class GRNOutputSerializer(serializers.ModelSerializer):
     party_email = serializers.CharField(source='party.email', read_only=True)
     lots = LotOutputSerializer(many=True, read_only=True)
     computed_loading_charge = serializers.SerializerMethodField()
+    legacy_ref = serializers.CharField(read_only=True)
 
     class Meta:
         model = GRN
@@ -139,6 +142,7 @@ class GRNOutputSerializer(serializers.ModelSerializer):
             'id',
             'facility_id',
             'grn_number',
+            'legacy_ref',
             'party_id',
             'party_name',
             'party_code',

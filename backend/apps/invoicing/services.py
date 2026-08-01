@@ -8,6 +8,7 @@ from django.core.mail import EmailMessage
 from libs.lookups import get_facility_or_raise
 from libs.pdf import render_pdf
 from libs.sequences import get_next_sequence_number
+from libs.fiscal import fy_label
 from apps.billing.services import compute_delivery_line_rent, days_stored
 from apps.delivery.selectors import get_uninvoiced_delivery_lines
 from libs.choices import ChargeMode
@@ -15,10 +16,103 @@ from .models import Invoice, InvoiceLine, Payment
 from .selectors import get_invoice_by_id
 
 
-def build_invoice_items(*, party, line_list: list) -> dict:
+def _compute_tax_amounts(
+    taxable_value: Decimal,
+    cgst_rate: Decimal,
+    sgst_rate: Decimal,
+    igst_rate: Decimal,
+) -> tuple[Decimal, Decimal, Decimal]:
+    """
+    Compute three independent GST component amounts: taxable_value * rate / 100,
+    quantized to 2dp ROUND_HALF_UP. Nothing is split or halved automatically.
+    Returns (cgst_amount, sgst_amount, igst_amount).
+    """
+    def _amt(rate):
+        return (taxable_value * rate / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    return _amt(cgst_rate), _amt(sgst_rate), _amt(igst_rate)
+
+
+def _derive_document_type(cgst_amount, sgst_amount, igst_amount) -> str:
+    """
+    Derive the default document_type from whether any tax is present.
+    Zero tax → Bill of Supply; any tax → Tax Invoice.
+
+    NOTE: The tax position depends on what is actually stored and must be
+    confirmed with the business's CA — the code implements a mechanism and
+    does not give tax advice.
+    """
+    tax_total = cgst_amount + sgst_amount + igst_amount
+    if tax_total == Decimal('0.00'):
+        return Invoice.DocumentType.BILL_OF_SUPPLY
+    return Invoice.DocumentType.TAX_INVOICE
+
+
+def compute_invoice_totals(
+    *,
+    subtotal: Decimal,
+    discount_amount: Decimal,
+    cgst_rate: Decimal,
+    sgst_rate: Decimal,
+    igst_rate: Decimal,
+) -> dict:
+    """
+    Single implementation of the money arithmetic on an invoice.
+
+    Both the generation path and the adjust path go through here, so a draft
+    that is later adjusted cannot end up computed differently from one that
+    was generated with the same numbers.
+
+    Discount comes off before tax: a discount shown on the face of the invoice
+    reduces the taxable value under s.15(3)(a) of the CGST Act.
+    """
+    if discount_amount < Decimal('0.00'):
+        raise ValidationError("Discount cannot be negative.")
+    if discount_amount > subtotal:
+        raise ValidationError(
+            f"Discount ({discount_amount}) cannot exceed the invoice subtotal ({subtotal})."
+        )
+
+    taxable_value = (subtotal - discount_amount).quantize(Decimal('0.01'))
+    cgst_amount, sgst_amount, igst_amount = _compute_tax_amounts(
+        taxable_value, cgst_rate, sgst_rate, igst_rate
+    )
+    gst_amount = (cgst_amount + sgst_amount + igst_amount).quantize(Decimal('0.01'))
+
+    return {
+        'discount_amount': discount_amount,
+        'taxable_value': taxable_value,
+        # Kept in step with the components so the legacy total-rate field can
+        # never contradict them.
+        'gst_rate': (cgst_rate + sgst_rate + igst_rate).quantize(Decimal('0.01')),
+        'cgst_rate': cgst_rate,
+        'sgst_rate': sgst_rate,
+        'igst_rate': igst_rate,
+        'cgst_amount': cgst_amount,
+        'sgst_amount': sgst_amount,
+        'igst_amount': igst_amount,
+        'gst_amount': gst_amount,
+        'total_amount': (taxable_value + gst_amount).quantize(Decimal('0.01')),
+    }
+
+
+def build_invoice_items(
+    *,
+    party,
+    line_list: list,
+    default_gst_rate: Decimal | None = None,
+    cgst_rate: Decimal | None = None,
+    sgst_rate: Decimal | None = None,
+    igst_rate: Decimal | None = None,
+    discount_amount: Decimal | None = None,
+) -> dict:
     """
     Build invoice line items, subtotal, GST rate, GST amount, and total amount
     for a list of delivery lines belonging to a party.
+
+    Tax rates and discount may be supplied explicitly. When they are not, the
+    facility's `default_gst_rate` is split evenly across CGST/SGST, which is
+    what this business does for a local (intra-state) supply.
 
     Pure and side-effect free: does NOT write to database or mutate any model.
     """
@@ -42,6 +136,10 @@ def build_invoice_items(*, party, line_list: list) -> dict:
             'quantity': line.qty,
             'unit': line.lot.unit,
             'rate_per_unit': line.lot.rent_rate_per_unit,
+            # Charge head: rent lines carry the storage period billed
+            'charge_type': InvoiceLine.ChargeType.RENT,
+            'period_from': line.lot.inward_date,
+            'period_to': line.delivery_note.dispatch_date,
         })
 
     # 2. GRN loading/unloading charges (billed once on first withdrawal).
@@ -70,6 +168,9 @@ def build_invoice_items(*, party, line_list: list) -> dict:
                     'quantity': total_units,
                     'unit': 'UNITS' if is_per_unit else '',
                     'rate_per_unit': grn.loading_unloading_rate_per_bag if is_per_unit else None,
+                    'charge_type': InvoiceLine.ChargeType.LOADING_UNLOADING,
+                    'period_from': None,
+                    'period_to': None,
                 })
 
     # 3. DN loading/unloading charges (billed once on invoice containing DN's lines)
@@ -95,19 +196,41 @@ def build_invoice_items(*, party, line_list: list) -> dict:
                     'quantity': total_units,
                     'unit': 'UNITS' if is_per_unit else '',
                     'rate_per_unit': dn.loading_unloading_rate_per_unit if is_per_unit else None,
+                    'charge_type': InvoiceLine.ChargeType.LOADING_UNLOADING,
+                    'period_from': None,
+                    'period_to': None,
                 })
 
     subtotal = sum((item['amount'] for item in invoice_items), Decimal('0.00')).quantize(Decimal('0.01'))
-    gst_rate = Decimal('18.00')
-    gst_amount = (subtotal * gst_rate / Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-    total_amount = subtotal + gst_amount
+
+    # When no explicit split is given, fall back to the facility default and
+    # treat the supply as intra-state, which is overwhelmingly what this
+    # business does. Any of the three can be overridden per invoice.
+    if cgst_rate is None and sgst_rate is None and igst_rate is None:
+        base_rate = default_gst_rate if default_gst_rate is not None else Decimal('18.00')
+        cgst_rate = (base_rate / 2).quantize(Decimal('0.01'))
+        sgst_rate = (base_rate / 2).quantize(Decimal('0.01'))
+        igst_rate = Decimal('0.00')
+    else:
+        cgst_rate = cgst_rate if cgst_rate is not None else Decimal('0.00')
+        sgst_rate = sgst_rate if sgst_rate is not None else Decimal('0.00')
+        igst_rate = igst_rate if igst_rate is not None else Decimal('0.00')
+
+    totals = compute_invoice_totals(
+        subtotal=subtotal,
+        discount_amount=discount_amount if discount_amount is not None else Decimal('0.00'),
+        cgst_rate=cgst_rate,
+        sgst_rate=sgst_rate,
+        igst_rate=igst_rate,
+    )
 
     return {
         'items': invoice_items,
         'subtotal': subtotal,
-        'gst_rate': gst_rate,
-        'gst_amount': gst_amount,
-        'total_amount': total_amount,
+        'document_type': _derive_document_type(
+            totals['cgst_amount'], totals['sgst_amount'], totals['igst_amount']
+        ),
+        **totals,
     }
 
 
@@ -134,7 +257,11 @@ def preview_uninvoiced_charges(
 
     previews = []
     for party, line_list in sorted(party_lines_map.items(), key=lambda item: item[0].id):
-        items_data = build_invoice_items(party=party, line_list=line_list)
+        items_data = build_invoice_items(
+            party=party,
+            line_list=line_list,
+            default_gst_rate=facility.default_gst_rate,
+        )
 
         line_breakdown = []
         for item in items_data['items']:
@@ -170,7 +297,11 @@ def preview_uninvoiced_charges(
 def generate_invoices_for_uninvoiced_deliveries(
     *,
     facility_id: int,
-    party_id: int | None = None
+    party_id: int | None = None,
+    cgst_rate: Decimal | None = None,
+    sgst_rate: Decimal | None = None,
+    igst_rate: Decimal | None = None,
+    discount_amount: Decimal | None = None,
 ) -> list[Invoice]:
     """
     Generate one Invoice per party for uninvoiced delivery lines (withdrawals).
@@ -182,6 +313,7 @@ def generate_invoices_for_uninvoiced_deliveries(
     """
     facility = get_facility_or_raise(facility_id)
     now = timezone.now()
+    today = date.today()
 
     lines = list(get_uninvoiced_delivery_lines(facility_id=facility_id, party_id=party_id))
     if not lines:
@@ -195,14 +327,24 @@ def generate_invoices_for_uninvoiced_deliveries(
 
     created_invoices = []
     for party, line_list in sorted(party_lines_map.items(), key=lambda item: item[0].id):
-        items_data = build_invoice_items(party=party, line_list=line_list)
+        items_data = build_invoice_items(
+            party=party,
+            line_list=line_list,
+            default_gst_rate=facility.default_gst_rate,
+            cgst_rate=cgst_rate,
+            sgst_rate=sgst_rate,
+            igst_rate=igst_rate,
+            discount_amount=discount_amount,
+        )
         invoice_items = items_data['items']
-        subtotal = items_data['subtotal']
-        gst_rate = items_data['gst_rate']
-        gst_amount = items_data['gst_amount']
-        total_amount = items_data['total_amount']
 
-        inv_number = get_next_sequence_number(facility=facility, sequence_type='INV')
+        # FY-scoped invoice numbering (GST Rule 46(b))
+        fy = fy_label(today)
+        inv_number = get_next_sequence_number(
+            facility=facility,
+            sequence_type='INV',
+            financial_year=fy,
+        )
 
         party_gstin_snapshot = party.gstin if party.gstin else ''
         party_name_snapshot = party.name if party.name else ''
@@ -215,7 +357,7 @@ def generate_invoices_for_uninvoiced_deliveries(
             facility=facility,
             invoice_number=inv_number,
             party=party,
-            invoice_date=date.today(),
+            invoice_date=today,
             status=Invoice.Status.DRAFT,
             party_gstin_snapshot=party_gstin_snapshot,
             party_name_snapshot=party_name_snapshot,
@@ -223,23 +365,38 @@ def generate_invoices_for_uninvoiced_deliveries(
             facility_name_snapshot=facility_name_snapshot,
             facility_address_snapshot=facility_address_snapshot,
             facility_gstin_snapshot=facility_gstin_snapshot,
-            subtotal=subtotal,
-            gst_rate=gst_rate,
-            gst_amount=gst_amount,
-            total_amount=total_amount
+            financial_year=fy,
+            subtotal=items_data['subtotal'],
+            discount_amount=items_data['discount_amount'],
+            taxable_value=items_data['taxable_value'],
+            gst_rate=items_data['gst_rate'],
+            gst_amount=items_data['gst_amount'],
+            cgst_rate=items_data['cgst_rate'],
+            sgst_rate=items_data['sgst_rate'],
+            igst_rate=items_data['igst_rate'],
+            cgst_amount=items_data['cgst_amount'],
+            sgst_amount=items_data['sgst_amount'],
+            igst_amount=items_data['igst_amount'],
+            total_amount=items_data['total_amount'],
+            document_type=items_data['document_type'],
         )
         invoice.full_clean()
         invoice.save()
 
         # Create InvoiceLine objects and mark DeliveryLine, GRN, DN as invoiced
         for item in invoice_items:
+            sac_code = InvoiceLine.DEFAULT_SAC_CODES.get(item.get('charge_type', InvoiceLine.ChargeType.OTHER), '')
             inv_line = InvoiceLine(
                 invoice=invoice,
                 description=item['description'],
                 amount=item['amount'],
                 quantity=item.get('quantity'),
                 unit=item.get('unit') or '',
-                rate_per_unit=item.get('rate_per_unit')
+                rate_per_unit=item.get('rate_per_unit'),
+                charge_type=item.get('charge_type', InvoiceLine.ChargeType.OTHER),
+                sac_code=sac_code,
+                period_from=item.get('period_from'),
+                period_to=item.get('period_to'),
             )
             inv_line.full_clean()
             inv_line.save()
@@ -263,6 +420,64 @@ def generate_invoices_for_uninvoiced_deliveries(
         created_invoices.append(get_invoice_by_id(invoice.id))
 
     return created_invoices
+
+
+@transaction.atomic
+def adjust_invoice(*, invoice_id: int, **changes) -> Invoice:
+    """
+    Apply the owner's manual tax and discount decisions to a DRAFT invoice and
+    recompute its money.
+
+    Only DRAFT invoices can be adjusted. Once POSTED an invoice is a document
+    that has been issued to a customer, and editing its numbers after the fact
+    is exactly what an audit trail exists to prevent.
+
+    Accepted keys (all optional; omitted keys are left unchanged):
+    discount_amount, discount_reason, cgst_rate, sgst_rate, igst_rate,
+    place_of_supply, document_type, is_reverse_charge, exemption_reason.
+    """
+    try:
+        invoice = Invoice.objects.select_for_update().get(pk=invoice_id)
+    except Invoice.DoesNotExist:
+        raise ValidationError(f"Invoice with ID {invoice_id} does not exist.")
+
+    if invoice.status != Invoice.Status.DRAFT:
+        raise ValidationError(
+            f"Cannot adjust Invoice: current status is '{invoice.status}', must be DRAFT."
+        )
+
+    passthrough = (
+        'discount_reason', 'place_of_supply', 'is_reverse_charge', 'exemption_reason',
+    )
+    for field in passthrough:
+        if field in changes and changes[field] is not None:
+            setattr(invoice, field, changes[field])
+
+    for field in ('cgst_rate', 'sgst_rate', 'igst_rate', 'discount_amount'):
+        if field in changes and changes[field] is not None:
+            setattr(invoice, field, changes[field])
+
+    totals = compute_invoice_totals(
+        subtotal=invoice.subtotal,
+        discount_amount=invoice.discount_amount,
+        cgst_rate=invoice.cgst_rate,
+        sgst_rate=invoice.sgst_rate,
+        igst_rate=invoice.igst_rate,
+    )
+    for field, value in totals.items():
+        setattr(invoice, field, value)
+
+    # An explicit document_type wins; otherwise follow the new tax total.
+    if changes.get('document_type'):
+        invoice.document_type = changes['document_type']
+    else:
+        invoice.document_type = _derive_document_type(
+            totals['cgst_amount'], totals['sgst_amount'], totals['igst_amount']
+        )
+
+    invoice.full_clean()
+    invoice.save()
+    return get_invoice_by_id(invoice.id)
 
 
 @transaction.atomic
@@ -494,5 +709,3 @@ def email_invoice_to_party(*, invoice_id: int) -> None:
 
     invoice.last_emailed_at = timezone.now()
     invoice.save()
-
-

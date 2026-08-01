@@ -63,6 +63,15 @@ export type ChamberUpdateInput = {
     is_active?: boolean;
 };
 
+/**
+ * * `RENT` - Rent
+ * * `LOADING_UNLOADING` - Loading/Unloading
+ * * `TRANSPORT` - Transport
+ * * `WEIGHING` - Weighing
+ * * `OTHER` - Other
+ */
+export type ChargeTypeEnum = 'RENT' | 'LOADING_UNLOADING' | 'TRANSPORT' | 'WEIGHING' | 'OTHER';
+
 export type CommodityInput = {
     facility_id: number;
     name: string;
@@ -139,6 +148,7 @@ export type DeliveryNoteOutput = {
     readonly id: number;
     readonly facility_id: number;
     dn_number: string;
+    readonly legacy_ref: string;
     readonly party_id: number;
     readonly party_name: string;
     readonly party_code: string;
@@ -159,6 +169,12 @@ export type DeliveryNoteOutput = {
     readonly updated_at: string;
 };
 
+/**
+ * * `TAX_INVOICE` - Tax Invoice
+ * * `BILL_OF_SUPPLY` - Bill of Supply
+ */
+export type DocumentTypeEnum = 'TAX_INVOICE' | 'BILL_OF_SUPPLY';
+
 export type FacilityInput = {
     name: string;
     address?: string;
@@ -168,6 +184,8 @@ export type FacilityInput = {
     bank_account_no?: string;
     bank_ifsc?: string;
     terms_and_conditions?: string;
+    state_code?: string;
+    default_gst_rate?: string | null;
 };
 
 export type FacilityOutput = {
@@ -181,6 +199,8 @@ export type FacilityOutput = {
     bank_account_no?: string;
     bank_ifsc?: string;
     terms_and_conditions?: string;
+    state_code?: string;
+    default_gst_rate?: string;
     readonly created_at: string;
     readonly updated_at: string;
 };
@@ -236,6 +256,7 @@ export type GrnOutput = {
     readonly id: number;
     readonly facility_id: number;
     grn_number: string;
+    readonly legacy_ref: string;
     readonly party_id: number;
     readonly party_name: string;
     readonly party_code: string;
@@ -263,7 +284,19 @@ export type GrnOutput = {
 export type GenerateInvoicesInput = {
     facility_id: number;
     party_id?: number | null;
+    cgst_rate?: string | null;
+    sgst_rate?: string | null;
+    igst_rate?: string | null;
+    discount_amount?: string | null;
 };
+
+/**
+ * * `REGULAR` - Regular
+ * * `COMPOSITION` - Composition
+ * * `UNREGISTERED` - Unregistered
+ * * `CONSUMER` - Consumer
+ */
+export type GstRegistrationTypeEnum = 'REGULAR' | 'COMPOSITION' | 'UNREGISTERED' | 'CONSUMER';
 
 export type InvoiceLineOutput = {
     readonly id: number;
@@ -272,6 +305,10 @@ export type InvoiceLineOutput = {
     quantity?: number | null;
     unit?: string;
     rate_per_unit?: string | null;
+    charge_type?: ChargeTypeEnum;
+    sac_code?: string;
+    period_from?: string | null;
+    period_to?: string | null;
 };
 
 export type InvoiceOutput = {
@@ -289,10 +326,24 @@ export type InvoiceOutput = {
     facility_gstin_snapshot?: string;
     invoice_date: string;
     status?: StatusEnum;
-    subtotal?: string;
+    readonly financial_year: string;
+    readonly subtotal: string;
+    readonly taxable_value: string;
     gst_rate?: string;
-    gst_amount?: string;
+    readonly gst_amount: string;
+    readonly cgst_amount: string;
+    readonly sgst_amount: string;
+    readonly igst_amount: string;
     total_amount?: string;
+    discount_amount?: string;
+    discount_reason?: string;
+    cgst_rate?: string;
+    sgst_rate?: string;
+    igst_rate?: string;
+    place_of_supply?: string;
+    document_type?: DocumentTypeEnum;
+    is_reverse_charge?: boolean;
+    exemption_reason?: string;
     readonly amount_paid: string;
     readonly amount_due: string;
     readonly payment_status: string;
@@ -368,6 +419,7 @@ export type LotOutput = {
     readonly commodity_code: string;
     readonly commodity_unit: string;
     lot_number: string;
+    readonly legacy_ref: string;
     chamber?: string;
     floor?: string;
     rack?: string;
@@ -410,6 +462,8 @@ export type LotWithdrawalInput = {
  */
 export type MethodEnum = 'CASH' | 'BANK_TRANSFER' | 'CHEQUE' | 'UPI' | 'OTHER';
 
+export type NullEnum = never;
+
 export type PartyInput = {
     facility_id: number;
     name: string;
@@ -419,6 +473,8 @@ export type PartyInput = {
     address?: string;
     gstin?: string;
     is_active?: boolean;
+    gst_registration_type?: GstRegistrationTypeEnum;
+    state_code?: string;
 };
 
 export type PartyOutput = {
@@ -434,8 +490,26 @@ export type PartyOutput = {
     address?: string;
     gstin?: string | string;
     is_active?: boolean;
+    gst_registration_type?: GstRegistrationTypeEnum;
+    state_code?: string;
     readonly created_at: string;
     readonly updated_at: string;
+};
+
+/**
+ * Manual tax and discount controls for a DRAFT invoice. Every field is
+ * optional; whatever is supplied is applied and the totals are recomputed.
+ */
+export type PatchedAdjustInvoiceInput = {
+    discount_amount?: string | null;
+    discount_reason?: string;
+    cgst_rate?: string | null;
+    sgst_rate?: string | null;
+    igst_rate?: string | null;
+    place_of_supply?: string;
+    document_type?: DocumentTypeEnum | NullEnum | null;
+    is_reverse_charge?: boolean;
+    exemption_reason?: string;
 };
 
 export type PaymentInput = {
@@ -609,6 +683,8 @@ export type FacilityOutputWritable = {
     bank_account_no?: string;
     bank_ifsc?: string;
     terms_and_conditions?: string;
+    state_code?: string;
+    default_gst_rate?: string;
 };
 
 export type FloorOutputWritable = {
@@ -642,6 +718,10 @@ export type InvoiceLineOutputWritable = {
     quantity?: number | null;
     unit?: string;
     rate_per_unit?: string | null;
+    charge_type?: ChargeTypeEnum;
+    sac_code?: string;
+    period_from?: string | null;
+    period_to?: string | null;
 };
 
 export type InvoiceOutputWritable = {
@@ -654,10 +734,17 @@ export type InvoiceOutputWritable = {
     facility_gstin_snapshot?: string;
     invoice_date: string;
     status?: StatusEnum;
-    subtotal?: string;
     gst_rate?: string;
-    gst_amount?: string;
     total_amount?: string;
+    discount_amount?: string;
+    discount_reason?: string;
+    cgst_rate?: string;
+    sgst_rate?: string;
+    igst_rate?: string;
+    place_of_supply?: string;
+    document_type?: DocumentTypeEnum;
+    is_reverse_charge?: boolean;
+    exemption_reason?: string;
     last_emailed_at?: string | null;
 };
 
@@ -690,6 +777,8 @@ export type PartyOutputWritable = {
     address?: string;
     gstin?: string | string;
     is_active?: boolean;
+    gst_registration_type?: GstRegistrationTypeEnum;
+    state_code?: string;
 };
 
 export type PaymentOutputWritable = {
@@ -1321,6 +1410,74 @@ export type DeliveryNotesPostCreateResponses = {
 
 export type DeliveryNotesPostCreateResponse = DeliveryNotesPostCreateResponses[keyof DeliveryNotesPostCreateResponses];
 
+export type ExportsInvoiceRegisterRetrieveData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Filter by invoice_date >= date_from
+         */
+        date_from?: string;
+        /**
+         * Filter by invoice_date <= date_to
+         */
+        date_to?: string;
+        /**
+         * Level of detail: 'summary' or 'lines'
+         */
+        detail?: string;
+        /**
+         * Facility ID or Facility Code
+         */
+        facility: string;
+        /**
+         * Filter by Financial Year (e.g. 2026-27)
+         */
+        financial_year?: string;
+    };
+    url: '/api/exports/invoice-register/';
+};
+
+export type ExportsInvoiceRegisterRetrieveResponses = {
+    200: Blob | File;
+};
+
+export type ExportsInvoiceRegisterRetrieveResponse = ExportsInvoiceRegisterRetrieveResponses[keyof ExportsInvoiceRegisterRetrieveResponses];
+
+export type ExportsTallyRetrieveData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Override the Tally current company name
+         */
+        company_name?: string;
+        /**
+         * Filter by invoice_date >= date_from
+         */
+        date_from?: string;
+        /**
+         * Filter by invoice_date <= date_to
+         */
+        date_to?: string;
+        /**
+         * Facility ID or Facility Code
+         */
+        facility: string;
+        /**
+         * Filter by Financial Year (e.g. 2026-27)
+         */
+        financial_year?: string;
+    };
+    url: '/api/exports/tally/';
+};
+
+export type ExportsTallyRetrieveResponses = {
+    200: Blob | File;
+};
+
+export type ExportsTallyRetrieveResponse = ExportsTallyRetrieveResponses[keyof ExportsTallyRetrieveResponses];
+
 export type FacilitiesListData = {
     body?: never;
     path?: never;
@@ -1688,6 +1845,10 @@ export type InvoicesListData = {
          */
         facility_id: number;
         /**
+         * Filter by financial year (e.g. 2026-27)
+         */
+        financial_year?: string;
+        /**
          * Filter by Party ID
          */
         party_id?: number;
@@ -1753,6 +1914,31 @@ export type InvoicesRetrieveResponses = {
 };
 
 export type InvoicesRetrieveResponse = InvoicesRetrieveResponses[keyof InvoicesRetrieveResponses];
+
+export type InvoicesAdjustPartialUpdateData = {
+    body?: PatchedAdjustInvoiceInput;
+    path: {
+        /**
+         * A unique integer value identifying this Invoice.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/invoices/{id}/adjust/';
+};
+
+export type InvoicesAdjustPartialUpdateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type InvoicesAdjustPartialUpdateResponses = {
+    200: InvoiceOutput;
+};
+
+export type InvoicesAdjustPartialUpdateResponse = InvoicesAdjustPartialUpdateResponses[keyof InvoicesAdjustPartialUpdateResponses];
 
 export type InvoicesCancelCreateData = {
     body?: never;

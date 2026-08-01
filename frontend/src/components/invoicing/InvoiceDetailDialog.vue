@@ -7,13 +7,14 @@ import Tag from 'primevue/tag'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
-import { Trash2, CreditCard, Printer, Mail } from 'lucide-vue-next'
+import { Trash2, CreditCard, Printer, Mail, Sliders } from 'lucide-vue-next'
 import { formatCurrency, formatQty } from '../../utils/format'
 import { useDeleteInvoicePayment } from '../../composables/useInvoices'
 import { downloadPdf } from '../../utils/downloadPdf'
 import { emailInvoice } from '../../api/invoicing'
 import { EMAIL_TO_CLIENT_ENABLED } from '../../config/features'
 import RecordPaymentDialog from './RecordPaymentDialog.vue'
+import AdjustInvoiceDialog from './AdjustInvoiceDialog.vue'
 import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 import type { InvoiceOutput } from '../../api/invoicing'
 import type { PaymentOutput } from '../../api/generated/types.gen'
@@ -41,6 +42,7 @@ const toast = useToast()
 const deletePaymentMutation = useDeleteInvoicePayment()
 
 const showRecordPayment = ref(false)
+const showAdjustDialog = ref(false)
 const downloadingPdf = ref(false)
 const emailing = ref(false)
 
@@ -170,6 +172,22 @@ const handleDeletePayment = (payment: PaymentOutput) => {
       :style="{ width: '750px', maxWidth: '95vw' }"
     >
       <div v-if="invoice" class="invoice-detail-body">
+        <!-- Prominent Document Title and Reverse Charge indicator -->
+        <div
+          class="document-type-banner"
+          :class="invoice.document_type === 'TAX_INVOICE' ? 'tax-invoice' : 'bill-supply'"
+        >
+          <div class="banner-title">
+            {{ invoice.document_type === 'TAX_INVOICE' ? t('invoicing.taxInvoice') : t('invoicing.billOfSupply') }}
+          </div>
+          <Tag
+            v-if="invoice.is_reverse_charge"
+            severity="danger"
+            :value="t('invoicing.reverseCharge')"
+            class="reverse-charge-tag"
+          />
+        </div>
+
         <!-- Metadata Grid -->
         <div class="meta-card">
           <div class="meta-grid">
@@ -194,8 +212,13 @@ const handleDeletePayment = (payment: PaymentOutput) => {
             </div>
 
             <div class="meta-item">
-              <span class="label">{{ t('common.totalAmount') }}</span>
-              <strong class="val text-lg">{{ formatCurrency(Number(invoice.total_amount || 0)) }}</strong>
+              <span class="label">{{ t('invoicing.financialYear') }}</span>
+              <span class="val">{{ invoice.financial_year }}</span>
+            </div>
+
+            <div class="meta-item">
+              <span class="label">{{ t('invoicing.placeOfSupply') }}</span>
+              <span class="val">{{ invoice.place_of_supply || '—' }}</span>
             </div>
 
             <div class="meta-item">
@@ -250,6 +273,58 @@ const handleDeletePayment = (payment: PaymentOutput) => {
               </template>
             </Column>
           </DataTable>
+
+          <!-- Totals Block -->
+          <div class="totals-wrapper">
+            <div class="totals-card">
+              <div class="totals-row">
+                <span class="totals-label">{{ t('common.subtotal') }}</span>
+                <span class="totals-val">{{ formatCurrency(Number(invoice.subtotal || 0)) }}</span>
+              </div>
+              
+              <div v-if="Number(invoice.discount_amount || 0) !== 0" class="totals-row discount-row">
+                <span class="totals-label">
+                  {{ t('invoicing.discountAmount') }}
+                  <small class="discount-reason" v-if="invoice.discount_reason">({{ invoice.discount_reason }})</small>
+                </span>
+                <span class="totals-val">-{{ formatCurrency(Number(invoice.discount_amount)) }}</span>
+              </div>
+              
+              <div class="totals-row taxable-row">
+                <span class="totals-label">{{ t('invoicing.taxableValue') }}</span>
+                <span class="totals-val">{{ formatCurrency(Number(invoice.taxable_value || 0)) }}</span>
+              </div>
+              
+              <!-- Tax Rows (only if NOT Bill of Supply) -->
+              <template v-if="invoice.document_type !== 'BILL_OF_SUPPLY'">
+                <div v-if="Number(invoice.cgst_amount || 0) !== 0" class="totals-row">
+                  <span class="totals-label">{{ t('invoicing.cgstAmountLabel', { rate: invoice.cgst_rate || '0' }) }}</span>
+                  <span class="totals-val">{{ formatCurrency(Number(invoice.cgst_amount)) }}</span>
+                </div>
+                <div v-if="Number(invoice.sgst_amount || 0) !== 0" class="totals-row">
+                  <span class="totals-label">{{ t('invoicing.sgstAmountLabel', { rate: invoice.sgst_rate || '0' }) }}</span>
+                  <span class="totals-val">{{ formatCurrency(Number(invoice.sgst_amount)) }}</span>
+                </div>
+                <div v-if="Number(invoice.igst_amount || 0) !== 0" class="totals-row">
+                  <span class="totals-label">{{ t('invoicing.igstAmountLabel', { rate: invoice.igst_rate || '0' }) }}</span>
+                  <span class="totals-val">{{ formatCurrency(Number(invoice.igst_amount)) }}</span>
+                </div>
+              </template>
+              
+              <!-- Exemption Reason (on Bill of Supply if present) -->
+              <div v-if="invoice.document_type === 'BILL_OF_SUPPLY' && invoice.exemption_reason" class="totals-row exemption-row">
+                <span class="totals-label">{{ t('invoicing.exemptionReason') }}</span>
+                <span class="totals-val text-sm font-normal">{{ invoice.exemption_reason }}</span>
+              </div>
+              
+              <hr class="totals-separator" />
+              
+              <div class="totals-row grand-total-row">
+                <span class="totals-label">{{ t('common.grandTotal') }}</span>
+                <span class="totals-val grand-total-val">{{ formatCurrency(Number(invoice.total_amount || 0)) }}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Payment History Table -->
@@ -323,8 +398,17 @@ const handleDeletePayment = (payment: PaymentOutput) => {
         <div class="dialog-footer">
           <div class="pdf-action-group">
             <button
-              v-if="invoice"
+              v-if="invoice?.status === 'DRAFT'"
               class="btn-primary"
+              type="button"
+              @click="showAdjustDialog = true"
+            >
+              <Sliders :size="15" />
+              <span>{{ t('invoicing.adjustInvoice') }}</span>
+            </button>
+            <button
+              v-if="invoice"
+              class="btn-outlined"
               type="button"
               title="PDF"
               aria-label="PDF"
@@ -357,6 +441,13 @@ const handleDeletePayment = (payment: PaymentOutput) => {
       :invoice="invoice"
       @success="emit('refresh')"
     />
+
+    <!-- Adjust Invoice Dialog -->
+    <AdjustInvoiceDialog
+      v-model:visible="showAdjustDialog"
+      :invoice="invoice"
+      @success="emit('refresh')"
+    />
   </div>
 </template>
 
@@ -370,7 +461,7 @@ const handleDeletePayment = (payment: PaymentOutput) => {
 
 .meta-card {
   background: var(--bg-surface-hover);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
   padding: 16px;
 }
@@ -438,11 +529,132 @@ const handleDeletePayment = (payment: PaymentOutput) => {
 .empty-payments {
   padding: 18px;
   background: var(--bg-page);
-  border: 1px dashed var(--border-subtle);
+  border: 1px dashed var(--border-strong);
   border-radius: 8px;
   text-align: center;
   font-size: 13px;
   color: var(--text-secondary);
+}
+
+.document-type-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+}
+
+.document-type-banner.tax-invoice {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.document-type-banner.tax-invoice .banner-title {
+  color: #10b981;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.document-type-banner.bill-supply {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.document-type-banner.bill-supply .banner-title {
+  color: #3b82f6;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.reverse-charge-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.totals-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.totals-card {
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 16px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.totals-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.totals-label {
+  font-weight: 500;
+}
+
+.totals-val {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.discount-row {
+  color: var(--status-danger-color);
+}
+.discount-row .totals-val {
+  color: var(--status-danger-color);
+}
+.discount-reason {
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: block;
+}
+
+.taxable-row {
+  border-top: 1px dashed var(--border-strong);
+  border-bottom: 1px dashed var(--border-strong);
+  padding: 6px 0;
+  margin: 4px 0;
+}
+.taxable-row .totals-val {
+  font-weight: 700;
+}
+
+.exemption-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 6px;
+  background: var(--bg-page);
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+}
+
+.totals-separator {
+  border: 0;
+  border-top: 1px solid var(--border-strong);
+  margin: 4px 0;
+}
+
+.grand-total-row {
+  font-size: 15px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.grand-total-val {
+  font-size: 18px;
+  color: var(--text-primary);
 }
 
 .badge-subtle {

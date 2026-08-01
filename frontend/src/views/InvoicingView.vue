@@ -18,10 +18,12 @@ const { facilityId } = useFacility()
 
 const searchQuery = ref('')
 const selectedStatus = ref('')
+const selectedFinancialYear = ref('')
 const showGenerateDialog = ref(false)
 
 const filters = computed(() => ({
-  status: selectedStatus.value || undefined
+  status: selectedStatus.value || undefined,
+  financialYear: selectedFinancialYear.value || undefined
 }))
 
 const {
@@ -115,6 +117,7 @@ function handleGenerateError(message: string) {
       :errorDetail="error ? (error as Error).message : undefined"
       v-model:searchQuery="searchQuery"
       v-model:selectedStatus="selectedStatus"
+      v-model:selectedFinancialYear="selectedFinancialYear"
       @openGenerate="showGenerateDialog = true"
       @retry="refetch"
       @post="handlePost"

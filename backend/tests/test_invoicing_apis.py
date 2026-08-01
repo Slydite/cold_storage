@@ -84,12 +84,12 @@ def test_invoice_api_generate_list_retrieve_post_cancel_pdf(auth_client, default
     inv_data = res.data[0]
     inv_id = inv_data['id']
     assert inv_data['status'] == Invoice.Status.DRAFT
-    assert inv_data['subtotal'] == "7500.00"
-    assert inv_data['gst_amount'] == "1350.00"
-    assert inv_data['total_amount'] == "8850.00"
+    assert inv_data['subtotal'] == "5000.00"
+    assert inv_data['gst_amount'] == "900.00"
+    assert inv_data['total_amount'] == "5900.00"
     assert inv_data['payment_status'] == "UNPAID"
     assert inv_data['amount_paid'] == "0.00"
-    assert inv_data['amount_due'] == "8850.00"
+    assert inv_data['amount_due'] == "5900.00"
     assert 'pdf_url' not in inv_data
 
     # List Invoices
@@ -224,10 +224,10 @@ def test_invoice_preview_api_endpoint(auth_client, default_facility, test_party,
     assert entry['party_id'] == test_party.id
     assert entry['party_name'] == test_party.name
     assert entry['party_code'] == test_party.code
-    assert entry['subtotal'] == "7650.00"
+    assert entry['subtotal'] == "5150.00"
     assert entry['gst_rate'] == "18.00"
-    assert entry['gst_amount'] == "1377.00"
-    assert entry['total_amount'] == "9027.00"
+    assert entry['gst_amount'] == "927.00"
+    assert entry['total_amount'] == "6077.00"
     assert len(entry['lines']) == 3
 
     rent_line = entry['lines'][0]
@@ -236,7 +236,7 @@ def test_invoice_preview_api_endpoint(auth_client, default_facility, test_party,
     assert rent_line['qty'] == 100
     assert rent_line['inward_date'] == "2026-07-01"
     assert rent_line['dispatch_date'] == "2026-07-31"
-    assert rent_line['days_stored'] == 31
+    assert rent_line['days_stored'] == 30
 
 
 @pytest.mark.django_db

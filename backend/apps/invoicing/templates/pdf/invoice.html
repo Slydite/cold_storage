@@ -1,6 +1,6 @@
 {% extends "pdf/base.html" %}
 
-{% block title %}Tax Invoice - {{ invoice.invoice_number }}{% endblock %}
+{% block title %}{{ invoice.document_type }} - {{ invoice.invoice_number }}{% endblock %}
 
 {% block content %}
 <table class="doc-header-table">
@@ -11,10 +11,11 @@
             </div>
         </td>
         <td style="width: 50%;">
-            <div class="doc-title">TAX INVOICE</div>
+            <div class="doc-title">{{ invoice.get_document_type_display|upper }}</div>
             <div class="doc-meta">
                 <strong>Invoice No:</strong> {{ invoice.invoice_number }}<br>
                 <strong>Date:</strong> {{ invoice.invoice_date|date:"Y-m-d" }}
+                {% if invoice.financial_year %}<br><strong>Financial Year:</strong> {{ invoice.financial_year }}{% endif %}
             </div>
         </td>
     </tr>
@@ -27,6 +28,12 @@
     {% if party_address %}{{ party_address }}<br>{% endif %}
     <strong>GSTIN:</strong> {{ party_gstin|default:"Not provided" }}
 </div>
+
+{% if invoice.is_reverse_charge %}
+<div style="font-size: 9pt; margin-bottom: 6px;">
+    <strong>Reverse Charge:</strong> Yes — Tax is payable on reverse charge basis.
+</div>
+{% endif %}
 
 <table class="data-table">
     <thead>
@@ -52,10 +59,51 @@
             <td colspan="4" class="right"><strong>Subtotal</strong></td>
             <td class="right">₹{{ invoice.subtotal|floatformat:2 }}</td>
         </tr>
+        {% if invoice.discount_amount %}
         <tr>
-            <td colspan="4" class="right">GST ({{ invoice.gst_rate }}%)</td>
+            <td colspan="4" class="right">Discount{% if invoice.discount_reason %} ({{ invoice.discount_reason }}){% endif %}</td>
+            <td class="right">(₹{{ invoice.discount_amount|floatformat:2 }})</td>
+        </tr>
+        <tr>
+            <td colspan="4" class="right"><strong>Taxable Value</strong></td>
+            <td class="right">₹{{ invoice.taxable_value|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
+        {% if invoice.document_type == 'TAX_INVOICE' %}
+        {% if invoice.cgst_amount %}
+        <tr>
+            <td colspan="4" class="right">CGST ({{ invoice.cgst_rate }}%)</td>
+            <td class="right">₹{{ invoice.cgst_amount|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
+        {% if invoice.sgst_amount %}
+        <tr>
+            <td colspan="4" class="right">SGST ({{ invoice.sgst_rate }}%)</td>
+            <td class="right">₹{{ invoice.sgst_amount|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
+        {% if invoice.igst_amount %}
+        <tr>
+            <td colspan="4" class="right">IGST ({{ invoice.igst_rate }}%)</td>
+            <td class="right">₹{{ invoice.igst_amount|floatformat:2 }}</td>
+        </tr>
+        {% endif %}
+        {% if invoice.gst_amount %}
+        <tr>
+            <td colspan="4" class="right">Total GST</td>
             <td class="right">₹{{ invoice.gst_amount|floatformat:2 }}</td>
         </tr>
+        {% endif %}
+        {% else %}
+        {# Bill of Supply: omit tax table entirely — no zero-amount rows #}
+        {% if invoice.exemption_reason %}
+        <tr>
+            <td colspan="5" style="font-size: 9pt; font-style: italic;">
+                <strong>Exemption:</strong> {{ invoice.exemption_reason }}
+            </td>
+        </tr>
+        {% endif %}
+        {% endif %}
         <tr class="total-row">
             <td colspan="4" class="right"><strong>Total Amount</strong></td>
             <td class="right"><strong>₹{{ invoice.total_amount|floatformat:2 }}</strong></td>
@@ -116,4 +164,3 @@
     </tr>
 </table>
 {% endblock %}
-

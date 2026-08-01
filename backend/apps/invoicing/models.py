@@ -1,5 +1,6 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from django.db import models
+from django.core.exceptions import ValidationError
 from simple_history.models import HistoricalRecords
 from apps.facilities.models import Facility
 from apps.parties.models import Party
@@ -17,6 +18,10 @@ class Invoice(models.Model):
         POSTED = 'POSTED', 'Posted'
         CANCELLED = 'CANCELLED', 'Cancelled'
 
+    class DocumentType(models.TextChoices):
+        TAX_INVOICE = 'TAX_INVOICE', 'Tax Invoice'
+        BILL_OF_SUPPLY = 'BILL_OF_SUPPLY', 'Bill of Supply'
+
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='invoices')
     invoice_number = models.CharField(max_length=100)
     party = models.ForeignKey(Party, on_delete=models.PROTECT, related_name='invoices')
@@ -28,10 +33,54 @@ class Invoice(models.Model):
     facility_name_snapshot = models.CharField(max_length=255, blank=True)
     facility_address_snapshot = models.TextField(blank=True)
     facility_gstin_snapshot = models.CharField(max_length=15, blank=True)
+
+    # --- Financial Year (GST Rule 46(b): serials must restart each FY) ---
+    financial_year = models.CharField(max_length=7, blank=True, db_index=True)
+
+    # --- Amounts ---
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
-    gst_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('18.00'))
+
+    # Flat discount (s.15(3)(a) CGST Act: reduces taxable value)
+    discount_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    discount_reason = models.CharField(max_length=255, blank=True)
+
+    # taxable_value = subtotal - discount_amount; stored so PDF/exporter always agree
+    taxable_value = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+
+    # --- Tax: owner enters these manually; we do NOT auto-derive intra/inter-state ---
+    # Compatibility: legacy gst_rate / gst_amount kept for existing rows.
+    # gst_amount is always the SUM of the three component amounts below.
+    gst_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
     gst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+
+    # Three independent GST component rates (entered by the owner)
+    cgst_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    sgst_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    igst_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+
+    # Three independent GST component amounts (taxable_value * rate / 100, ROUND_HALF_UP)
+    cgst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    sgst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    igst_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+
+    # Place of supply (2-letter state code, informational for now)
+    place_of_supply = models.CharField(max_length=2, blank=True)
+
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+
+    # --- Document type (Tax Invoice vs Bill of Supply) ---
+    # NOTE: The default is derived from whether tax is present, but the owner
+    # is in charge of the tax position and can override this field.  The code
+    # implements a mechanism — it does NOT give tax advice.  Confirm the correct
+    # document type with the business's CA before filing.
+    document_type = models.CharField(
+        max_length=20,
+        choices=DocumentType.choices,
+        default=DocumentType.TAX_INVOICE,
+    )
+    is_reverse_charge = models.BooleanField(default=False)
+    exemption_reason = models.CharField(max_length=255, blank=True)
+
     last_emailed_at = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -73,8 +122,34 @@ class Invoice(models.Model):
         else:
             return PaymentStatus.PAID
 
+    def clean(self):
+        super().clean()
+        # Validate discount
+        if self.discount_amount < Decimal('0.00'):
+            raise ValidationError({'discount_amount': 'Discount amount cannot be negative.'})
+        if self.discount_amount > self.subtotal:
+            raise ValidationError({'discount_amount': 'Discount amount cannot exceed subtotal.'})
+
 
 class InvoiceLine(models.Model):
+    class ChargeType(models.TextChoices):
+        RENT = 'RENT', 'Rent'
+        LOADING_UNLOADING = 'LOADING_UNLOADING', 'Loading/Unloading'
+        TRANSPORT = 'TRANSPORT', 'Transport'
+        WEIGHING = 'WEIGHING', 'Weighing'
+        OTHER = 'OTHER', 'Other'
+
+    # Mapping from charge_type to default SAC code.
+    # IMPORTANT: These SAC codes MUST be confirmed with the CA before the first
+    # GST filing. Using a wrong SAC code is a compliance error.
+    DEFAULT_SAC_CODES = {
+        ChargeType.RENT: '996729',           # General warehousing and storage services
+        ChargeType.LOADING_UNLOADING: '998619',  # Other support services to agriculture
+        ChargeType.TRANSPORT: '',            # Confirm with CA
+        ChargeType.WEIGHING: '',             # Confirm with CA
+        ChargeType.OTHER: '',                # Confirm with CA
+    }
+
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='lines')
     description = models.CharField(max_length=500)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
@@ -87,6 +162,18 @@ class InvoiceLine(models.Model):
     quantity = models.PositiveIntegerField(null=True, blank=True)
     unit = models.CharField(max_length=20, blank=True)
     rate_per_unit = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    # Ledger / accounting classification
+    charge_type = models.CharField(
+        max_length=20,
+        choices=ChargeType.choices,
+        default=ChargeType.RENT,
+    )
+    sac_code = models.CharField(max_length=10, blank=True)
+
+    # Rent lines must record the storage period billed so the customer can audit
+    period_from = models.DateField(null=True, blank=True)
+    period_to = models.DateField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -119,4 +206,3 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Payment #{self.id} (₹{self.amount}) for Invoice {self.invoice.invoice_number}"
-

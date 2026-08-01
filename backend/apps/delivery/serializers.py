@@ -51,6 +51,7 @@ class DeliveryNoteOutputSerializer(serializers.ModelSerializer):
     party_email = serializers.CharField(source='party.email', read_only=True)
     lines = DeliveryLineOutputSerializer(many=True, read_only=True)
     computed_loading_charge = serializers.SerializerMethodField()
+    legacy_ref = serializers.CharField(read_only=True)
 
     class Meta:
         model = DeliveryNote
@@ -58,6 +59,7 @@ class DeliveryNoteOutputSerializer(serializers.ModelSerializer):
             'id',
             'facility_id',
             'dn_number',
+            'legacy_ref',
             'party_id',
             'party_name',
             'party_code',

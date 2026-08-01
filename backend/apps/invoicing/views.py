@@ -18,6 +18,7 @@ from .services import (
     generate_invoices_for_uninvoiced_deliveries,
     preview_uninvoiced_charges,
     post_invoice,
+    adjust_invoice,
     cancel_invoice,
     record_payment,
     delete_payment,
@@ -26,6 +27,7 @@ from .services import (
 )
 from .serializers import (
     GenerateInvoicesInputSerializer,
+    AdjustInvoiceInputSerializer,
     InvoiceOutputSerializer,
     InvoicePreviewPartyOutputSerializer,
     PaymentInputSerializer,
@@ -44,6 +46,7 @@ class InvoiceViewSet(ViewSet):
             OpenApiParameter('party_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=False, description="Filter by Party ID"),
             OpenApiParameter('status', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by status (DRAFT, POSTED, CANCELLED)"),
             OpenApiParameter('payment_status', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by payment_status (UNPAID, PARTIAL, PAID)"),
+            OpenApiParameter('financial_year', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Filter by financial year (e.g. 2026-27)"),
         ],
         responses={200: InvoiceOutputSerializer(many=True)},
         summary="List invoices for a facility"
@@ -56,6 +59,7 @@ class InvoiceViewSet(ViewSet):
         party_id = request.query_params.get('party_id')
         status_param = request.query_params.get('status')
         payment_status_param = request.query_params.get('payment_status')
+        financial_year_param = request.query_params.get('financial_year')
 
         try:
             invoices = get_invoices_list(
@@ -63,6 +67,7 @@ class InvoiceViewSet(ViewSet):
                 party_id=int(party_id) if party_id else None,
                 status=status_param,
                 payment_status=payment_status_param,
+                financial_year=financial_year_param,
             )
         except ValueError:
             raise ValidationError({"facility_id": "Must be an integer."})
@@ -127,13 +132,38 @@ class InvoiceViewSet(ViewSet):
         try:
             invoices = generate_invoices_for_uninvoiced_deliveries(
                 facility_id=serializer.validated_data['facility_id'],
-                party_id=serializer.validated_data.get('party_id')
+                party_id=serializer.validated_data.get('party_id'),
+                cgst_rate=serializer.validated_data.get('cgst_rate'),
+                sgst_rate=serializer.validated_data.get('sgst_rate'),
+                igst_rate=serializer.validated_data.get('igst_rate'),
+                discount_amount=serializer.validated_data.get('discount_amount'),
             )
         except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         output_serializer = InvoiceOutputSerializer(invoices, many=True)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=AdjustInvoiceInputSerializer,
+        responses={200: InvoiceOutputSerializer, 400: None},
+        summary="Adjust tax and discount on a DRAFT invoice"
+    )
+    @action(detail=True, methods=['patch'], url_path='adjust')
+    def adjust(self, request, pk=None):
+        serializer = AdjustInvoiceInputSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            invoice = adjust_invoice(invoice_id=pk, **serializer.validated_data)
+        except DjangoValidationError as e:
+            return Response(
+                {"detail": e.messages[0] if e.messages else str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except (Invoice.DoesNotExist, ValueError):
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        return Response(InvoiceOutputSerializer(invoice).data)
 
     @extend_schema(
         responses={200: InvoiceOutputSerializer, 400: None},
