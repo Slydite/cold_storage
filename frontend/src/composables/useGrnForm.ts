@@ -49,7 +49,10 @@ export function useGrnForm(
         .refine((v): v is number => v != null && v > 0, { message: t('validation.commodityRequired') }),
       chamber_id: z.number().nullable().optional(),
       floor_id: z.number().nullable().optional(),
-      block_id: z.number().nullable().optional(),
+      block_id: z
+        .number()
+        .nullable()
+        .refine((v): v is number => v != null && v > 0, { message: t('validation.blockRequired') }),
       initial_qty: z.number().min(1, t('validation.qtyMin1')),
       unit: z.string().optional(),
       unit_weight: z.number().nullable().optional(),
@@ -101,6 +104,8 @@ export function useGrnForm(
   const [loading_unloading_rate_per_bag, loadingRateProps] = defineField('loading_unloading_rate_per_bag')
 
   const items = ref<FormLineItem[]>([createDefaultLineItem()])
+
+  const itemErrors = ref<Record<number, Record<string, string>>>({})
 
   const reserveNumberForLine = async (item: FormLineItem) => {
     if (!facilityId.value) return
@@ -181,6 +186,7 @@ export function useGrnForm(
 
   const handleResetForm = () => {
     resetForm()
+    itemErrors.value = {}
     const defaultItem = createDefaultLineItem()
     items.value = [defaultItem]
     reserveNumberForLine(defaultItem)
@@ -198,12 +204,24 @@ export function useGrnForm(
     }
 
     const submitFn = handleSubmit(async (formValues) => {
+      itemErrors.value = {}
       const parsed = z
         .array(lineItemSchema.value)
         .min(1, t('errors.atLeastOneLineItem'))
         .safeParse(items.value)
 
       if (!parsed.success) {
+        parsed.error.issues.forEach((issue) => {
+          if (issue.path.length >= 2) {
+            const idx = issue.path[0] as number
+            const field = issue.path[1] as string
+            if (!itemErrors.value[idx]) {
+              itemErrors.value[idx] = {}
+            }
+            itemErrors.value[idx][field] = issue.message
+          }
+        })
+
         const firstIssue = parsed.error.issues[0]
         const msg = firstIssue ? firstIssue.message : t('errors.invalidLineItems')
         toast.add({
@@ -224,7 +242,7 @@ export function useGrnForm(
         commodity_id: item.commodity_id!,
         chamber_id: item.chamber_id || undefined,
         floor_id: item.floor_id || undefined,
-        block_id: item.block_id || undefined,
+        block_id: item.block_id!,
         initial_qty: item.initial_qty,
         unit: item.unit || undefined,
         unit_weight: item.unit_weight != null ? String(item.unit_weight) : undefined,
@@ -292,6 +310,7 @@ export function useGrnForm(
     loadingRateProps,
     items,
     errors,
+    itemErrors,
     addItemRow,
     removeItemRow,
     totalNetWeight,

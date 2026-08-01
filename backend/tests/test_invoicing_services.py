@@ -52,7 +52,7 @@ def test_commodity(default_facility):
 
 
 @pytest.mark.django_db
-def test_generate_invoices_for_withdrawals_single_party(default_facility, test_party, test_commodity):
+def test_generate_invoices_for_withdrawals_single_party(default_facility, test_party, test_commodity, default_block):
     """
     Test generating invoices for posted delivery notes for a single party.
     Includes rent calculation and loading charges.
@@ -67,7 +67,8 @@ def test_generate_invoices_for_withdrawals_single_party(default_facility, test_p
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -108,7 +109,7 @@ def test_generate_invoices_for_withdrawals_single_party(default_facility, test_p
 
 
 @pytest.mark.django_db
-def test_generate_invoices_double_invoicing_guard(default_facility, test_party, test_commodity):
+def test_generate_invoices_double_invoicing_guard(default_facility, test_party, test_commodity, default_block):
     """
     Asserts calling generate_invoices_for_uninvoiced_deliveries twice returns empty on second call
     because all delivery lines were marked invoiced_at on the first call.
@@ -122,7 +123,8 @@ def test_generate_invoices_double_invoicing_guard(default_facility, test_party, 
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -151,7 +153,7 @@ def test_generate_invoices_double_invoicing_guard(default_facility, test_party, 
 
 
 @pytest.mark.django_db
-def test_post_and_cancel_invoice_status_transitions(default_facility, test_party, test_commodity):
+def test_post_and_cancel_invoice_status_transitions(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -161,7 +163,8 @@ def test_post_and_cancel_invoice_status_transitions(default_facility, test_party
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -197,7 +200,7 @@ def test_post_and_cancel_invoice_status_transitions(default_facility, test_party
 
 
 @pytest.mark.django_db
-def test_cancel_draft_invoice(default_facility, test_party, test_commodity):
+def test_cancel_draft_invoice(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -207,7 +210,8 @@ def test_cancel_draft_invoice(default_facility, test_party, test_commodity):
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -231,7 +235,7 @@ def test_cancel_draft_invoice(default_facility, test_party, test_commodity):
 
 
 @pytest.mark.django_db
-def test_generate_invoice_pdf(default_facility, test_party, test_commodity):
+def test_generate_invoice_pdf(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -241,7 +245,8 @@ def test_generate_invoice_pdf(default_facility, test_party, test_commodity):
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -270,7 +275,7 @@ def test_generate_invoice_pdf(default_facility, test_party, test_commodity):
 
 
 @pytest.mark.django_db
-def test_invoice_party_and_facility_snapshots_and_rename_resilience(default_facility, test_party, test_commodity):
+def test_invoice_party_and_facility_snapshots_and_rename_resilience(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -280,7 +285,8 @@ def test_invoice_party_and_facility_snapshots_and_rename_resilience(default_faci
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -495,7 +501,7 @@ def test_delete_payment_service(default_facility, test_party):
 
 
 @pytest.mark.django_db
-def test_preview_uninvoiced_charges_totals_identical_to_generation(default_facility, test_party, test_commodity):
+def test_preview_uninvoiced_charges_totals_identical_to_generation(default_facility, test_party, test_commodity, default_block):
     """
     Assert preview returns totals IDENTICAL to what generation then actually produces for the same data.
     """
@@ -509,7 +515,8 @@ def test_preview_uninvoiced_charges_totals_identical_to_generation(default_facil
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -556,7 +563,7 @@ def test_preview_uninvoiced_charges_totals_identical_to_generation(default_facil
 
 
 @pytest.mark.django_db
-def test_preview_uninvoiced_charges_does_not_create_records_or_mark_invoiced(default_facility, test_party, test_commodity):
+def test_preview_uninvoiced_charges_does_not_create_records_or_mark_invoiced(default_facility, test_party, test_commodity, default_block):
     """
     Assert preview does NOT create Invoice/InvoiceLine rows and does NOT set DeliveryLine.invoiced_at.
     """
@@ -571,7 +578,8 @@ def test_preview_uninvoiced_charges_does_not_create_records_or_mark_invoiced(def
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -598,7 +606,7 @@ def test_preview_uninvoiced_charges_does_not_create_records_or_mark_invoiced(def
 
 
 @pytest.mark.django_db
-def test_preview_uninvoiced_charges_does_not_consume_sequence_number(default_facility, test_party, test_commodity):
+def test_preview_uninvoiced_charges_does_not_consume_sequence_number(default_facility, test_party, test_commodity, default_block):
     """
     Assert preview does not consume an invoice sequence number.
     """
@@ -613,7 +621,8 @@ def test_preview_uninvoiced_charges_does_not_consume_sequence_number(default_fac
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -645,7 +654,7 @@ def test_preview_uninvoiced_charges_does_not_consume_sequence_number(default_fac
 
 
 @pytest.mark.django_db
-def test_preview_already_invoiced_delivery_lines_never_appear(default_facility, test_party, test_commodity):
+def test_preview_already_invoiced_delivery_lines_never_appear(default_facility, test_party, test_commodity, default_block):
     """
     Assert already-invoiced delivery lines never appear in a preview.
     """
@@ -658,7 +667,8 @@ def test_preview_already_invoiced_delivery_lines_never_appear(default_facility, 
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -680,7 +690,7 @@ def test_preview_already_invoiced_delivery_lines_never_appear(default_facility, 
 
 
 @pytest.mark.django_db
-def test_preview_already_billed_grn_charge_does_not_reappear(default_facility, test_party, test_commodity):
+def test_preview_already_billed_grn_charge_does_not_reappear(default_facility, test_party, test_commodity, default_block):
     """
     Assert a GRN receiving charge already billed on an earlier invoice does not reappear in a later preview.
     """
@@ -694,7 +704,8 @@ def test_preview_already_billed_grn_charge_does_not_reappear(default_facility, t
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -730,7 +741,7 @@ def test_preview_already_billed_grn_charge_does_not_reappear(default_facility, t
 
 
 @pytest.mark.django_db
-def test_preview_party_id_filtering(default_facility, test_party, test_party2, test_commodity):
+def test_preview_party_id_filtering(default_facility, test_party, test_party2, test_commodity, default_block):
     """
     Assert party_id filtering returns only that party.
     """
@@ -739,7 +750,7 @@ def test_preview_party_id_filtering(default_facility, test_party, test_party2, t
         party_id=test_party.id,
         receipt_date=date(2026, 7, 1),
         status=GRN.Status.POSTED,
-        items=[{"commodity_id": test_commodity.id, "initial_qty": 50, "unit_weight": Decimal('50.00'), "rent_rate_per_unit": Decimal('50.00')}]
+        items=[{"commodity_id": test_commodity.id, "initial_qty": 50, "unit_weight": Decimal('50.00'), "rent_rate_per_unit": Decimal('50.00'), "block_id": default_block.id}]
     )
     create_delivery_note(
         facility_id=default_facility.id,
@@ -754,7 +765,7 @@ def test_preview_party_id_filtering(default_facility, test_party, test_party2, t
         party_id=test_party2.id,
         receipt_date=date(2026, 7, 1),
         status=GRN.Status.POSTED,
-        items=[{"commodity_id": test_commodity.id, "initial_qty": 30, "unit_weight": Decimal('50.00'), "rent_rate_per_unit": Decimal('50.00')}]
+        items=[{"commodity_id": test_commodity.id, "initial_qty": 30, "unit_weight": Decimal('50.00'), "rent_rate_per_unit": Decimal('50.00'), "block_id": default_block.id}]
     )
     create_delivery_note(
         facility_id=default_facility.id,
@@ -782,7 +793,7 @@ def test_preview_party_id_filtering(default_facility, test_party, test_party2, t
 
 
 @pytest.mark.django_db
-def test_invoice_lines_carry_billed_quantity_unit_and_rate(default_facility):
+def test_invoice_lines_carry_billed_quantity_unit_and_rate(default_facility, default_block):
     """
     InvoiceLine used to only store description + amount. A quantity/unit/rate
     was embedded in the description text but never available as data, so the
@@ -802,6 +813,7 @@ def test_invoice_lines_carry_billed_quantity_unit_and_rate(default_facility):
             "commodity_id": commodity.id,
             "initial_qty": 100,
             "rent_rate_per_unit": Decimal('12.00'),
+            "block_id": default_block.id,
         }],
     )
     lot = grn.lots.first()

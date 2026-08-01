@@ -31,7 +31,7 @@ def test_commodity(default_facility):
 
 
 @pytest.fixture
-def posted_grn(default_facility, test_party, test_commodity):
+def posted_grn(default_facility, test_party, test_commodity, default_block):
     return create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -41,13 +41,15 @@ def posted_grn(default_facility, test_party, test_commodity):
                 "commodity_id": test_commodity.id,
                 "chamber": "Chamber A",
                 "initial_qty": 100,
-                "unit_weight": 50.0
+                "unit_weight": 50.0,
+                "block_id": default_block.id,
             },
             {
                 "commodity_id": test_commodity.id,
                 "chamber": "Chamber B",
                 "initial_qty": 200,
-                "unit_weight": 50.0
+                "unit_weight": 50.0,
+                "block_id": default_block.id,
             }
         ]
     )
@@ -228,12 +230,20 @@ def test_dn_number_sequence_and_increment(default_facility, test_party, posted_g
 
 @pytest.mark.django_db
 def test_create_delivery_note_facility_validation(default_facility, test_party, test_commodity):
+    from apps.locations.services import create_chamber, create_floor, create_block
     other_facility = Facility.objects.create(code="FAC-02", name="Other Facility")
+    other_chamber = create_chamber(facility_id=other_facility.id, name="Other Chamber")
+    other_floor = create_floor(chamber_id=other_chamber.id, name="Other Floor")
+    other_block = create_block(floor_id=other_floor.id, name="Other Block")
     grn_other = create_grn(
         facility_id=other_facility.id,
         party_id=create_party(facility_id=other_facility.id, name="Other Party", type="DEPOSITOR").id,
         receipt_date=date(2026, 7, 25),
-        items=[{"commodity_id": create_commodity(facility_id=other_facility.id, name="Peas 2").id, "initial_qty": 50}]
+        items=[{
+            "commodity_id": create_commodity(facility_id=other_facility.id, name="Peas 2").id,
+            "initial_qty": 50,
+            "block_id": other_block.id,
+        }]
     )
     other_lot = grn_other.lots.first()
 

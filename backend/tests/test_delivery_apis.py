@@ -18,7 +18,7 @@ def commodity(default_facility):
 
 
 @pytest.fixture
-def posted_grn(default_facility, party, commodity):
+def posted_grn(default_facility, party, commodity, default_block):
     return create_grn(
         facility_id=default_facility.id,
         party_id=party.id,
@@ -27,7 +27,8 @@ def posted_grn(default_facility, party, commodity):
             "commodity_id": commodity.id,
             "chamber": "Chamber 1",
             "initial_qty": 500,
-            "unit_weight": "40.00"
+            "unit_weight": "40.00",
+            "block_id": default_block.id,
         }]
     )
 

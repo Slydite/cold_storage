@@ -49,7 +49,7 @@ def test_unauthenticated_invoicing_apis_denied(api_client):
 
 
 @pytest.mark.django_db
-def test_invoice_api_generate_list_retrieve_post_cancel_pdf(auth_client, default_facility, test_party, test_commodity):
+def test_invoice_api_generate_list_retrieve_post_cancel_pdf(auth_client, default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -59,7 +59,8 @@ def test_invoice_api_generate_list_retrieve_post_cancel_pdf(auth_client, default
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -182,7 +183,7 @@ def test_payment_api_workflow_and_filtering(auth_client, default_facility, test_
 
 
 @pytest.mark.django_db
-def test_invoice_preview_api_endpoint(auth_client, default_facility, test_party, test_commodity):
+def test_invoice_preview_api_endpoint(auth_client, default_facility, test_party, test_commodity, default_block):
     """
     Test GET /api/invoices/preview/?facility_id=<int>&party_id=<int optional>
     """
@@ -196,7 +197,8 @@ def test_invoice_preview_api_endpoint(auth_client, default_facility, test_party,
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()

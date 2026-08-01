@@ -2,6 +2,7 @@ import pytest
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
 from apps.facilities.models import Facility
+from apps.locations.services import create_chamber, create_floor, create_block
 
 @pytest.fixture
 def api_client():
@@ -31,3 +32,16 @@ def default_facility(db):
         }
     )
     return facility
+
+@pytest.fixture
+def default_chamber(default_facility):
+    return create_chamber(facility_id=default_facility.id, name="Default Chamber")
+
+@pytest.fixture
+def default_floor(default_chamber):
+    return create_floor(chamber_id=default_chamber.id, name="Default Floor")
+
+@pytest.fixture
+def default_block(default_floor):
+    return create_block(floor_id=default_floor.id, name="Default Block")
+

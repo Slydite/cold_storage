@@ -32,7 +32,7 @@ def test_commodity(default_facility):
 
 
 @pytest.mark.django_db
-def test_compute_delivery_line_rent_real_chain(default_facility, test_party, test_commodity):
+def test_compute_delivery_line_rent_real_chain(default_facility, test_party, test_commodity, default_block):
     """
     Test compute_delivery_line_rent against a real GRN -> Lot -> posted DN chain.
     Asserts exact Decimal rent output based on Lot.rent_rate_per_unit and DN dispatch_date.
@@ -46,7 +46,8 @@ def test_compute_delivery_line_rent_real_chain(default_facility, test_party, tes
             "commodity_id": test_commodity.id,
             "initial_qty": 500,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('12.00')
+            "rent_rate_per_unit": Decimal('12.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -69,7 +70,7 @@ def test_compute_delivery_line_rent_real_chain(default_facility, test_party, tes
 
 
 @pytest.mark.django_db
-def test_two_withdrawals_same_lot_different_dates_different_multipliers(default_facility, test_party, test_commodity):
+def test_two_withdrawals_same_lot_different_dates_different_multipliers(default_facility, test_party, test_commodity, default_block):
     """
     PROVES RULE 2: Rent is charged PER WITHDRAWAL, not per lot.
     Two withdrawals from the same lot at different dates bill different multipliers:
@@ -85,7 +86,8 @@ def test_two_withdrawals_same_lot_different_dates_different_multipliers(default_
             "commodity_id": test_commodity.id,
             "initial_qty": 1000,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('10.00')
+            "rent_rate_per_unit": Decimal('10.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -118,7 +120,7 @@ def test_two_withdrawals_same_lot_different_dates_different_multipliers(default_
 
 
 @pytest.mark.django_db
-def test_get_uninvoiced_delivery_lines_filters_draft_and_invoiced(default_facility, test_party, test_commodity):
+def test_get_uninvoiced_delivery_lines_filters_draft_and_invoiced(default_facility, test_party, test_commodity, default_block):
     """
     Asserts get_uninvoiced_delivery_lines:
     - Excludes lines from DRAFT delivery notes (RULE 3 - DRAFT DNs move zero stock and are not billable).
@@ -134,7 +136,8 @@ def test_get_uninvoiced_delivery_lines_filters_draft_and_invoiced(default_facili
             "commodity_id": test_commodity.id,
             "initial_qty": 500,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('12.00')
+            "rent_rate_per_unit": Decimal('12.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()

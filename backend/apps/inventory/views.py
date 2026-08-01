@@ -203,7 +203,8 @@ class GRNViewSet(ViewSet):
                 loading_charge_mode=serializer.validated_data.get('loading_charge_mode', ChargeMode.FLAT),
                 inward_time=serializer.validated_data.get('inward_time', None),
                 status=serializer.validated_data.get('status', GRN.Status.POSTED),
-                items=serializer.validated_data.get('items', [])
+                items=serializer.validated_data.get('items', []),
+                require_location=True
             )
         except DjangoValidationError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

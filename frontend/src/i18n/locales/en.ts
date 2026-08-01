@@ -618,6 +618,7 @@ const en = {
     minLength: 'Minimum length is {min}',
     maxLength: 'Maximum length is {max}',
     commodityRequired: 'Commodity is required',
+    blockRequired: 'Block is required',
     qtyMin1: 'Qty must be at least 1',
     partyRequired: 'Party is required',
     receiptDateRequired: 'Receipt date is required',

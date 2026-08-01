@@ -35,12 +35,26 @@ class LotItemInputSerializer(serializers.Serializer):
     rack = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
     chamber_id = serializers.IntegerField(required=False, allow_null=True, default=None)
     floor_id = serializers.IntegerField(required=False, allow_null=True, default=None)
-    block_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    block_id = serializers.IntegerField(required=True)
     special_remarks = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
     initial_qty = serializers.IntegerField(min_value=1)
     unit = serializers.CharField(max_length=20, required=False, allow_blank=True, default='')
     unit_weight = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0.00)
     rent_rate_per_unit = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0.00)
+
+    def to_internal_value(self, data):
+        if 'block_id' not in data or data['block_id'] is None or data['block_id'] == '':
+            commodity_id = data.get('commodity_id')
+            commodity_name = "Unknown"
+            if commodity_id:
+                try:
+                    commodity_name = Commodity.objects.get(pk=commodity_id).name
+                except Commodity.DoesNotExist:
+                    pass
+            raise serializers.ValidationError({
+                'block_id': f"Storage location (block) is required for commodity '{commodity_name}'."
+            })
+        return super().to_internal_value(data)
 
 
 class LotOutputSerializer(serializers.ModelSerializer):

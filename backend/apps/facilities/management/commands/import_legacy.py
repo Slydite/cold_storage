@@ -502,7 +502,8 @@ class Command(BaseCommand):
                                 vehicle_number=grn_row['vehicle_number'],
                                 remarks=grn_row['remarks'],
                                 status=grn_row['status'],
-                                items=items_data
+                                items=items_data,
+                                require_location=False  # Legacy imports genuinely have no location recorded and must bypass this requirement
                             )
                             # Set legacy_ref on GRN
                             grn.legacy_ref = grn_ref

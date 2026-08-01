@@ -54,6 +54,11 @@ def test_commodity_api_lifecycle(auth_client, default_facility):
 
 @pytest.mark.django_db
 def test_grn_api_create_and_list(auth_client, default_facility, party, commodity):
+    from apps.locations.services import create_chamber, create_floor, create_block
+    chamber = create_chamber(facility_id=default_facility.id, name="Chamber 1")
+    floor = create_floor(chamber_id=chamber.id, name="Floor 1")
+    block = create_block(floor_id=floor.id, name="Block 1")
+
     grn_payload = {
         "facility_id": default_facility.id,
         "party_id": party.id,
@@ -68,7 +73,8 @@ def test_grn_api_create_and_list(auth_client, default_facility, party, commodity
                 "floor": "Floor 2",
                 "initial_qty": 300,
                 "unit_weight": "40.00",
-                "rent_rate_per_unit": "10.00"
+                "rent_rate_per_unit": "10.00",
+                "block_id": block.id
             }
         ]
     }
@@ -86,7 +92,7 @@ def test_grn_api_create_and_list(auth_client, default_facility, party, commodity
     assert len(res_list.data) == 1
 
 @pytest.mark.django_db
-def test_lot_api_withdraw(auth_client, default_facility, party, commodity):
+def test_lot_api_withdraw(auth_client, default_facility, party, commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=party.id,
@@ -94,7 +100,8 @@ def test_lot_api_withdraw(auth_client, default_facility, party, commodity):
         items=[{
             "commodity_id": commodity.id,
             "initial_qty": 500,
-            "chamber": "Chamber 3"
+            "chamber": "Chamber 3",
+            "block_id": default_block.id,
         }]
     )
     lot_id = grn.lots.first().id
@@ -113,6 +120,11 @@ def test_lot_api_withdraw(auth_client, default_facility, party, commodity):
 
 @pytest.mark.django_db
 def test_grn_api_roundtrip_loading_charge_mode(auth_client, default_facility, party, commodity):
+    from apps.locations.services import create_chamber, create_floor, create_block
+    chamber = create_chamber(facility_id=default_facility.id, name="Chamber 1")
+    floor = create_floor(chamber_id=chamber.id, name="Floor 1")
+    block = create_block(floor_id=floor.id, name="Block 1")
+
     grn_payload = {
         "facility_id": default_facility.id,
         "party_id": party.id,
@@ -123,7 +135,8 @@ def test_grn_api_roundtrip_loading_charge_mode(auth_client, default_facility, pa
             {
                 "commodity_id": commodity.id,
                 "initial_qty": 200,
-                "unit": "CRATES"
+                "unit": "CRATES",
+                "block_id": block.id
             }
         ]
     }
@@ -155,6 +168,11 @@ def test_reserve_number_returns_sequential_values_and_never_repeats(auth_client,
 
 @pytest.mark.django_db
 def test_grn_created_with_previously_reserved_lot_number(auth_client, default_facility, party, commodity):
+    from apps.locations.services import create_chamber, create_floor, create_block
+    chamber = create_chamber(facility_id=default_facility.id, name="Chamber 1")
+    floor = create_floor(chamber_id=chamber.id, name="Floor 1")
+    block = create_block(floor_id=floor.id, name="Block 1")
+
     res_reserve = auth_client.post('/api/lots/reserve-number/', {"facility_id": default_facility.id})
     assert res_reserve.status_code == status.HTTP_201_CREATED
     reserved_number = res_reserve.data['lot_number']
@@ -167,7 +185,8 @@ def test_grn_created_with_previously_reserved_lot_number(auth_client, default_fa
             {
                 "commodity_id": commodity.id,
                 "initial_qty": 300,
-                "lot_number": reserved_number
+                "lot_number": reserved_number,
+                "block_id": block.id
             }
         ]
     }
@@ -187,6 +206,11 @@ def test_grn_email_api_workflow(auth_client, default_facility, party, commodity)
     from django.core import mail
     from django.utils import timezone
     from apps.parties.models import Party
+    from apps.locations.services import create_chamber, create_floor, create_block
+
+    chamber = create_chamber(facility_id=default_facility.id, name="Chamber 1")
+    floor = create_floor(chamber_id=chamber.id, name="Floor 1")
+    block = create_block(floor_id=floor.id, name="Block 1")
 
     # Create GRN
     grn_payload = {
@@ -197,6 +221,7 @@ def test_grn_email_api_workflow(auth_client, default_facility, party, commodity)
             {
                 "commodity_id": commodity.id,
                 "initial_qty": 100,
+                "block_id": block.id
             }
         ]
     }
@@ -245,3 +270,79 @@ def test_grn_email_action_genuinely_unauthenticated():
     fresh_client = APIClient()
     res = fresh_client.post('/api/grns/999/email/')
     assert res.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+
+
+@pytest.mark.django_db
+def test_create_grn_block_required_api(auth_client, default_facility, party, commodity):
+    # Test that creating a GRN without a block_id is rejected with a 400 and names the commodity
+    payload = {
+        "facility_id": default_facility.id,
+        "party_id": party.id,
+        "receipt_date": "2026-07-25",
+        "items": [
+            {
+                "commodity_id": commodity.id,
+                "initial_qty": 100,
+                # block_id is missing!
+            }
+        ]
+    }
+    res = auth_client.post('/api/grns/', payload, format='json')
+    assert res.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Onion" in str(res.data)
+    assert "block" in str(res.data) or "location" in str(res.data)
+
+
+@pytest.mark.django_db
+def test_create_grn_valid_block_api(auth_client, default_facility, party, commodity):
+    from apps.locations.services import create_chamber, create_floor, create_block
+    from apps.inventory.models import Lot
+    chamber = create_chamber(facility_id=default_facility.id, name="Chamber X")
+    floor = create_floor(chamber_id=chamber.id, name="Floor Y")
+    block = create_block(floor_id=floor.id, name="Block Z")
+
+    payload = {
+        "facility_id": default_facility.id,
+        "party_id": party.id,
+        "receipt_date": "2026-07-25",
+        "items": [
+            {
+                "commodity_id": commodity.id,
+                "initial_qty": 100,
+                "block_id": block.id
+            }
+        ]
+    }
+    res = auth_client.post('/api/grns/', payload, format='json')
+    assert res.status_code == status.HTTP_201_CREATED
+    lot = Lot.objects.get(pk=res.data['lots'][0]['id'])
+    assert lot.block_ref_id == block.id
+    assert lot.floor_ref_id == floor.id
+    assert lot.chamber_ref_id == chamber.id
+
+
+@pytest.mark.django_db
+def test_create_grn_mismatched_locations_rejected(auth_client, default_facility, party, commodity):
+    from apps.locations.services import create_chamber, create_floor, create_block
+    chamber1 = create_chamber(facility_id=default_facility.id, name="Chamber 1")
+    floor1 = create_floor(chamber_id=chamber1.id, name="Floor 1")
+    block1 = create_block(floor_id=floor1.id, name="Block 1")
+
+    chamber2 = create_chamber(facility_id=default_facility.id, name="Chamber 2")
+
+    payload = {
+        "facility_id": default_facility.id,
+        "party_id": party.id,
+        "receipt_date": "2026-07-25",
+        "items": [
+            {
+                "commodity_id": commodity.id,
+                "initial_qty": 100,
+                "block_id": block1.id,
+                "chamber_id": chamber2.id  # Mismatched chamber!
+            }
+        ]
+    }
+    res = auth_client.post('/api/grns/', payload, format='json')
+    assert res.status_code == status.HTTP_400_BAD_REQUEST
+    assert "does not belong to chamber" in str(res.data)

@@ -693,3 +693,39 @@ def test_include_referenced_lots_idempotency(tmp_path, default_facility):
     output2 = out2.getvalue()
     assert "Skipped            : 1" in output2
 
+
+@pytest.mark.django_db
+def test_import_legacy_no_location(tmp_path, default_facility):
+    # Setup CSV files where lots have NO location details
+    setup_csv_files(
+        tmp_path,
+        grns=[{
+            'grn_number': 'GRN_NOLOC', 'party_code': 'P01', 'receipt_date': '2026-06-01',
+            'vehicle_number': 'UP15-1234', 'remarks': 'No Location Test', 'status': 'POSTED'
+        }],
+        lots=[{
+            'lot_number': 'LOT_NOLOC', 'grn_number': 'GRN_NOLOC', 'commodity_code': 'C01',
+            'chamber_ref_code': '', 'floor_ref_code': '', 'block_ref_code': '',
+            'initial_qty': '100', 'remaining_qty': '100', 'rent_rate_per_unit': '1.50',
+            'unit': 'BAGS', 'chamber': '', 'floor': '', 'rack': '', 'special_remarks': '',
+            'unit_weight': '50.00', 'inward_date': '2026-06-01'
+        }]
+    )
+
+    out = StringIO()
+    call_command(
+        'import_legacy',
+        facility=default_facility.id,
+        source=str(tmp_path),
+        commit=True,
+        stdout=out
+    )
+
+    # Check that the GRN and Lot were imported successfully despite having no location block
+    grn = GRN.objects.get(facility=default_facility, legacy_ref='GRN_NOLOC')
+    lot = Lot.objects.get(facility=default_facility, legacy_ref='LOT_NOLOC')
+    assert lot.grn == grn
+    assert lot.block_ref is None
+    assert lot.floor_ref is None
+    assert lot.chamber_ref is None
+

@@ -46,6 +46,11 @@ def test_unauthenticated_reports_denied(api_client):
 
 @pytest.mark.django_db
 def test_stock_summary_api_json_and_csv(auth_client, default_facility, party, commodity):
+    from apps.locations.services import create_chamber, create_floor, create_block
+    ch_a = create_chamber(facility_id=default_facility.id, name="Chamber A")
+    fl_a = create_floor(chamber_id=ch_a.id, name="Floor A")
+    bl_a = create_block(floor_id=fl_a.id, name="Block A")
+
     create_grn(
         facility_id=default_facility.id,
         party_id=party.id,
@@ -54,7 +59,8 @@ def test_stock_summary_api_json_and_csv(auth_client, default_facility, party, co
             "commodity_id": commodity.id,
             "chamber": "Chamber A",
             "initial_qty": 200,
-            "unit_weight": Decimal('50.00')
+            "unit_weight": Decimal('50.00'),
+            "block_id": bl_a.id,
         }]
     )
 
@@ -80,7 +86,7 @@ def test_stock_summary_api_json_and_csv(auth_client, default_facility, party, co
 
 
 @pytest.mark.django_db
-def test_grn_register_api_json_csv_and_date_filter(auth_client, default_facility, party, commodity):
+def test_grn_register_api_json_csv_and_date_filter(auth_client, default_facility, party, commodity, default_block):
     res_err = auth_client.get('/api/reports/grn-register/')
     assert res_err.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -90,7 +96,8 @@ def test_grn_register_api_json_csv_and_date_filter(auth_client, default_facility
         receipt_date=date(2026, 7, 15),
         items=[{
             "commodity_id": commodity.id,
-            "initial_qty": 100
+            "initial_qty": 100,
+            "block_id": default_block.id,
         }]
     )
 
@@ -110,7 +117,7 @@ def test_grn_register_api_json_csv_and_date_filter(auth_client, default_facility
 
 
 @pytest.mark.django_db
-def test_dn_register_api_json_csv_and_date_filter(auth_client, default_facility, party, commodity):
+def test_dn_register_api_json_csv_and_date_filter(auth_client, default_facility, party, commodity, default_block):
     res_err = auth_client.get('/api/reports/dn-register/')
     assert res_err.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -118,7 +125,7 @@ def test_dn_register_api_json_csv_and_date_filter(auth_client, default_facility,
         facility_id=default_facility.id,
         party_id=party.id,
         receipt_date=date(2026, 7, 1),
-        items=[{"commodity_id": commodity.id, "initial_qty": 100}]
+        items=[{"commodity_id": commodity.id, "initial_qty": 100, "block_id": default_block.id}]
     )
     lot = grn.lots.first()
 
@@ -146,7 +153,7 @@ def test_dn_register_api_json_csv_and_date_filter(auth_client, default_facility,
 
 
 @pytest.mark.django_db
-def test_invoice_register_api_json_csv_and_date_filter(auth_client, default_facility, party, commodity):
+def test_invoice_register_api_json_csv_and_date_filter(auth_client, default_facility, party, commodity, default_block):
     res_err = auth_client.get('/api/reports/invoices/')
     assert res_err.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -154,7 +161,7 @@ def test_invoice_register_api_json_csv_and_date_filter(auth_client, default_faci
         facility_id=default_facility.id,
         party_id=party.id,
         receipt_date=date(2026, 7, 1),
-        items=[{"commodity_id": commodity.id, "initial_qty": 50, "unit_weight": Decimal('50.00'), "rent_rate_per_unit": Decimal('50.00')}]
+        items=[{"commodity_id": commodity.id, "initial_qty": 50, "unit_weight": Decimal('50.00'), "rent_rate_per_unit": Decimal('50.00'), "block_id": default_block.id}]
     )
     lot = grn.lots.first()
 
@@ -185,11 +192,22 @@ def test_invoice_register_api_json_csv_and_date_filter(auth_client, default_faci
 
 
 def _helper_create_invoice(facility_id, party_id, commodity_id):
+    from apps.locations.models import Chamber, Floor, Block
+    from apps.locations.services import create_chamber, create_floor, create_block
+    chamber = Chamber.objects.filter(facility_id=facility_id, name="Report Temp Chamber").first()
+    if not chamber:
+        chamber = create_chamber(facility_id=facility_id, name="Report Temp Chamber")
+    floor = Floor.objects.filter(chamber_id=chamber.id, name="Report Temp Floor").first()
+    if not floor:
+        floor = create_floor(chamber_id=chamber.id, name="Report Temp Floor")
+    block = Block.objects.filter(floor_id=floor.id, name="Report Temp Block").first()
+    if not block:
+        block = create_block(floor_id=floor.id, name="Report Temp Block")
     grn = create_grn(
         facility_id=facility_id,
         party_id=party_id,
         receipt_date=date(2026, 7, 1),
-        items=[{"commodity_id": commodity_id, "initial_qty": 50, "unit_weight": Decimal('50.00'), "rent_rate_per_unit": Decimal('50.00')}]
+        items=[{"commodity_id": commodity_id, "initial_qty": 50, "unit_weight": Decimal('50.00'), "rent_rate_per_unit": Decimal('50.00'), "block_id": block.id}]
     )
     lot = grn.lots.first()
     create_delivery_note(

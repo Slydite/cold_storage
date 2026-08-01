@@ -3565,7 +3565,6 @@ components:
           nullable: true
         block_id:
           type: integer
-          nullable: true
         special_remarks:
           type: string
           default: ''
@@ -3588,6 +3587,7 @@ components:
           pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
           default: '0.00'
       required:
+      - block_id
       - commodity_id
       - initial_qty
     LotOutput:

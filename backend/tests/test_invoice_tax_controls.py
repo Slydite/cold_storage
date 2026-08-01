@@ -45,6 +45,10 @@ def test_commodity(default_facility):
 
 def _make_invoice(facility, party, commodity, **generate_kwargs):
     """Put 100 bags in, take them out 31 days later, invoice the result."""
+    from apps.locations.services import create_chamber, create_floor, create_block
+    chamber = create_chamber(facility_id=facility.id, name="Temp Chamber")
+    floor = create_floor(chamber_id=chamber.id, name="Temp Floor")
+    block = create_block(floor_id=floor.id, name="Temp Block")
     grn = create_grn(
         facility_id=facility.id,
         party_id=party.id,
@@ -55,6 +59,7 @@ def _make_invoice(facility, party, commodity, **generate_kwargs):
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
             "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": block.id,
         }],
     )
     lot = grn.lots.first()

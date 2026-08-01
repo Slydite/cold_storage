@@ -617,6 +617,7 @@ const hi: MessageSchema = {
     minLength: 'न्यूनतम लंबाई {min} होनी चाहिए',
     maxLength: 'अधिकतम लंबाई {max} होनी चाहिए',
     commodityRequired: 'जिंस का चयन अनिवार्य है',
+    blockRequired: 'ब्लॉक का चयन अनिवार्य है',
     qtyMin1: 'मात्रा कम से कम 1 होनी चाहिए',
     partyRequired: 'पार्टी का चयन अनिवार्य है',
     receiptDateRequired: 'आवक दिनांक अनिवार्य है',

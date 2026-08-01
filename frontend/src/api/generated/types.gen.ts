@@ -397,7 +397,7 @@ export type LotItemInput = {
     rack?: string;
     chamber_id?: number | null;
     floor_id?: number | null;
-    block_id?: number | null;
+    block_id: number;
     special_remarks?: string;
     initial_qty: number;
     unit?: string;

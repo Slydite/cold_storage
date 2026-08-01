@@ -55,6 +55,15 @@ def test_create_commodity_sequence_advances(default_facility):
 
 @pytest.mark.django_db
 def test_create_grn_with_sequence_and_lots(default_facility, test_party, test_commodity):
+    from apps.locations.services import create_chamber, create_floor, create_block
+    ch_a = create_chamber(facility_id=default_facility.id, name="Chamber A")
+    fl_1 = create_floor(chamber_id=ch_a.id, name="Floor 1")
+    bl_1 = create_block(floor_id=fl_1.id, name="Block 1")
+
+    ch_b = create_chamber(facility_id=default_facility.id, name="Chamber B")
+    fl_2 = create_floor(chamber_id=ch_b.id, name="Floor 2")
+    bl_2 = create_block(floor_id=fl_2.id, name="Block 2")
+
     receipt_date = date(2026, 7, 25)
     items = [
         {
@@ -64,7 +73,8 @@ def test_create_grn_with_sequence_and_lots(default_facility, test_party, test_co
             "rack": "Rack 05",
             "initial_qty": 100,
             "unit_weight": 50.0,
-            "rent_rate_per_unit": 12.50
+            "rent_rate_per_unit": 12.50,
+            "block_id": bl_1.id,
         },
         {
             "commodity_id": test_commodity.id,
@@ -73,7 +83,8 @@ def test_create_grn_with_sequence_and_lots(default_facility, test_party, test_co
             "rack": "Rack 12",
             "initial_qty": 50,
             "unit_weight": 50.0,
-            "rent_rate_per_unit": 12.50
+            "rent_rate_per_unit": 12.50,
+            "block_id": bl_2.id,
         }
     ]
 
@@ -113,7 +124,7 @@ def test_create_grn_with_sequence_and_lots(default_facility, test_party, test_co
     assert grn2.grn_number == "GRN-000002"
 
 @pytest.mark.django_db
-def test_withdraw_stock_from_lot_success(default_facility, test_party, test_commodity):
+def test_withdraw_stock_from_lot_success(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -121,7 +132,8 @@ def test_withdraw_stock_from_lot_success(default_facility, test_party, test_comm
         items=[{
             "commodity_id": test_commodity.id,
             "initial_qty": 200,
-            "unit_weight": 50.0
+            "unit_weight": 50.0,
+            "block_id": default_block.id,
         }]
     )
 
@@ -137,14 +149,15 @@ def test_withdraw_stock_from_lot_success(default_facility, test_party, test_comm
     assert updated_lot_2.remaining_qty == 100
 
 @pytest.mark.django_db
-def test_withdraw_stock_from_lot_insufficient_stock(default_facility, test_party, test_commodity):
+def test_withdraw_stock_from_lot_insufficient_stock(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
         receipt_date=date(2026, 7, 25),
         items=[{
             "commodity_id": test_commodity.id,
-            "initial_qty": 50
+            "initial_qty": 50,
+            "block_id": default_block.id,
         }]
     )
 
@@ -156,7 +169,7 @@ def test_withdraw_stock_from_lot_insufficient_stock(default_facility, test_party
 
 
 @pytest.mark.django_db
-def test_post_grn_transitions_draft_to_posted(default_facility, test_party, test_commodity):
+def test_post_grn_transitions_draft_to_posted(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -164,7 +177,8 @@ def test_post_grn_transitions_draft_to_posted(default_facility, test_party, test
         status=GRN.Status.DRAFT,
         items=[{
             "commodity_id": test_commodity.id,
-            "initial_qty": 100
+            "initial_qty": 100,
+            "block_id": default_block.id,
         }]
     )
     assert grn.status == GRN.Status.DRAFT
@@ -176,7 +190,7 @@ def test_post_grn_transitions_draft_to_posted(default_facility, test_party, test
 
 
 @pytest.mark.django_db
-def test_post_grn_rejects_non_draft(default_facility, test_party, test_commodity):
+def test_post_grn_rejects_non_draft(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -184,7 +198,8 @@ def test_post_grn_rejects_non_draft(default_facility, test_party, test_commodity
         status=GRN.Status.POSTED,
         items=[{
             "commodity_id": test_commodity.id,
-            "initial_qty": 100
+            "initial_qty": 100,
+            "block_id": default_block.id,
         }]
     )
     with pytest.raises(ValidationError) as exc:
@@ -193,7 +208,7 @@ def test_post_grn_rejects_non_draft(default_facility, test_party, test_commodity
 
 
 @pytest.mark.django_db
-def test_cancel_grn_from_draft(default_facility, test_party, test_commodity):
+def test_cancel_grn_from_draft(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -201,7 +216,8 @@ def test_cancel_grn_from_draft(default_facility, test_party, test_commodity):
         status=GRN.Status.DRAFT,
         items=[{
             "commodity_id": test_commodity.id,
-            "initial_qty": 100
+            "initial_qty": 100,
+            "block_id": default_block.id,
         }]
     )
     cancelled_grn = cancel_grn(grn_id=grn.id)
@@ -211,7 +227,7 @@ def test_cancel_grn_from_draft(default_facility, test_party, test_commodity):
 
 
 @pytest.mark.django_db
-def test_cancel_grn_rejects_posted(default_facility, test_party, test_commodity):
+def test_cancel_grn_rejects_posted(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -219,7 +235,8 @@ def test_cancel_grn_rejects_posted(default_facility, test_party, test_commodity)
         status=GRN.Status.POSTED,
         items=[{
             "commodity_id": test_commodity.id,
-            "initial_qty": 100
+            "initial_qty": 100,
+            "block_id": default_block.id,
         }]
     )
     with pytest.raises(ValidationError) as exc:
@@ -228,7 +245,7 @@ def test_cancel_grn_rejects_posted(default_facility, test_party, test_commodity)
 
 
 @pytest.mark.django_db
-def test_withdraw_rejected_when_grn_is_draft(default_facility, test_party, test_commodity):
+def test_withdraw_rejected_when_grn_is_draft(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -236,7 +253,8 @@ def test_withdraw_rejected_when_grn_is_draft(default_facility, test_party, test_
         status=GRN.Status.DRAFT,
         items=[{
             "commodity_id": test_commodity.id,
-            "initial_qty": 100
+            "initial_qty": 100,
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -249,7 +267,7 @@ def test_withdraw_rejected_when_grn_is_draft(default_facility, test_party, test_
 
 
 @pytest.mark.django_db
-def test_withdraw_succeeds_after_posting(default_facility, test_party, test_commodity):
+def test_withdraw_succeeds_after_posting(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -257,7 +275,8 @@ def test_withdraw_succeeds_after_posting(default_facility, test_party, test_comm
         status=GRN.Status.DRAFT,
         items=[{
             "commodity_id": test_commodity.id,
-            "initial_qty": 100
+            "initial_qty": 100,
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -271,7 +290,7 @@ def test_withdraw_succeeds_after_posting(default_facility, test_party, test_comm
 
 
 @pytest.mark.django_db
-def test_get_lots_list_excludes_draft_grn_lots(default_facility, test_party, test_commodity):
+def test_get_lots_list_excludes_draft_grn_lots(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -279,7 +298,8 @@ def test_get_lots_list_excludes_draft_grn_lots(default_facility, test_party, tes
         status=GRN.Status.DRAFT,
         items=[{
             "commodity_id": test_commodity.id,
-            "initial_qty": 100
+            "initial_qty": 100,
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -294,7 +314,7 @@ def test_get_lots_list_excludes_draft_grn_lots(default_facility, test_party, tes
 
 
 @pytest.mark.django_db
-def test_grn_computed_loading_charge_flat_mode(default_facility, test_party, test_commodity):
+def test_grn_computed_loading_charge_flat_mode(default_facility, test_party, test_commodity, default_block):
     from decimal import Decimal
     from libs.choices import ChargeMode
 
@@ -305,16 +325,16 @@ def test_grn_computed_loading_charge_flat_mode(default_facility, test_party, tes
         loading_charge=Decimal('1500.00'),
         loading_charge_mode=ChargeMode.FLAT,
         items=[
-            {"commodity_id": test_commodity.id, "initial_qty": 100},
-            {"commodity_id": test_commodity.id, "initial_qty": 50},
-            {"commodity_id": test_commodity.id, "initial_qty": 25}
+            {"commodity_id": test_commodity.id, "initial_qty": 100, "block_id": default_block.id},
+            {"commodity_id": test_commodity.id, "initial_qty": 50, "block_id": default_block.id},
+            {"commodity_id": test_commodity.id, "initial_qty": 25, "block_id": default_block.id}
         ]
     )
     assert grn.computed_loading_charge() == Decimal('1500.00')
 
 
 @pytest.mark.django_db
-def test_grn_computed_loading_charge_per_unit_mode(default_facility, test_party, test_commodity):
+def test_grn_computed_loading_charge_per_unit_mode(default_facility, test_party, test_commodity, default_block):
     from decimal import Decimal
     from libs.choices import ChargeMode
 
@@ -325,9 +345,9 @@ def test_grn_computed_loading_charge_per_unit_mode(default_facility, test_party,
         loading_unloading_rate_per_bag=Decimal('15.00'),
         loading_charge_mode=ChargeMode.PER_UNIT,
         items=[
-            {"commodity_id": test_commodity.id, "initial_qty": 100},
-            {"commodity_id": test_commodity.id, "initial_qty": 50},
-            {"commodity_id": test_commodity.id, "initial_qty": 25}
+            {"commodity_id": test_commodity.id, "initial_qty": 100, "block_id": default_block.id},
+            {"commodity_id": test_commodity.id, "initial_qty": 50, "block_id": default_block.id},
+            {"commodity_id": test_commodity.id, "initial_qty": 25, "block_id": default_block.id}
         ]
     )
     # 175 units * 15.00 = 2625.00
@@ -335,14 +355,14 @@ def test_grn_computed_loading_charge_per_unit_mode(default_facility, test_party,
 
 
 @pytest.mark.django_db
-def test_lot_unit_override_and_fallback(default_facility, test_party, test_commodity):
+def test_lot_unit_override_and_fallback(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
         receipt_date=date(2026, 7, 25),
         items=[
-            {"commodity_id": test_commodity.id, "initial_qty": 100, "unit": "BOXES"},
-            {"commodity_id": test_commodity.id, "initial_qty": 50}  # Omitted -> falls back to commodity.unit ('BAGS')
+            {"commodity_id": test_commodity.id, "initial_qty": 100, "unit": "BOXES", "block_id": default_block.id},
+            {"commodity_id": test_commodity.id, "initial_qty": 50, "block_id": default_block.id}  # Omitted -> falls back to commodity.unit ('BAGS')
         ]
     )
     lots = list(grn.lots.order_by('id'))
@@ -351,7 +371,7 @@ def test_lot_unit_override_and_fallback(default_facility, test_party, test_commo
 
 
 @pytest.mark.django_db
-def test_duplicate_lot_number_same_facility_fails(default_facility, test_party, test_commodity):
+def test_duplicate_lot_number_same_facility_fails(default_facility, test_party, test_commodity, default_block):
     from django.db import IntegrityError
     create_grn(
         facility_id=default_facility.id,
@@ -360,7 +380,8 @@ def test_duplicate_lot_number_same_facility_fails(default_facility, test_party, 
         items=[{
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
-            "lot_number": "LOT-000001"
+            "lot_number": "LOT-000001",
+            "block_id": default_block.id,
         }]
     )
     with pytest.raises((ValidationError, IntegrityError)):
@@ -371,14 +392,16 @@ def test_duplicate_lot_number_same_facility_fails(default_facility, test_party, 
             items=[{
                 "commodity_id": test_commodity.id,
                 "initial_qty": 100,
-                "lot_number": "LOT-000001"
+                "lot_number": "LOT-000001",
+                "block_id": default_block.id,
             }]
         )
 
 
 @pytest.mark.django_db
-def test_same_lot_number_different_facility_allowed(default_facility, test_party, test_commodity):
+def test_same_lot_number_different_facility_allowed(default_facility, test_party, test_commodity, default_block):
     from apps.facilities.models import Facility
+    from apps.locations.services import create_chamber, create_floor, create_block
     other_facility = Facility.objects.create(
         code="FAC-02",
         name="Second Facility",
@@ -386,6 +409,9 @@ def test_same_lot_number_different_facility_allowed(default_facility, test_party
     )
     other_party = create_party(facility_id=other_facility.id, name="Other Farmer", type="DEPOSITOR")
     other_commodity = create_commodity(facility_id=other_facility.id, name="Apple", unit="BAGS")
+    other_chamber = create_chamber(facility_id=other_facility.id, name="Other Chamber")
+    other_floor = create_floor(chamber_id=other_chamber.id, name="Other Floor")
+    other_block = create_block(floor_id=other_floor.id, name="Other Block")
 
     create_grn(
         facility_id=default_facility.id,
@@ -394,7 +420,8 @@ def test_same_lot_number_different_facility_allowed(default_facility, test_party
         items=[{
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
-            "lot_number": "LOT-000001"
+            "lot_number": "LOT-000001",
+            "block_id": default_block.id,
         }]
     )
 
@@ -405,14 +432,15 @@ def test_same_lot_number_different_facility_allowed(default_facility, test_party
         items=[{
             "commodity_id": other_commodity.id,
             "initial_qty": 100,
-            "lot_number": "LOT-000001"
+            "lot_number": "LOT-000001",
+            "block_id": other_block.id,
         }]
     )
     assert grn_other.lots.first().lot_number == "LOT-000001"
 
 
 @pytest.mark.django_db
-def test_client_supplied_lot_number_bogus_format_rejected(default_facility, test_party, test_commodity):
+def test_client_supplied_lot_number_bogus_format_rejected(default_facility, test_party, test_commodity, default_block):
     for bogus_lot in ["HACKED", "LOT-abc", ""]:
         if bogus_lot == "":
             grn = create_grn(
@@ -422,7 +450,8 @@ def test_client_supplied_lot_number_bogus_format_rejected(default_facility, test
                 items=[{
                     "commodity_id": test_commodity.id,
                     "initial_qty": 100,
-                    "lot_number": bogus_lot
+                    "lot_number": bogus_lot,
+                    "block_id": default_block.id,
                 }]
             )
             assert grn.lots.first().lot_number.startswith("LOT-")
@@ -435,14 +464,15 @@ def test_client_supplied_lot_number_bogus_format_rejected(default_facility, test
                     items=[{
                         "commodity_id": test_commodity.id,
                         "initial_qty": 100,
-                        "lot_number": bogus_lot
+                        "lot_number": bogus_lot,
+                        "block_id": default_block.id,
                     }]
                 )
             assert "Invalid lot number format" in str(exc.value)
 
 
 @pytest.mark.django_db
-def test_omitting_lot_number_auto_generates(default_facility, test_party, test_commodity):
+def test_omitting_lot_number_auto_generates(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -450,6 +480,7 @@ def test_omitting_lot_number_auto_generates(default_facility, test_party, test_c
         items=[{
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
+            "block_id": default_block.id,
         }]
     )
     assert grn.lots.first().lot_number == "LOT-000001"

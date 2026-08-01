@@ -76,6 +76,7 @@ const {
   loadingRateProps,
   items,
   errors,
+  itemErrors,
   addItemRow,
   removeItemRow,
   totalNetWeight,
@@ -103,12 +104,18 @@ const onChamberChange = (itemIdx: number) => {
   if (!item) return
   item.floor_id = null
   item.block_id = null
+  if (itemErrors.value[itemIdx]) {
+    itemErrors.value[itemIdx].block_id = ''
+  }
 }
 
 const onFloorChange = (itemIdx: number) => {
   const item = items.value[itemIdx]
   if (!item) return
   item.block_id = null
+  if (itemErrors.value[itemIdx]) {
+    itemErrors.value[itemIdx].block_id = ''
+  }
 }
 </script>
 
@@ -290,7 +297,7 @@ const onFloorChange = (itemIdx: number) => {
                 <th>{{ t('inventory.lotNo') }}</th>
                 <th>{{ t('grn.chamber') }}</th>
                 <th>{{ t('grn.floor') }}</th>
-                <th>{{ t('grn.block') }}</th>
+                <th>{{ t('grn.block') }} <span class="req">*</span></th>
                 <th>{{ t('common.quantity') }} <span class="req">*</span></th>
                 <th>{{ t('common.unit') }}</th>
                 <th>{{ t('common.weight') }} (MT)</th>
@@ -352,14 +359,17 @@ const onFloorChange = (itemIdx: number) => {
                 <td>
                   <Select
                     v-model="item.block_id"
+                    @change="if (itemErrors[idx]) itemErrors[idx].block_id = ''"
                     :options="getBlocksForFloor(item.floor_id, item.chamber_id)"
                     optionLabel="label"
                     optionValue="value"
                     :placeholder="!item.floor_id ? t('grn.selectFloorFirst') : t('grn.block')"
                     :disabled="!item.floor_id"
                     showClear
+                    :invalid="!!itemErrors[idx]?.block_id"
                     class="w-full input-sm-select"
                   />
+                  <small v-if="itemErrors[idx]?.block_id" class="field-error">{{ itemErrors[idx].block_id }}</small>
                 </td>
                 <td>
                   <input
@@ -483,17 +493,20 @@ const onFloorChange = (itemIdx: number) => {
               </div>
 
               <div class="card-field">
-                <label class="card-field-label">{{ t('grn.block') }}</label>
+                <label class="card-field-label">{{ t('grn.block') }} <span class="req">*</span></label>
                 <Select
                   v-model="item.block_id"
+                  @change="if (itemErrors[idx]) itemErrors[idx].block_id = ''"
                   :options="getBlocksForFloor(item.floor_id, item.chamber_id)"
                   optionLabel="label"
                   optionValue="value"
                   :placeholder="!item.floor_id ? t('grn.selectFloorFirst') : t('grn.block')"
                   :disabled="!item.floor_id"
                   showClear
+                  :invalid="!!itemErrors[idx]?.block_id"
                   class="w-full input-sm-select"
                 />
+                <small v-if="itemErrors[idx]?.block_id" class="field-error">{{ itemErrors[idx].block_id }}</small>
               </div>
 
               <div class="card-field">

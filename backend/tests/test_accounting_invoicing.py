@@ -294,9 +294,9 @@ def test_explicit_document_type_override_is_honoured(default_facility):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_invoice_lines_have_correct_charge_type_and_period(default_facility):
+def test_invoice_lines_have_correct_charge_type_and_period(default_facility, default_block):
     """
-    Rent lines created by generate_invoices_for_uninvoiced_deliveries must carry
+    generate_invoices_for_uninvoiced_deliveries must produce lines with
     charge_type=RENT and have period_from / period_to set to the storage period billed.
     Loading/unloading lines must carry charge_type=LOADING_UNLOADING.
     """
@@ -314,6 +314,7 @@ def test_invoice_lines_have_correct_charge_type_and_period(default_facility):
             "initial_qty": 50,
             "unit_weight": Decimal('50.00'),
             "rent_rate_per_unit": Decimal('10.00'),
+            "block_id": default_block.id,
         }],
     )
     lot = grn.lots.first()
@@ -346,7 +347,7 @@ def test_invoice_lines_have_correct_charge_type_and_period(default_facility):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_generated_invoice_carries_financial_year(default_facility):
+def test_generated_invoice_carries_financial_year(default_facility, default_block):
     """
     generate_invoices_for_uninvoiced_deliveries must set financial_year
     from the invoice_date using fy_label, and the invoice_number must embed it.
@@ -365,6 +366,7 @@ def test_generated_invoice_carries_financial_year(default_facility):
             "initial_qty": 10,
             "unit_weight": Decimal('50.00'),
             "rent_rate_per_unit": Decimal('5.00'),
+            "block_id": default_block.id,
         }],
     )
     lot = grn.lots.first()

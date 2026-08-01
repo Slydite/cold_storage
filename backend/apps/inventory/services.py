@@ -73,6 +73,8 @@ def update_commodity(*, commodity_id: int, **fields) -> Commodity:
     return commodity
 
 
+
+
 @transaction.atomic
 def create_grn(
     *,
@@ -91,7 +93,8 @@ def create_grn(
     loading_charge_mode: str = ChargeMode.FLAT,
     inward_time: Any = None,
     status: str = GRN.Status.POSTED,
-    items: List[Dict[str, Any]] = None
+    items: List[Dict[str, Any]] = None,
+    require_location: bool = True
 ) -> GRN:
     """
     Create a Goods Receipt Note (GRN) with lots/items.
@@ -167,6 +170,9 @@ def create_grn(
         chamber_id = item_data.get('chamber_id')
         floor_id = item_data.get('floor_id')
         block_id = item_data.get('block_id')
+
+        if require_location and (block_id is None or block_id == ""):
+            raise ValidationError(f"Storage location (block) is required for commodity '{commodity.name}'.")
 
         chamber_ref = None
         floor_ref = None

@@ -57,6 +57,10 @@ def test_second_facilitys_first_grn_dn_invoice_do_not_collide_with_first_facilit
     fac2 = create_facility(name="Facility Two")
 
     def first_document_set(facility):
+        from apps.locations.services import create_chamber, create_floor, create_block
+        chamber = create_chamber(facility_id=facility.id, name="Chamber")
+        floor = create_floor(chamber_id=chamber.id, name="Floor")
+        block = create_block(floor_id=floor.id, name="Block")
         party = create_party(facility_id=facility.id, name="Farmer", type="DEPOSITOR")
         commodity = create_commodity(facility_id=facility.id, name="Potato", unit="BAGS")
         grn = create_grn(
@@ -67,6 +71,7 @@ def test_second_facilitys_first_grn_dn_invoice_do_not_collide_with_first_facilit
                 "commodity_id": commodity.id,
                 "initial_qty": 50,
                 "rent_rate_per_unit": Decimal('10.00'),
+                "block_id": block.id,
             }],
         )
         lot = grn.lots.first()

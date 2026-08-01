@@ -34,7 +34,7 @@ def test_commodity(default_facility):
 
 
 @pytest.mark.django_db
-def test_generate_grn_pdf_service_and_serializer(default_facility, test_party, test_commodity):
+def test_generate_grn_pdf_service_and_serializer(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -48,7 +48,8 @@ def test_generate_grn_pdf_service_and_serializer(default_facility, test_party, t
         items=[{
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
-            "special_remarks": "Floor 2 Chamber 4"
+            "special_remarks": "Floor 2 Chamber 4",
+            "block_id": default_block.id,
         }]
     )
 
@@ -65,7 +66,7 @@ def test_generate_grn_pdf_service_and_serializer(default_facility, test_party, t
 
 
 @pytest.mark.django_db
-def test_generate_delivery_note_pdf_and_balance_after(default_facility, test_party, test_commodity):
+def test_generate_delivery_note_pdf_and_balance_after(default_facility, test_party, test_commodity, default_block):
     grn = create_grn(
         facility_id=default_facility.id,
         party_id=test_party.id,
@@ -74,7 +75,8 @@ def test_generate_delivery_note_pdf_and_balance_after(default_facility, test_par
         items=[{
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
-            "unit_weight": Decimal('50.00')
+            "unit_weight": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -116,7 +118,7 @@ def test_generate_delivery_note_pdf_and_balance_after(default_facility, test_par
 
 
 @pytest.mark.django_db
-def test_pdf_determinism(default_facility, test_party, test_commodity):
+def test_pdf_determinism(default_facility, test_party, test_commodity, default_block):
     """
     Assert that rendering the same record twice produces byte-identical output (same SHA256 / bytes).
     This is the core property on-the-fly streaming rests on.
@@ -130,7 +132,8 @@ def test_pdf_determinism(default_facility, test_party, test_commodity):
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "unit_weight": Decimal('50.00'),
-            "rent_rate_per_unit": Decimal('50.00')
+            "rent_rate_per_unit": Decimal('50.00'),
+            "block_id": default_block.id,
         }]
     )
     lot = grn.lots.first()
@@ -175,8 +178,13 @@ def test_amount_in_words():
 
 @pytest.mark.django_db
 def test_grn_new_fields_roundtrip_api(admin_user, default_facility, test_party, test_commodity):
+    from apps.locations.services import create_chamber, create_floor, create_block
     client = APIClient()
     client.force_authenticate(user=admin_user)
+
+    chamber = create_chamber(facility_id=default_facility.id, name="Chamber 1")
+    floor = create_floor(chamber_id=chamber.id, name="Floor 1")
+    block = create_block(floor_id=floor.id, name="Block 1")
 
     payload = {
         "facility_id": default_facility.id,
@@ -197,7 +205,8 @@ def test_grn_new_fields_roundtrip_api(admin_user, default_facility, test_party, 
             {
                 "commodity_id": test_commodity.id,
                 "initial_qty": 100,
-                "special_remarks": "Special Quality Peas"
+                "special_remarks": "Special Quality Peas",
+                "block_id": block.id
             }
         ]
     }
@@ -216,7 +225,7 @@ def test_grn_new_fields_roundtrip_api(admin_user, default_facility, test_party, 
 
 
 @pytest.mark.django_db
-def test_delivery_note_new_fields_roundtrip_api(admin_user, default_facility, test_party, test_commodity):
+def test_delivery_note_new_fields_roundtrip_api(admin_user, default_facility, test_party, test_commodity, default_block):
     client = APIClient()
     client.force_authenticate(user=admin_user)
 
@@ -225,7 +234,7 @@ def test_delivery_note_new_fields_roundtrip_api(admin_user, default_facility, te
         party_id=test_party.id,
         receipt_date=date(2026, 7, 1),
         status=GRN.Status.POSTED,
-        items=[{"commodity_id": test_commodity.id, "initial_qty": 50}]
+        items=[{"commodity_id": test_commodity.id, "initial_qty": 50, "block_id": default_block.id}]
     )
     lot = grn.lots.first()
 
@@ -284,7 +293,8 @@ def test_grn_pdf_rendering_locations(default_facility, test_party, test_commodit
             },
             {
                 "commodity_id": test_commodity.id,
-                "initial_qty": 50
+                "initial_qty": 50,
+                "block_id": block.id
             }
         ]
     )
@@ -296,7 +306,7 @@ def test_grn_pdf_rendering_locations(default_facility, test_party, test_commodit
 
 @pytest.mark.django_db
 def test_pdf_endpoints_accept_application_pdf_header(
-    auth_client, default_facility, test_party, test_commodity
+    auth_client, default_facility, test_party, test_commodity, default_block
 ):
     """
     Browsers request PDFs with `Accept: application/pdf`. DRF negotiates the
@@ -316,6 +326,7 @@ def test_pdf_endpoints_accept_application_pdf_header(
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
             "rent_rate_per_unit": Decimal('12.00'),
+            "block_id": default_block.id,
         }],
     )
     lot = Lot.objects.filter(grn=grn).first()
