@@ -16,10 +16,10 @@ class CommodityAdmin(SimpleHistoryAdmin):
 class GRNAdmin(SimpleHistoryAdmin):
     list_display = ('grn_number', 'party', 'facility', 'receipt_date', 'status')
     list_filter = ('facility', 'status', 'receipt_date')
-    search_fields = ('grn_number', 'party__name', 'vehicle_number')
+    search_fields = ('grn_number', 'party__name', 'vehicle_number', 'legacy_ref')
 
 @admin.register(Lot)
 class LotAdmin(SimpleHistoryAdmin):
     list_display = ('lot_number', 'grn', 'commodity', 'chamber', 'remaining_qty', 'initial_qty')
     list_filter = ('facility', 'commodity', 'chamber')
-    search_fields = ('lot_number', 'grn__grn_number')
+    search_fields = ('lot_number', 'grn__grn_number', 'legacy_ref')

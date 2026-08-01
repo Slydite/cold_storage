@@ -32,6 +32,7 @@ from .models import DeliveryNote
 class DeliveryNoteViewSet(ViewSet):
     permission_classes = [IsAuthenticated]
     queryset = DeliveryNote.objects.none()
+    search_fields = ('dn_number', 'party__name', 'vehicle_number', 'legacy_ref')
 
     @extend_schema(
         parameters=[

@@ -134,6 +134,7 @@ class CommodityViewSet(ViewSet):
 class GRNViewSet(ViewSet):
     permission_classes = [IsAuthenticated]
     queryset = GRN.objects.none()
+    search_fields = ('grn_number', 'party__name', 'vehicle_number', 'legacy_ref')
 
     @extend_schema(
         parameters=[
@@ -273,6 +274,7 @@ class GRNViewSet(ViewSet):
 class LotViewSet(ViewSet):
     permission_classes = [IsAuthenticated]
     queryset = Lot.objects.none()
+    search_fields = ('lot_number', 'grn__grn_number', 'legacy_ref')
 
     @extend_schema(
         parameters=[

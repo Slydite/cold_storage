@@ -15,6 +15,8 @@ class DeliveryNote(models.Model):
 
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='delivery_notes')
     dn_number = models.CharField(max_length=100)
+    # Holds the FAS voucher/lot identifier for records imported from the legacy Access system, and is empty for anything created in this app.
+    legacy_ref = models.CharField(max_length=100, blank=True, db_index=True)
     party = models.ForeignKey(Party, on_delete=models.PROTECT, related_name='delivery_notes')
     dispatch_date = models.DateField()
     vehicle_number = models.CharField(max_length=50, blank=True)

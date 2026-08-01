@@ -7,7 +7,7 @@ from .models import DeliveryNote, DeliveryLine
 class DeliveryNoteAdmin(SimpleHistoryAdmin):
     list_display = ('dn_number', 'party', 'facility', 'dispatch_date', 'status')
     list_filter = ('facility', 'status', 'dispatch_date')
-    search_fields = ('dn_number', 'party__name', 'vehicle_number')
+    search_fields = ('dn_number', 'party__name', 'vehicle_number', 'legacy_ref')
 
 
 @admin.register(DeliveryLine)

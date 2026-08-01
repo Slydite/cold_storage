@@ -63,6 +63,8 @@ class GRN(models.Model):
 
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE, related_name='grns')
     grn_number = models.CharField(max_length=100)
+    # Holds the FAS voucher/lot identifier for records imported from the legacy Access system, and is empty for anything created in this app.
+    legacy_ref = models.CharField(max_length=100, blank=True, db_index=True)
     party = models.ForeignKey(Party, on_delete=models.PROTECT, related_name='grns')
     receipt_date = models.DateField()
     vehicle_number = models.CharField(max_length=50, blank=True)
@@ -117,6 +119,8 @@ class Lot(models.Model):
     grn = models.ForeignKey(GRN, on_delete=models.CASCADE, related_name='lots')
     commodity = models.ForeignKey(Commodity, on_delete=models.PROTECT, related_name='lots')
     lot_number = models.CharField(max_length=100)
+    # Holds the FAS voucher/lot identifier for records imported from the legacy Access system, and is empty for anything created in this app.
+    legacy_ref = models.CharField(max_length=100, blank=True, db_index=True)
     
     chamber = models.CharField(max_length=50, blank=True)
     floor = models.CharField(max_length=50, blank=True)
