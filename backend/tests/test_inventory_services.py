@@ -484,3 +484,144 @@ def test_omitting_lot_number_auto_generates(default_facility, test_party, test_c
         }]
     )
     assert grn.lots.first().lot_number == "LOT-000001"
+
+
+@pytest.mark.django_db
+def test_adjust_lot_stock_success(default_facility, test_party, test_commodity, default_block):
+    from apps.inventory.services import adjust_lot_stock
+    from apps.inventory.models import StockAdjustment
+    from apps.delivery.models import DeliveryNote, DeliveryLine
+    from apps.invoicing.models import Invoice
+
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 100,
+            "block_id": default_block.id,
+        }]
+    )
+    lot = grn.lots.first()
+
+    # Capture counts before adjustment
+    dn_count = DeliveryNote.objects.count()
+    dl_count = DeliveryLine.objects.count()
+    inv_count = Invoice.objects.count()
+
+    # 1. Reducing stock (delta = -20)
+    adjustment = adjust_lot_stock(
+        lot_id=lot.id,
+        qty_delta=-20,
+        reason=StockAdjustment.Reason.SPOILAGE,
+        adjustment_date=date(2026, 7, 26),
+        note="Spoiled apples",
+        adjusted_by=None
+    )
+
+    lot.refresh_from_db()
+    assert lot.remaining_qty == 80
+    assert adjustment.qty_delta == -20
+    assert adjustment.qty_before == 100
+    assert adjustment.qty_after == 80
+    assert adjustment.reason == StockAdjustment.Reason.SPOILAGE
+    assert adjustment.note == "Spoiled apples"
+    assert adjustment.adjustment_date == date(2026, 7, 26)
+
+    # 2. Increasing stock (new_qty = 95, delta should be +15)
+    adjustment_up = adjust_lot_stock(
+        lot_id=lot.id,
+        new_qty=95,
+        reason=StockAdjustment.Reason.FOUND_EXTRA,
+        adjustment_date=date(2026, 7, 27),
+        note="Found extra bags during recount",
+        adjusted_by=None
+    )
+
+    lot.refresh_from_db()
+    assert lot.remaining_qty == 95
+    assert adjustment_up.qty_delta == 15
+    assert adjustment_up.qty_before == 80
+    assert adjustment_up.qty_after == 95
+    assert adjustment_up.reason == StockAdjustment.Reason.FOUND_EXTRA
+
+    # Assert no delivery note or invoice was created
+    assert DeliveryNote.objects.count() == dn_count
+    assert DeliveryLine.objects.count() == dl_count
+    assert Invoice.objects.count() == inv_count
+
+
+@pytest.mark.django_db
+def test_adjust_lot_stock_validation_failures(default_facility, test_party, test_commodity, default_block):
+    from apps.inventory.services import adjust_lot_stock
+    from apps.inventory.models import StockAdjustment
+
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 50,
+            "block_id": default_block.id,
+        }]
+    )
+    lot = grn.lots.first()
+
+    # Zero net change rejected
+    with pytest.raises(ValidationError) as exc:
+        adjust_lot_stock(
+            lot_id=lot.id,
+            qty_delta=0,
+            reason=StockAdjustment.Reason.COUNT_CORRECTION,
+            adjustment_date=date(2026, 7, 26)
+        )
+    assert "zero net change" in str(exc.value)
+
+    # Resulting negative quantity rejected
+    with pytest.raises(ValidationError) as exc:
+        adjust_lot_stock(
+            lot_id=lot.id,
+            qty_delta=-60,
+            reason=StockAdjustment.Reason.NOT_FOUND,
+            adjustment_date=date(2026, 7, 26)
+        )
+    assert "resulting quantity may not be negative" in str(exc.value)
+    assert lot.lot_number in str(exc.value)
+
+    # OTHER reason without a note is rejected
+    with pytest.raises(ValidationError) as exc:
+        adjust_lot_stock(
+            lot_id=lot.id,
+            qty_delta=10,
+            reason=StockAdjustment.Reason.OTHER,
+            adjustment_date=date(2026, 7, 26),
+            note=""
+        )
+    assert "Note is mandatory when reason is OTHER" in str(exc.value)
+
+    # DRAFT GRN adjustment is rejected
+    draft_grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=test_party.id,
+        receipt_date=date(2026, 7, 25),
+        status=GRN.Status.DRAFT,
+        items=[{
+            "commodity_id": test_commodity.id,
+            "initial_qty": 50,
+            "block_id": default_block.id,
+        }]
+    )
+    draft_lot = draft_grn.lots.first()
+    with pytest.raises(ValidationError) as exc:
+        adjust_lot_stock(
+            lot_id=draft_lot.id,
+            qty_delta=10,
+            reason=StockAdjustment.Reason.COUNT_CORRECTION,
+            adjustment_date=date(2026, 7, 26)
+        )
+    assert "must be POSTED" in str(exc.value)
+

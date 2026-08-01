@@ -72,6 +72,12 @@ class Command(BaseCommand):
             action='store_true',
             help='Include GRNs and lots referenced by in-range delivery notes.',
         )
+        parser.add_argument(
+            '--zero-stock-before',
+            type=str,
+            help='Zero out stock for lots dated before YYYY-MM-DD.',
+        )
+
 
     def handle(self, *args, **options):
         facility_id = options['facility']
@@ -83,6 +89,15 @@ class Command(BaseCommand):
         parties_only = options.get('parties_only', False)
         financial_year = options.get('financial_year')
         include_referenced_lots = options.get('include_referenced_lots', False)
+        zero_stock_before = options.get('zero_stock_before')
+
+        zero_stock_before_date = None
+        if zero_stock_before:
+            try:
+                zero_stock_before_date = datetime.strptime(zero_stock_before, '%Y-%m-%d').date()
+            except ValueError:
+                self.stderr.write(self.style.ERROR(f"Invalid date format for --zero-stock-before: {zero_stock_before}. Expected YYYY-MM-DD."))
+                return
 
         # Validation checks
         if financial_year and full_history:
@@ -186,6 +201,8 @@ class Command(BaseCommand):
             'lines_skipped_no_lot': 0,
             'dns_skipped_no_lines': 0,
             'supporting_grns_pulled': 0,
+            'zeroed_lots_count': 0,
+            'zeroed_bags_removed': 0,
         }
 
         failures = {}
@@ -198,6 +215,22 @@ class Command(BaseCommand):
         lot_by_number = {row['lot_number']: row for row in lots_csv}
         # Maps grn_number -> grn row
         grn_by_number = {row['grn_number']: row for row in grns_csv}
+
+        def get_lot_row_inward_date(row):
+            inward_date_str = row.get('inward_date')
+            if inward_date_str:
+                try:
+                    return datetime.strptime(inward_date_str, '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+            grn_num = row.get('grn_number')
+            grn_row = grn_by_number.get(grn_num)
+            if grn_row and grn_row.get('receipt_date'):
+                try:
+                    return datetime.strptime(grn_row['receipt_date'], '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+            return None
 
         referenced_grn_numbers = set()
         if not parties_only and include_referenced_lots:
@@ -395,6 +428,32 @@ class Command(BaseCommand):
                             for lot_row in lots_by_grn.get(grn_ref, []):
                                 if Lot.objects.filter(facility=facility, legacy_ref=lot_row['lot_number']).exists():
                                     summary['lots_skipped'] += 1
+                                    try:
+                                        lot_obj = Lot.objects.get(facility=facility, legacy_ref=lot_row['lot_number'])
+                                        original_remaining_qty = lot_obj.remaining_qty
+                                        if zero_stock_before_date and lot_obj.inward_date < zero_stock_before_date:
+                                            from apps.inventory.models import StockAdjustment
+                                            has_adj = StockAdjustment.objects.filter(
+                                                lot=lot_obj,
+                                                reason=StockAdjustment.Reason.MIGRATION_OPENING_BALANCE
+                                            ).exists()
+                                            if not has_adj and original_remaining_qty > 0:
+                                                lot_obj.remaining_qty = 0
+                                                lot_obj.save(update_fields=['remaining_qty'])
+                                                StockAdjustment.objects.create(
+                                                    lot=lot_obj,
+                                                    qty_delta=-original_remaining_qty,
+                                                    qty_before=original_remaining_qty,
+                                                    qty_after=0,
+                                                    reason=StockAdjustment.Reason.MIGRATION_OPENING_BALANCE,
+                                                    note="Owner confirmed legacy stock not present at migration",
+                                                    adjustment_date=lot_obj.inward_date,
+                                                    adjusted_by=None
+                                                )
+                                                summary['zeroed_lots_count'] += 1
+                                                summary['zeroed_bags_removed'] += original_remaining_qty
+                                    except Lot.DoesNotExist:
+                                        pass
                                 else:
                                     summary['lots_failed'] += 1
                                     record_failure("Lot Import: Cannot add lot to already existing GRN")
@@ -516,13 +575,39 @@ class Command(BaseCommand):
                             created_lots = list(grn.lots.order_by('id'))
                             for lot_obj, lot_row in zip(created_lots, imported_lot_rows):
                                 lot_obj.legacy_ref = lot_row['lot_number']
-                                lot_obj.remaining_qty = int(lot_row['remaining_qty'])
+                                original_remaining_qty = int(lot_row['remaining_qty'])
+                                lot_obj.remaining_qty = original_remaining_qty
                                 if lot_row.get('inward_date'):
                                     try:
                                         lot_obj.inward_date = datetime.strptime(lot_row['inward_date'], '%Y-%m-%d').date()
                                     except ValueError:
                                         pass
+
+                                should_zero = (
+                                    zero_stock_before_date is not None and
+                                    lot_obj.inward_date < zero_stock_before_date and
+                                    original_remaining_qty > 0
+                                )
+                                if should_zero:
+                                    lot_obj.remaining_qty = 0
+
                                 lot_obj.save(update_fields=['legacy_ref', 'remaining_qty', 'inward_date'])
+
+                                if should_zero:
+                                    from apps.inventory.models import StockAdjustment
+                                    StockAdjustment.objects.create(
+                                        lot=lot_obj,
+                                        qty_delta=-original_remaining_qty,
+                                        qty_before=original_remaining_qty,
+                                        qty_after=0,
+                                        reason=StockAdjustment.Reason.MIGRATION_OPENING_BALANCE,
+                                        note="Owner confirmed legacy stock not present at migration",
+                                        adjustment_date=lot_obj.inward_date,
+                                        adjusted_by=None
+                                    )
+                                    summary['zeroed_lots_count'] += 1
+                                    summary['zeroed_bags_removed'] += original_remaining_qty
+
                                 summary['lots_created'] += 1
                                 summary['total_initial_qty'] += lot_obj.initial_qty
                                 summary['total_remaining_qty'] += lot_obj.remaining_qty
@@ -672,8 +757,12 @@ class Command(BaseCommand):
                     # --- F. Force Align Remaining Quantities ---
                     # This aligns remaining_qty exactly to the legacy values, compensating for any potential deviations
                     for lot_row in lots_csv:
+                        lot_inward_date = get_lot_row_inward_date(lot_row)
+                        target_qty = int(lot_row['remaining_qty'])
+                        if zero_stock_before_date and lot_inward_date and lot_inward_date < zero_stock_before_date:
+                            target_qty = 0
                         Lot.objects.filter(facility=facility, legacy_ref=lot_row['lot_number']).update(
-                            remaining_qty=int(lot_row['remaining_qty'])
+                            remaining_qty=target_qty
                         )
 
                 if dry_run:
@@ -751,6 +840,9 @@ class Command(BaseCommand):
             self.stdout.write(f"  - Failed             : {summary['lots_failed']}")
             self.stdout.write(f"  - Initial Qty (Bags) : {summary['total_initial_qty']}")
             self.stdout.write(f"  - Remaining Qty (Bags): {summary['total_remaining_qty']}")
+            if 'zeroed_lots_count' in summary:
+                self.stdout.write(f"  - Zeroed Lots        : {summary['zeroed_lots_count']}")
+                self.stdout.write(f"  - Zeroed Bags Removed: {summary['zeroed_bags_removed']}")
 
             if not open_stock_only:
                 self.stdout.write("Delivery Notes:")

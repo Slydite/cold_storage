@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from libs.choices import ChargeMode
-from .models import Commodity, GRN, Lot
+from .models import Commodity, GRN, Lot, StockAdjustment
 
 class CommodityInputSerializer(serializers.Serializer):
     facility_id = serializers.IntegerField()
@@ -57,6 +57,26 @@ class LotItemInputSerializer(serializers.Serializer):
         return super().to_internal_value(data)
 
 
+class StockAdjustmentSerializer(serializers.ModelSerializer):
+    adjusted_by_username = serializers.CharField(source='adjusted_by.username', read_only=True, allow_null=True)
+
+    class Meta:
+        model = StockAdjustment
+        fields = [
+            'id',
+            'lot_id',
+            'qty_delta',
+            'qty_before',
+            'qty_after',
+            'reason',
+            'note',
+            'adjustment_date',
+            'adjusted_by_id',
+            'adjusted_by_username',
+            'created_at'
+        ]
+
+
 class LotOutputSerializer(serializers.ModelSerializer):
     commodity_name = serializers.CharField(source='commodity.name', read_only=True)
     commodity_code = serializers.CharField(source='commodity.code', read_only=True)
@@ -74,6 +94,7 @@ class LotOutputSerializer(serializers.ModelSerializer):
     block_name = serializers.SerializerMethodField()
     location_display = serializers.CharField(read_only=True)
     legacy_ref = serializers.CharField(read_only=True)
+    adjustments = StockAdjustmentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Lot
@@ -109,6 +130,7 @@ class LotOutputSerializer(serializers.ModelSerializer):
             'unit_weight',
             'rent_rate_per_unit',
             'inward_date',
+            'adjustments',
             'created_at',
             'updated_at'
         ]
@@ -195,4 +217,26 @@ class LotReserveNumberInputSerializer(serializers.Serializer):
 
 class LotReserveNumberOutputSerializer(serializers.Serializer):
     lot_number = serializers.CharField()
+
+
+class LotAdjustmentInputSerializer(serializers.Serializer):
+    new_qty = serializers.IntegerField(required=False, allow_null=True, default=None)
+    qty_delta = serializers.IntegerField(required=False, allow_null=True, default=None)
+    reason = serializers.ChoiceField(choices=StockAdjustment.Reason.choices)
+    note = serializers.CharField(max_length=500, required=False, allow_blank=True, default='')
+    adjustment_date = serializers.DateField(required=False, allow_null=True, default=None)
+
+    def validate(self, attrs):
+        new_qty = attrs.get('new_qty')
+        qty_delta = attrs.get('qty_delta')
+        if (new_qty is not None and qty_delta is not None) or (new_qty is None and qty_delta is None):
+            raise serializers.ValidationError("Specify either new_qty or qty_delta, not both or neither.")
+
+        reason = attrs.get('reason')
+        note = attrs.get('note', '')
+        if reason == StockAdjustment.Reason.OTHER and not note.strip():
+            raise serializers.ValidationError({"note": "Note is mandatory when reason is OTHER."})
+
+        return attrs
+
 

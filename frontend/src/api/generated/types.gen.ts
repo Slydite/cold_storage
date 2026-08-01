@@ -389,6 +389,14 @@ export type LoginInput = {
     username: string;
 };
 
+export type LotAdjustmentInput = {
+    new_qty?: number | null;
+    qty_delta?: number | null;
+    reason: ReasonEnum;
+    note?: string;
+    adjustment_date?: string | null;
+};
+
 export type LotItemInput = {
     commodity_id: number;
     lot_number?: string;
@@ -437,6 +445,7 @@ export type LotOutput = {
     unit_weight?: string;
     rent_rate_per_unit?: string;
     inward_date: string;
+    readonly adjustments: Array<StockAdjustment>;
     readonly created_at: string;
     readonly updated_at: string;
 };
@@ -553,6 +562,16 @@ export type PaymentRegisterResponse = {
 };
 
 /**
+ * * `NOT_FOUND` - Not Found
+ * * `SPOILAGE` - Spoilage
+ * * `COUNT_CORRECTION` - Count Correction
+ * * `FOUND_EXTRA` - Found Extra
+ * * `MIGRATION_OPENING_BALANCE` - Migration Opening Balance
+ * * `OTHER` - Other
+ */
+export type ReasonEnum = 'NOT_FOUND' | 'SPOILAGE' | 'COUNT_CORRECTION' | 'FOUND_EXTRA' | 'MIGRATION_OPENING_BALANCE' | 'OTHER';
+
+/**
  * * `ADMIN` - Admin
  */
 export type RoleEnum = 'ADMIN';
@@ -563,6 +582,20 @@ export type RoleEnum = 'ADMIN';
  * * `CANCELLED` - Cancelled
  */
 export type StatusEnum = 'DRAFT' | 'POSTED' | 'CANCELLED';
+
+export type StockAdjustment = {
+    readonly id: number;
+    readonly lot_id: number;
+    qty_delta: number;
+    qty_before: number;
+    qty_after: number;
+    reason: ReasonEnum;
+    note?: string;
+    adjustment_date: string;
+    readonly adjusted_by_id: number | null;
+    readonly adjusted_by_username: string | null;
+    readonly created_at: string;
+};
 
 export type TokenAuthOutput = {
     token: string;
@@ -800,6 +833,15 @@ export type PaymentRegisterOutputWritable = {
 export type PaymentRegisterResponseWritable = {
     results: Array<PaymentRegisterOutputWritable>;
     total_amount: string;
+};
+
+export type StockAdjustmentWritable = {
+    qty_delta: number;
+    qty_before: number;
+    qty_after: number;
+    reason: ReasonEnum;
+    note?: string;
+    adjustment_date: string;
 };
 
 export type TokenAuthOutputWritable = {
@@ -2228,6 +2270,31 @@ export type LotsRetrieveResponses = {
 };
 
 export type LotsRetrieveResponse = LotsRetrieveResponses[keyof LotsRetrieveResponses];
+
+export type LotsAdjustCreateData = {
+    body: LotAdjustmentInput;
+    path: {
+        /**
+         * A unique integer value identifying this lot.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/lots/{id}/adjust/';
+};
+
+export type LotsAdjustCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type LotsAdjustCreateResponses = {
+    200: LotOutput;
+};
+
+export type LotsAdjustCreateResponse = LotsAdjustCreateResponses[keyof LotsAdjustCreateResponses];
 
 export type LotsWithdrawCreateData = {
     body: LotWithdrawalInput;

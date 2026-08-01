@@ -346,3 +346,77 @@ def test_create_grn_mismatched_locations_rejected(auth_client, default_facility,
     res = auth_client.post('/api/grns/', payload, format='json')
     assert res.status_code == status.HTTP_400_BAD_REQUEST
     assert "does not belong to chamber" in str(res.data)
+
+
+@pytest.mark.django_db
+def test_adjust_lot_stock_api_auth_required(default_facility, party, commodity, default_block):
+    from rest_framework.test import APIClient
+    from rest_framework import status
+    from apps.inventory.services import create_grn
+    from apps.inventory.models import GRN
+    from datetime import date
+
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=party.id,
+        receipt_date=date(2026, 7, 25),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": commodity.id,
+            "initial_qty": 100,
+            "block_id": default_block.id,
+        }]
+    )
+    lot = grn.lots.first()
+
+    unauth_client = APIClient()
+    res = unauth_client.post(
+        f'/api/lots/{lot.id}/adjust/',
+        {'qty_delta': -10, 'reason': 'SPOILAGE'},
+        format='json'
+    )
+    assert res.status_code in (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN)
+
+
+@pytest.mark.django_db
+def test_adjust_lot_stock_api_success_and_failures(auth_client, default_facility, party, commodity, default_block):
+    from rest_framework import status
+    from apps.inventory.services import create_grn
+    from apps.inventory.models import GRN
+    from datetime import date
+
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=party.id,
+        receipt_date=date(2026, 7, 25),
+        status=GRN.Status.POSTED,
+        items=[{
+            "commodity_id": commodity.id,
+            "initial_qty": 100,
+            "block_id": default_block.id,
+        }]
+    )
+    lot = grn.lots.first()
+
+    # Success: Reduce stock
+    payload = {
+        'qty_delta': -30,
+        'reason': 'SPOILAGE',
+        'note': 'Some spoiled potatoes'
+    }
+    res = auth_client.post(f'/api/lots/{lot.id}/adjust/', payload, format='json')
+    assert res.status_code == status.HTTP_200_OK
+    assert res.data['remaining_qty'] == 70
+    assert len(res.data['adjustments']) == 1
+    assert res.data['adjustments'][0]['qty_delta'] == -30
+    assert res.data['adjustments'][0]['reason'] == 'SPOILAGE'
+
+    # Failure: Adjust resulting in negative qty
+    payload_neg = {
+        'qty_delta': -80,
+        'reason': 'NOT_FOUND'
+    }
+    res_neg = auth_client.post(f'/api/lots/{lot.id}/adjust/', payload_neg, format='json')
+    assert res_neg.status_code == status.HTTP_400_BAD_REQUEST
+    assert 'resulting quantity may not be negative' in res_neg.data['detail']
+

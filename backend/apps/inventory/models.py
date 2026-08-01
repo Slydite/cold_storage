@@ -1,4 +1,5 @@
 from decimal import Decimal, ROUND_HALF_UP
+from django.conf import settings
 from django.db import models
 from simple_history.models import HistoricalRecords
 from apps.facilities.models import Facility
@@ -171,4 +172,33 @@ class Lot(models.Model):
         if parts:
             return " / ".join(parts)
         return "—"
+
+
+class StockAdjustment(models.Model):
+    class Reason(models.TextChoices):
+        NOT_FOUND = 'NOT_FOUND', 'Not Found'
+        SPOILAGE = 'SPOILAGE', 'Spoilage'
+        COUNT_CORRECTION = 'COUNT_CORRECTION', 'Count Correction'
+        FOUND_EXTRA = 'FOUND_EXTRA', 'Found Extra'
+        MIGRATION_OPENING_BALANCE = 'MIGRATION_OPENING_BALANCE', 'Migration Opening Balance'
+        OTHER = 'OTHER', 'Other'
+
+    lot = models.ForeignKey(Lot, on_delete=models.PROTECT, related_name='adjustments')
+    qty_delta = models.IntegerField()
+    qty_before = models.PositiveIntegerField()
+    qty_after = models.PositiveIntegerField()
+    reason = models.CharField(max_length=50, choices=Reason.choices)
+    note = models.CharField(max_length=500, blank=True)
+    adjustment_date = models.DateField()
+    adjusted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ['-adjustment_date', '-id']
+
+    def __str__(self):
+        return f"Adjustment to {self.lot.lot_number}: {self.qty_delta:+} ({self.reason})"
+
 

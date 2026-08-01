@@ -729,3 +729,81 @@ def test_import_legacy_no_location(tmp_path, default_facility):
     assert lot.floor_ref is None
     assert lot.chamber_ref is None
 
+
+@pytest.mark.django_db
+def test_zero_stock_before_import(tmp_path, default_facility):
+    # Setup CSV files where:
+    # LOT01 inward_date is 2021-12-31 (before 2022-01-01) -> should be zeroed
+    # LOT02 inward_date is 2022-01-01 (on/after 2022-01-01) -> should NOT be zeroed
+    setup_csv_files(
+        tmp_path,
+        grns=[
+            {
+                'grn_number': 'GRN01', 'party_code': 'P01', 'receipt_date': '2021-12-31',
+                'vehicle_number': 'V1', 'remarks': '', 'status': 'POSTED'
+            },
+            {
+                'grn_number': 'GRN02', 'party_code': 'P01', 'receipt_date': '2022-01-01',
+                'vehicle_number': 'V2', 'remarks': '', 'status': 'POSTED'
+            }
+        ],
+        lots=[
+            {
+                'lot_number': 'LOT01', 'grn_number': 'GRN01', 'commodity_code': 'C01',
+                'chamber_ref_code': 'CH01', 'floor_ref_code': 'FL01', 'block_ref_code': 'BK01',
+                'initial_qty': '100', 'remaining_qty': '80', 'rent_rate_per_unit': '1.50',
+                'unit': 'BAGS', 'chamber': '1', 'floor': '1', 'rack': 'A', 'special_remarks': '',
+                'unit_weight': '50.00', 'inward_date': '2021-12-31'
+            },
+            {
+                'lot_number': 'LOT02', 'grn_number': 'GRN02', 'commodity_code': 'C01',
+                'chamber_ref_code': 'CH01', 'floor_ref_code': 'FL01', 'block_ref_code': 'BK01',
+                'initial_qty': '100', 'remaining_qty': '90', 'rent_rate_per_unit': '1.50',
+                'unit': 'BAGS', 'chamber': '1', 'floor': '1', 'rack': 'A', 'special_remarks': '',
+                'unit_weight': '50.00', 'inward_date': '2022-01-01'
+            }
+        ]
+    )
+
+    out = StringIO()
+    call_command(
+        'import_legacy',
+        facility=default_facility.id,
+        source=str(tmp_path),
+        zero_stock_before='2022-01-01',
+        commit=True,
+        stdout=out
+    )
+
+    # LOT01 should be zeroed out
+    lot1 = Lot.objects.get(facility=default_facility, legacy_ref='LOT01')
+    assert lot1.remaining_qty == 0
+    # There should be exactly 1 StockAdjustment for LOT01
+    assert lot1.adjustments.count() == 1
+    adj = lot1.adjustments.first()
+    assert adj.qty_delta == -80
+    assert adj.qty_before == 80
+    assert adj.qty_after == 0
+    assert adj.reason == 'MIGRATION_OPENING_BALANCE'
+
+    # LOT02 should not be zeroed out
+    lot2 = Lot.objects.get(facility=default_facility, legacy_ref='LOT02')
+    assert lot2.remaining_qty == 90
+    assert lot2.adjustments.count() == 0
+
+    # Verify idempotency on second run
+    out2 = StringIO()
+    call_command(
+        'import_legacy',
+        facility=default_facility.id,
+        source=str(tmp_path),
+        zero_stock_before='2022-01-01',
+        commit=True,
+        stdout=out2
+    )
+
+    lot1.refresh_from_db()
+    assert lot1.remaining_qty == 0
+    assert lot1.adjustments.count() == 1  # No new adjustments created!
+
+

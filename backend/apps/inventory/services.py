@@ -13,7 +13,7 @@ from libs.pdf import render_pdf
 from libs.choices import ChargeMode
 from libs.sanitizers import clean_text, title_name, upper_code
 from apps.locations.models import Chamber, Floor, Block
-from .models import Commodity, GRN, Lot, Sequence
+from .models import Commodity, GRN, Lot, Sequence, StockAdjustment
 
 
 @transaction.atomic
@@ -380,5 +380,98 @@ def email_grn_to_party(*, grn_id: int) -> None:
 
     grn.last_emailed_at = timezone.now()
     grn.save()
+
+
+@transaction.atomic
+def adjust_lot_stock(
+    *,
+    lot_id: int,
+    reason: str,
+    adjustment_date: date,
+    new_qty: int = None,
+    qty_delta: int = None,
+    note: str = '',
+    adjusted_by: Any = None,
+) -> StockAdjustment:
+    """
+    Safely adjust stock of a lot using select_for_update() row lock.
+    Enforces rules:
+    - Resulting quantity may not be negative.
+    - Exactly one of new_qty or qty_delta must be provided.
+    - reason is mandatory and must be a valid StockAdjustment.Reason choice.
+    - note is mandatory when reason is OTHER.
+    - A zero net change is rejected.
+    - Adjusting a lot whose GRN is not POSTED is rejected.
+    - It must not create, touch or trigger any rent, invoice or delivery record.
+      (This is a correction, not a movement. Do NOT bill anything here.)
+    - Allow quantity to exceed initial_qty.
+    """
+    # 1. Parameter exclusivity check
+    if (new_qty is not None and qty_delta is not None) or (new_qty is None and qty_delta is None):
+        raise ValidationError("Specify either new_qty or qty_delta, not both or neither.")
+
+    # 2. Reason validation
+    if reason not in StockAdjustment.Reason.values:
+        raise ValidationError(f"Invalid reason: {reason}. Allowed: {StockAdjustment.Reason.values}")
+
+    # 3. Note requirement for OTHER
+    if reason == StockAdjustment.Reason.OTHER and not note.strip():
+        raise ValidationError("Note is mandatory when reason is OTHER.")
+
+    # 4. Fetch Lot with lock
+    try:
+        lot = Lot.objects.select_for_update().select_related('grn').get(pk=lot_id)
+    except Lot.DoesNotExist:
+        raise ValidationError(f"Lot with ID {lot_id} does not exist.")
+
+    # 5. Check if GRN is POSTED
+    if lot.grn.status != GRN.Status.POSTED:
+        raise ValidationError(
+            f"Cannot adjust stock for Lot '{lot.lot_number}' because its GRN status is '{lot.grn.status}' (must be POSTED)."
+        )
+
+    qty_before = lot.remaining_qty
+
+    if new_qty is not None:
+        if new_qty < 0:
+            raise ValidationError(f"The resulting quantity may not be negative. Lot: {lot.lot_number}, current quantity: {qty_before}")
+        delta = new_qty - qty_before
+    else:
+        delta = qty_delta
+
+    qty_after = qty_before + delta
+
+    # 6. Negative qty check
+    if qty_after < 0:
+        raise ValidationError(
+            f"The resulting quantity may not be negative. Lot: {lot.lot_number}, current quantity: {qty_before}"
+        )
+
+    # 7. Zero change check
+    if delta == 0:
+        raise ValidationError("A zero net change is rejected — there is nothing to record.")
+
+    # 8. Update Lot remaining_qty
+    lot.remaining_qty = qty_after
+    lot.save()
+
+    # 9. Create StockAdjustment
+    # Note: This is purely a stock correction, not a physical movement.
+    # It must not create, touch or trigger any rent, invoice or delivery records.
+    adjustment = StockAdjustment(
+        lot=lot,
+        qty_delta=delta,
+        qty_before=qty_before,
+        qty_after=qty_after,
+        reason=reason,
+        note=note,
+        adjustment_date=adjustment_date,
+        adjusted_by=adjusted_by
+    )
+    adjustment.full_clean()
+    adjustment.save()
+
+    return adjustment
+
 
 

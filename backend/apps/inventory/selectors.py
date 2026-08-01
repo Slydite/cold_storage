@@ -56,7 +56,7 @@ def get_lots_list(
     """
     qs = Lot.objects.filter(grn__status=GRN.Status.POSTED).select_related(
         'facility', 'grn', 'grn__party', 'commodity', 'chamber_ref', 'floor_ref', 'block_ref'
-    )
+    ).prefetch_related('adjustments__adjusted_by')
     if facility_id:
         qs = qs.filter(facility_id=facility_id)
 
@@ -88,5 +88,5 @@ def get_lot_by_id(lot_id: int) -> Lot:
     """
     return Lot.objects.select_related(
         'grn', 'grn__party', 'commodity', 'chamber_ref', 'floor_ref', 'block_ref'
-    ).get(pk=lot_id)
+    ).prefetch_related('adjustments__adjusted_by').get(pk=lot_id)
 

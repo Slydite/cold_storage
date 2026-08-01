@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.utils import timezone
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
@@ -27,7 +28,8 @@ from .services import (
     cancel_grn,
     withdraw_stock_from_lot,
     build_grn_pdf,
-    email_grn_to_party
+    email_grn_to_party,
+    adjust_lot_stock
 )
 from .serializers import (
     CommodityInputSerializer,
@@ -37,7 +39,8 @@ from .serializers import (
     LotOutputSerializer,
     LotWithdrawalInputSerializer,
     LotReserveNumberInputSerializer,
-    LotReserveNumberOutputSerializer
+    LotReserveNumberOutputSerializer,
+    LotAdjustmentInputSerializer
 )
 from .models import Commodity, GRN, Lot
 
@@ -380,3 +383,33 @@ class LotViewSet(ViewSet):
 
         output_serializer = LotReserveNumberOutputSerializer({"lot_number": lot_number})
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=LotAdjustmentInputSerializer,
+        responses={200: LotOutputSerializer, 400: None},
+        summary="Adjust stock of a lot"
+    )
+    @action(detail=True, methods=['post'], url_path='adjust')
+    def adjust(self, request, pk=None):
+        serializer = LotAdjustmentInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        adjustment_date = serializer.validated_data.get('adjustment_date') or timezone.localdate()
+
+        try:
+            adjust_lot_stock(
+                lot_id=pk,
+                reason=serializer.validated_data['reason'],
+                adjustment_date=adjustment_date,
+                new_qty=serializer.validated_data.get('new_qty'),
+                qty_delta=serializer.validated_data.get('qty_delta'),
+                note=serializer.validated_data.get('note', ''),
+                adjusted_by=request.user
+            )
+            updated_lot = get_lot_by_id(pk)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        output_serializer = LotOutputSerializer(updated_lot)
+        return Response(output_serializer.data)
+
