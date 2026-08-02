@@ -109,6 +109,7 @@ const handleRetry = () => {
       v-model:selectedPartyId="selectedPartyId"
       v-model:selectedStatus="selectedStatus"
       @retry="handleRetry"
+      @refresh="lotsQuery.refetch()"
     />
   </div>
 </template>

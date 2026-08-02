@@ -1,5 +1,16 @@
-import { lotsList } from './generated/sdk.gen'
-import type { LotOutput } from './generated/types.gen'
+import {
+  lotsList,
+  lotsAdjustCreate,
+  lotsRateChangesCreate,
+  lotsRateChangesDestroy,
+  lotsBulkRateChangeCreate
+} from './generated/sdk.gen'
+import type {
+  LotOutput,
+  LotAdjustmentInput,
+  LotRateChangeInput,
+  LotBulkRateChangeInput
+} from './generated/types.gen'
 import { apiFetch } from './client'
 
 export type { LotOutput }
@@ -71,4 +82,54 @@ export async function reserveLotNumber(facilityId: number): Promise<string> {
   return data.lot_number as string
 }
 
+export async function adjustLotStock(id: number, body: LotAdjustmentInput): Promise<unknown> {
+  const res = await lotsAdjustCreate({
+    path: { id },
+    body
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to adjust stock'))
+  }
+  return res.data
+}
 
+export async function addLotRateChange(id: number, body: LotRateChangeInput): Promise<unknown> {
+  const res = await lotsRateChangesCreate({
+    path: { id },
+    body
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to add rate change'))
+  }
+  return res.data
+}
+
+export async function deleteLotRateChange(id: number, rateChangeId: number): Promise<void> {
+  const res = await lotsRateChangesDestroy({
+    path: {
+      id,
+      rate_change_id: String(rateChangeId)
+    }
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to delete rate change'))
+  }
+}
+
+export async function bulkRateChangeLots(body: LotBulkRateChangeInput): Promise<{
+  applied_count: number
+  skipped_count: number
+  skipped_details: Array<{ lot_id: number; lot_number: string; reason: string }>
+}> {
+  const res = await lotsBulkRateChangeCreate({
+    body
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to bulk change rates'))
+  }
+  return res.data as {
+    applied_count: number
+    skipped_count: number
+    skipped_details: Array<{ lot_id: number; lot_number: string; reason: string }>
+  }
+}

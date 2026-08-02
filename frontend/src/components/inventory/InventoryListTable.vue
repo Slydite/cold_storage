@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
@@ -8,7 +8,7 @@ import DatePicker from 'primevue/datepicker'
 import Skeleton from 'primevue/skeleton'
 import { useI18n } from 'vue-i18n'
 import { FilterMatchMode } from '@primevue/core/api'
-import { Search, Filter, FilterX, Download, AlertCircle, RefreshCw, Package, Eye } from 'lucide-vue-next'
+import { Search, Filter, FilterX, Download, AlertCircle, RefreshCw, Package, Eye, SlidersHorizontal, TrendingUp } from 'lucide-vue-next'
 import { formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { useTableFilters, formatDateFilter } from '../../composables/useTableFilters'
@@ -20,6 +20,9 @@ import type { LotOutput } from '../../api/lot'
 import type { FacilityOutput } from '../../api/facility'
 import type { ChamberOutput, FloorOutput, BlockOutput } from '../../api/location'
 import type { PartyOutput } from '../../api/party'
+import LotDetailDialog from './LotDetailDialog.vue'
+import StockAdjustmentDialog from './StockAdjustmentDialog.vue'
+import BulkRateChangeDialog from './BulkRateChangeDialog.vue'
 
 interface Props {
   lots: LotOutput[]
@@ -51,6 +54,7 @@ const emit = defineEmits<{
   'update:selectedPartyId': [id: number | undefined]
   'update:selectedStatus': [status: string]
   retry: []
+  refresh: []
 }>()
 
 const toast = useToast()
@@ -60,10 +64,10 @@ const selectedGrn = ref<GrnOutput | null>(null)
 const showGrnDetail = ref(false)
 const fetchingLotId = ref<number | null>(null)
 
-async function handleViewGrn(lot: LotOutput) {
-  fetchingLotId.value = lot.id
+async function handleViewGrnById(grnId: number) {
+  fetchingLotId.value = grnId
   try {
-    const grn = await fetchGrn(lot.grn_id)
+    const grn = await fetchGrn(grnId)
     selectedGrn.value = grn
     showGrnDetail.value = true
   } catch (err) {
@@ -77,6 +81,57 @@ async function handleViewGrn(lot: LotOutput) {
     fetchingLotId.value = null
   }
 }
+
+async function handleViewGrn(lot: LotOutput) {
+  await handleViewGrnById(lot.grn_id)
+}
+
+const showLotDetail = ref(false)
+const selectedLot = ref<LotOutput | null>(null)
+
+const showAdjustStock = ref(false)
+const selectedLotForAdjust = ref<LotOutput | null>(null)
+
+const showBulkRateChange = ref(false)
+
+const handleViewLotDetails = (lot: LotOutput) => {
+  selectedLot.value = lot
+  showLotDetail.value = true
+}
+
+const handleOpenAdjustStock = (lot: LotOutput) => {
+  selectedLotForAdjust.value = lot
+  showAdjustStock.value = true
+}
+
+const uniqueCommodities = computed(() => {
+  const map = new Map<number, string>()
+  props.lots.forEach((lot) => {
+    if (lot.commodity_id) {
+      map.set(lot.commodity_id, lot.commodity_name)
+    }
+  })
+  return Array.from(map.entries()).map(([id, name]) => ({ label: name, value: id }))
+})
+
+const handleRefresh = () => {
+  emit('refresh')
+}
+
+watch(() => props.lots, (newLots) => {
+  if (selectedLot.value) {
+    const updated = newLots.find(l => l.id === selectedLot.value?.id)
+    if (updated) {
+      selectedLot.value = updated
+    }
+  }
+  if (selectedLotForAdjust.value) {
+    const updated = newLots.find(l => l.id === selectedLotForAdjust.value?.id)
+    if (updated) {
+      selectedLotForAdjust.value = updated
+    }
+  }
+}, { deep: true })
 
 const statusOptions = computed(() => [
   { label: t('inventory.activeLots'), value: 'active' },
@@ -275,6 +330,16 @@ const handleExport = () => {
           <FilterX :size="15" />
           <span>{{ t('common.clearFilters') }}</span>
         </button>
+        <button
+          class="btn-outlined"
+          type="button"
+          :disabled="selectedFacilityId === undefined"
+          @click="showBulkRateChange = true"
+          title="Apply rate change in bulk"
+        >
+          <TrendingUp :size="15" />
+          <span>{{ t('inventory.bulkRateChange') }}</span>
+        </button>
         <button class="btn-outlined" type="button" @click="handleExport">
           <Download :size="15" />
           <span>{{ t('common.export') }}</span>
@@ -324,24 +389,32 @@ const handleExport = () => {
           responsiveLayout="scroll"
           class="custom-datatable"
         >
-          <Column :header="t('common.actions')" style="width: 80px">
+          <Column :header="t('common.actions')" style="width: 100px">
             <template #body="{ data }">
-              <button
-                class="icon-btn"
-                :disabled="fetchingLotId !== null"
-                :title="t('common.details')"
-                type="button"
-                @click="handleViewGrn(data)"
-              >
-                <i v-if="fetchingLotId === data.id" class="pi pi-spin pi-spinner" style="font-size: 1rem"></i>
-                <Eye v-else :size="16" />
-              </button>
+              <div class="flex gap-2">
+                <button
+                  class="icon-btn"
+                  :title="t('common.details')"
+                  type="button"
+                  @click="handleViewLotDetails(data)"
+                >
+                  <Eye :size="16" />
+                </button>
+                <button
+                  class="icon-btn"
+                  :title="t('inventory.adjustStock')"
+                  type="button"
+                  @click="handleOpenAdjustStock(data)"
+                >
+                  <SlidersHorizontal :size="16" />
+                </button>
+              </div>
             </template>
           </Column>
 
           <Column field="lot_number" :header="t('inventory.lotNo')" sortable>
             <template #body="{ data }">
-              <span class="code-link clickable" @click="handleViewGrn(data)">{{ data.lot_number }}</span>
+              <span class="code-link clickable" @click="handleViewLotDetails(data)">{{ data.lot_number }}</span>
             </template>
             <template #filter="{ filterModel, filterCallback }">
               <InputText
@@ -489,14 +562,21 @@ const handleExport = () => {
           <div class="card-actions">
             <button
               class="btn-outlined btn-sm"
-              :disabled="fetchingLotId !== null"
               :title="t('common.details')"
               type="button"
-              @click="handleViewGrn(data)"
+              @click="handleViewLotDetails(data)"
             >
-              <i v-if="fetchingLotId === data.id" class="pi pi-spin pi-spinner mr-1"></i>
-              <Eye v-else :size="15" />
+              <Eye :size="15" />
               <span>{{ t('common.details') }}</span>
+            </button>
+            <button
+              class="btn-outlined btn-sm"
+              :title="t('inventory.adjustStock')"
+              type="button"
+              @click="handleOpenAdjustStock(data)"
+            >
+              <SlidersHorizontal :size="15" />
+              <span>{{ t('inventory.adjustStock') }}</span>
             </button>
           </div>
         </div>
@@ -507,6 +587,30 @@ const handleExport = () => {
     <GrnDetailDialog
       v-model:visible="showGrnDetail"
       :grn="selectedGrn"
+    />
+
+    <!-- Lot Detail Dialog -->
+    <LotDetailDialog
+      v-model:visible="showLotDetail"
+      :lot="selectedLot"
+      @refresh="handleRefresh"
+      @view-grn="handleViewGrnById"
+    />
+
+    <!-- Stock Adjustment Dialog -->
+    <StockAdjustmentDialog
+      v-model:visible="showAdjustStock"
+      :lot="selectedLotForAdjust"
+      @success="handleRefresh"
+    />
+
+    <!-- Bulk Rate Change Dialog -->
+    <BulkRateChangeDialog
+      v-model:visible="showBulkRateChange"
+      :facilityId="props.selectedFacilityId"
+      :parties="props.parties || []"
+      :commodities="uniqueCommodities"
+      @success="handleRefresh"
     />
   </div>
 </template>

@@ -34,16 +34,24 @@
 <table class="data-table">
     <thead>
         <tr>
-            <th style="width: 25%;">Lot No. / लॉट नं.</th>
+            <th style="width: 20%;">Lot No. / लॉट नं.</th>
+            <th class="center" style="width: 15%;">Bal. Before / पिछला शेष</th>
             <th class="center" style="width: 15%;">Qty / मात्रा</th>
-            <th style="width: 40%;">PARTICULARS (Commodity / विवरण)</th>
-            <th class="center" style="width: 20%;">Balance / शेष</th>
+            <th style="width: 35%;">PARTICULARS (Commodity / विवरण)</th>
+            <th class="center" style="width: 15%;">Balance / शेष</th>
         </tr>
     </thead>
     <tbody>
         {% for line in dn.lines.all %}
         <tr>
             <td>{{ line.lot.lot_number }}</td>
+            <td class="center">
+                {% if line.balance_after is not None %}
+                    {{ line.balance_after|add:line.qty }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
             <td class="center">{{ line.qty }}</td>
             <td>{{ line.lot.commodity.name }}</td>
             <td class="center">{% if line.balance_after is not None %}{{ line.balance_after }}{% else %}—{% endif %}</td>
@@ -51,7 +59,7 @@
         {% endfor %}
         <tr class="total-row">
             <td>Total</td>
-            <td class="center" colspan="3">Total: {{ total_qty }} Bag{{ total_qty|pluralize }}</td>
+            <td class="center" colspan="4">Total: {{ total_qty }} Bag{{ total_qty|pluralize }}</td>
         </tr>
     </tbody>
 </table>

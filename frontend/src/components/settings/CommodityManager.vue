@@ -9,7 +9,7 @@ import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Checkbox from 'primevue/checkbox'
 import Textarea from 'primevue/textarea'
-import { Plus, Edit2, RefreshCw, Package } from 'lucide-vue-next'
+import { Plus, Edit2, RefreshCw, Package, GitMerge } from 'lucide-vue-next'
 import { useToast } from 'primevue/usetoast'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
@@ -22,6 +22,11 @@ import {
   useUpdateCommodity
 } from '../../composables/useCommodities'
 import type { CommodityOutput } from '../../api/commodity'
+import {
+  addCommodityAlias,
+  deleteCommodityAlias,
+  mergeCommodities
+} from '../../api/commodity'
 
 const toast = useToast()
 const { t } = useI18n()
@@ -39,6 +44,147 @@ useHistoryDismiss(isDialogOpen, () => {
   isDialogOpen.value = false
 })
 const editingCommodity = ref<CommodityOutput | null>(null)
+
+const showAliasDialog = ref(false)
+const showMergeDialog = ref(false)
+const selectedCommodity = ref<CommodityOutput | null>(null)
+const isSubmittingAlias = ref(false)
+const isSubmittingMerge = ref(false)
+
+const aliasSchema = computed(() =>
+  z.object({
+    alias_name: z.string().min(1, t('validation.required'))
+  })
+)
+
+const mergeSchema = computed(() =>
+  z.object({
+    source_commodity_id: z.number({ message: t('validation.required') })
+  })
+)
+
+const { handleSubmit: handleAliasSubmit, errors: aliasErrors, defineField: defineAliasField, resetForm: resetAliasForm } = useForm({
+  validationSchema: computed(() => toTypedSchema(aliasSchema.value)),
+  initialValues: { alias_name: '' }
+})
+
+const { handleSubmit: handleMergeSubmit, errors: mergeErrors, defineField: defineMergeField, resetForm: resetMergeForm } = useForm({
+  validationSchema: computed(() => toTypedSchema(mergeSchema.value)),
+  initialValues: { source_commodity_id: undefined as number | undefined }
+})
+
+const [alias_name, aliasNameProps] = defineAliasField('alias_name')
+const [source_commodity_id, sourceCommodityIdProps] = defineMergeField('source_commodity_id')
+
+const openAddAlias = (item: CommodityOutput) => {
+  selectedCommodity.value = item
+  resetAliasForm({ values: { alias_name: '' } })
+  showAliasDialog.value = true
+}
+
+const openMergeDialog = (item: CommodityOutput) => {
+  selectedCommodity.value = item
+  resetMergeForm({ values: { source_commodity_id: undefined as number | undefined } })
+  showMergeDialog.value = true
+}
+
+const onAddAliasSubmit = handleAliasSubmit(async (values) => {
+  if (!selectedCommodity.value) return
+  isSubmittingAlias.value = true
+  try {
+    await addCommodityAlias(selectedCommodity.value.id, { name: values.alias_name })
+    toast.add({
+      severity: 'success',
+      summary: t('common.success'),
+      detail: t('settings.aliasSuccess'),
+      life: 3000
+    })
+    showAliasDialog.value = false
+    refetch()
+  } catch (err: unknown) {
+    toast.add({
+      severity: 'error',
+      summary: t('settings.aliasFailed'),
+      detail: err instanceof Error ? err.message : t('errors.generic'),
+      life: 5000
+    })
+  } finally {
+    isSubmittingAlias.value = false
+  }
+})
+
+const onRemoveAlias = async (commodityId: number, aliasId: number) => {
+  try {
+    await deleteCommodityAlias(commodityId, aliasId)
+    toast.add({
+      severity: 'success',
+      summary: t('common.success'),
+      detail: t('settings.aliasDeleteSuccess'),
+      life: 3000
+    })
+    refetch()
+  } catch (err: unknown) {
+    toast.add({
+      severity: 'error',
+      summary: t('settings.aliasDeleteFailed'),
+      detail: err instanceof Error ? err.message : t('errors.generic'),
+      life: 5000
+    })
+  }
+}
+
+const onMergeSubmit = handleMergeSubmit(async (values) => {
+  if (!selectedCommodity.value) return
+  const sourceId = values.source_commodity_id
+  if (sourceId === selectedCommodity.value.id) {
+    toast.add({
+      severity: 'error',
+      summary: t('common.error'),
+      detail: t('errors.generic'),
+      life: 5000
+    })
+    return
+  }
+
+  isSubmittingMerge.value = true
+  try {
+    await mergeCommodities(selectedCommodity.value.id, { source_commodity_id: sourceId })
+    toast.add({
+      severity: 'success',
+      summary: t('common.success'),
+      detail: t('settings.mergeSuccess'),
+      life: 5000
+    })
+    showMergeDialog.value = false
+    refetch()
+  } catch (err: unknown) {
+    toast.add({
+      severity: 'error',
+      summary: t('settings.mergeFailed'),
+      detail: err instanceof Error ? err.message : t('errors.generic'),
+      life: 7000
+    })
+  } finally {
+    isSubmittingMerge.value = false
+  }
+})
+
+const otherCommoditiesOptions = computed(() => {
+  if (!commodities.value) return []
+  return commodities.value
+    .filter((c) => c.id !== selectedCommodity.value?.id)
+    .map((c) => ({ label: `${c.name} (${c.code})`, value: c.id }))
+})
+
+const sourceCommodityName = computed(() => {
+  if (!source_commodity_id.value || !commodities.value) return ''
+  const source = commodities.value.find((c) => c.id === source_commodity_id.value)
+  return source ? source.name : ''
+})
+
+const destCommodityName = computed(() => {
+  return selectedCommodity.value ? selectedCommodity.value.name : ''
+})
 
 const unitOptions = computed(() => [
   { label: `${t('units.bags')} (Bags)`, value: 'Bags' },
@@ -230,16 +376,51 @@ const onSubmit = handleSubmit(async (values) => {
           </template>
         </Column>
 
-        <Column :header="t('common.actions')" alignFrozen="right" style="width: 100px">
+        <Column :header="t('settings.aliases')">
           <template #body="{ data }">
-            <button
-              type="button"
-              class="icon-btn"
-              :title="t('settings.editCommodity')"
-              @click="openEditDialog(data)"
-            >
-              <Edit2 :size="16" />
-            </button>
+            <div class="alias-chips-container">
+              <span v-for="alias in data.aliases" :key="alias.id" class="alias-chip">
+                <span>{{ alias.name }}</span>
+                <button
+                  type="button"
+                  class="alias-remove-btn"
+                  @click="onRemoveAlias(data.id, alias.id)"
+                  :title="t('settings.aliasDeleteSuccess')"
+                >
+                  ×
+                </button>
+              </span>
+              <button
+                type="button"
+                class="add-alias-chip-btn"
+                @click="openAddAlias(data)"
+              >
+                + {{ t('settings.addAlias') }}
+              </button>
+            </div>
+          </template>
+        </Column>
+
+        <Column :header="t('common.actions')" alignFrozen="right" style="width: 120px">
+          <template #body="{ data }">
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="icon-btn"
+                :title="t('settings.editCommodity')"
+                @click="openEditDialog(data)"
+              >
+                <Edit2 :size="16" />
+              </button>
+              <button
+                type="button"
+                class="icon-btn merge-btn"
+                :title="t('settings.mergeCommodity')"
+                @click="openMergeDialog(data)"
+              >
+                <GitMerge :size="16" />
+              </button>
+            </div>
           </template>
         </Column>
       </DataTable>
@@ -309,6 +490,104 @@ const onSubmit = handleSubmit(async (values) => {
             :disabled="createCommodityMutation.isPending.value || updateCommodityMutation.isPending.value"
           >
             {{ editingCommodity ? t('common.save') : t('common.add') }}
+          </button>
+        </div>
+      </form>
+    </Dialog>
+
+    <!-- Add Alias Dialog -->
+    <Dialog
+      v-model:visible="showAliasDialog"
+      modal
+      :header="t('settings.addAlias')"
+      :style="{ width: '400px', maxWidth: '90vw' }"
+    >
+      <form @submit.prevent="onAddAliasSubmit" class="dialog-form">
+        <div class="form-group">
+          <label for="alias-name-input" class="form-label">{{ t('settings.aliases') }} <span class="req">*</span></label>
+          <InputText
+            id="alias-name-input"
+            v-model="alias_name"
+            v-bind="aliasNameProps"
+            placeholder="e.g. Desi Aloo"
+            class="w-full"
+            :invalid="!!aliasErrors.alias_name"
+          />
+          <span v-if="aliasErrors.alias_name" class="field-error">{{ aliasErrors.alias_name }}</span>
+        </div>
+
+        <div class="dialog-actions">
+          <button
+            type="button"
+            class="btn-outlined"
+            @click="showAliasDialog = false"
+            :disabled="isSubmittingAlias"
+          >
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            type="submit"
+            class="btn-primary"
+            :disabled="isSubmittingAlias"
+          >
+            <i v-if="isSubmittingAlias" class="pi pi-spin pi-spinner mr-1"></i>
+            <span>{{ t('common.add') }}</span>
+          </button>
+        </div>
+      </form>
+    </Dialog>
+
+    <!-- Merge Dialog -->
+    <Dialog
+      v-model:visible="showMergeDialog"
+      modal
+      :header="t('settings.mergeCommodity')"
+      :style="{ width: '450px', maxWidth: '95vw' }"
+    >
+      <form @submit.prevent="onMergeSubmit" class="dialog-form">
+        <p class="form-help-text">
+          Fold another commodity into <strong>{{ destCommodityName }}</strong>.
+        </p>
+
+        <!-- Source Commodity Select -->
+        <div class="form-group">
+          <label for="source-select" class="form-label">{{ t('settings.mergeSource') }} <span class="req">*</span></label>
+          <Select
+            id="source-select"
+            v-model="source_commodity_id"
+            v-bind="sourceCommodityIdProps"
+            :options="otherCommoditiesOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="w-full"
+            filter
+            :placeholder="t('settings.mergeSource')"
+            :invalid="!!mergeErrors.source_commodity_id"
+          />
+          <span v-if="mergeErrors.source_commodity_id" class="field-error">{{ mergeErrors.source_commodity_id }}</span>
+        </div>
+
+        <!-- Dynamic Warning Message -->
+        <div v-if="source_commodity_id" class="merge-warning-box">
+          {{ t('settings.confirmMergeMessage', { source: sourceCommodityName, dest: destCommodityName }) }}
+        </div>
+
+        <div class="dialog-actions">
+          <button
+            type="button"
+            class="btn-outlined"
+            @click="showMergeDialog = false"
+            :disabled="isSubmittingMerge"
+          >
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            type="submit"
+            class="btn-primary"
+            :disabled="isSubmittingMerge"
+          >
+            <i v-if="isSubmittingMerge" class="pi pi-spin pi-spinner mr-1"></i>
+            <span>{{ t('settings.mergeCommodity') }}</span>
           </button>
         </div>
       </form>
@@ -411,5 +690,89 @@ const onSubmit = handleSubmit(async (values) => {
 
 .mb-2 {
   margin-bottom: 8px;
+}
+
+.alias-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.alias-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface-active);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.alias-remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alias-remove-btn:hover {
+  color: var(--status-danger-color);
+}
+
+.add-alias-chip-btn {
+  background: none;
+  border: 1px dashed var(--border-strong);
+  color: var(--accent-primary);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.add-alias-chip-btn:hover {
+  background: rgba(var(--accent-primary-rgb, 99, 102, 241), 0.05);
+  border-color: var(--accent-primary);
+}
+
+.merge-btn {
+  color: var(--accent-primary);
+}
+
+.merge-btn:hover {
+  background: rgba(var(--accent-primary-rgb, 99, 102, 241), 0.08);
+}
+
+.merge-warning-box {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--text-primary);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.form-help-text {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.mr-1 {
+  margin-right: 4px;
 }
 </style>

@@ -12,7 +12,7 @@ import { downloadPdf } from '../../utils/downloadPdf'
 import { useHistoryDismiss } from '../../composables/useHistoryDismiss'
 import { emailDeliveryNote } from '../../api/delivery'
 import { EMAIL_TO_CLIENT_ENABLED } from '../../config/features'
-import type { DeliveryNoteOutput } from '../../api/delivery'
+import type { DeliveryNoteOutput, DeliveryLineOutput } from '../../api/delivery'
 
 interface Props {
   visible: boolean
@@ -105,15 +105,25 @@ const totalQty = computed(() => {
   return props.deliveryNote.lines.reduce((sum, line) => sum + (line.qty || 0), 0)
 })
 
+function getBalanceBefore(line: DeliveryLineOutput): number | null {
+  if (line.balance_after === null || line.balance_after === undefined) return null
+  if (line.qty === null || line.qty === undefined) return null
+  return Number(line.balance_after) + Number(line.qty)
+}
+
 const handleExportLines = () => {
   if (!props.deliveryNote || !props.deliveryNote.lines) return
-  const headers = [t('inventory.lotNo'), t('common.commodity'), t('common.quantity'), t('delivery.balanceAfter')]
-  const rows = props.deliveryNote.lines.map((line) => [
-    line.lot_number || '—',
-    line.commodity_name || '—',
-    line.qty,
-    line.balance_after !== null && line.balance_after !== undefined ? line.balance_after : '—'
-  ])
+  const headers = [t('inventory.lotNo'), t('common.commodity'), t('delivery.balanceBefore'), t('common.quantity'), t('delivery.balanceAfter')]
+  const rows = props.deliveryNote.lines.map((line) => {
+    const balBefore = getBalanceBefore(line)
+    return [
+      line.lot_number || '—',
+      line.commodity_name || '—',
+      balBefore !== null ? balBefore : '—',
+      line.qty,
+      line.balance_after !== null && line.balance_after !== undefined ? line.balance_after : '—'
+    ]
+  })
   exportToCsv(`delivery_${props.deliveryNote.dn_number}_lines.csv`, headers, rows)
 }
 </script>
@@ -246,6 +256,14 @@ const handleExportLines = () => {
           <Column field="commodity_name" :header="t('common.commodity')">
             <template #body="{ data }">
               <span>{{ data.commodity_name || '—' }}</span>
+            </template>
+          </Column>
+
+          <Column :header="t('delivery.balanceBefore')">
+            <template #body="{ data }">
+              <span class="num-val">
+                {{ getBalanceBefore(data) !== null ? formatQty(getBalanceBefore(data)!, 0) : '—' }}
+              </span>
             </template>
           </Column>
 
