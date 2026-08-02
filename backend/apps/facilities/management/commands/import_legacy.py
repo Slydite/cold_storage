@@ -82,6 +82,16 @@ class Command(BaseCommand):
             type=str,
             help='Zero out stock for lots dated before YYYY-MM-DD.',
         )
+        parser.add_argument(
+            '--as-draft',
+            action='store_true',
+            help='Import GRNs and delivery notes as DRAFT status instead of status in CSV.',
+        )
+        parser.add_argument(
+            '--party-names',
+            type=str,
+            help='Path to CSV file with party clean-up / name corrections.',
+        )
 
 
     def handle(self, *args, **options):
@@ -95,6 +105,7 @@ class Command(BaseCommand):
         financial_year = options.get('financial_year')
         include_referenced_lots = options.get('include_referenced_lots', False)
         zero_stock_before = options.get('zero_stock_before')
+        as_draft = options.get('as_draft', False)
 
         zero_stock_before_date = None
         if zero_stock_before:
@@ -168,6 +179,29 @@ class Command(BaseCommand):
                     if alias_mapping[alias_target]['VERDICT_keep_or_alias'] == 'alias':
                         raise CommandError(f"Validation Error: ALIAS_OF target '{alias_target}' for commodity {code} is itself an alias.")
 
+        # Parse and validate party names mapping
+        party_names_path = options.get('party_names')
+        party_name_mapping = {}
+        if party_names_path:
+            if not os.path.isabs(party_names_path):
+                from django.conf import settings
+                project_root = settings.BASE_DIR.parent
+                party_names_path = os.path.join(project_root, party_names_path)
+
+            if not os.path.exists(party_names_path):
+                from django.core.management.base import CommandError
+                raise CommandError(f"Party names file not found: {party_names_path}")
+
+            with open(party_names_path, mode='r', encoding='utf-8-sig') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    party_name_mapping[row['our_code'].strip()] = {
+                        'our_code': row['our_code'].strip(),
+                        'our_name': row['our_name'].strip() if row.get('our_name') else '',
+                        'CORRECTED_NAME': row['CORRECTED_NAME'].strip() if row.get('CORRECTED_NAME') else '',
+                        'VERDICT_keep_or_remove': row['VERDICT_keep_or_remove'].strip().lower()
+                    }
+
         # 1. Fetch Facility
         try:
             facility = Facility.objects.get(pk=facility_id)
@@ -208,6 +242,10 @@ class Command(BaseCommand):
         # Metrics trackers
         summary = {
             'parties_created': 0,
+            'parties_created_corrected': 0,
+            'parties_created_legacy': 0,
+            'parties_skipped': 0,
+            'parties_skipped_list': [],
             'parties_matched': 0,
             'parties_failed': 0,
             'commodities_created': 0,
@@ -302,38 +340,68 @@ class Command(BaseCommand):
         try:
             with transaction.atomic():
                 # --- A. Parties ---
+                skipped_parties_list = []
                 for row in parties_csv:
                     code = row['code']
+                    legacy_name = row['name']
+
+                    # Check party_name_mapping
+                    in_csv = False
+                    verdict = None
+                    corrected_name = None
+                    if party_name_mapping and code in party_name_mapping:
+                        in_csv = True
+                        verdict = party_name_mapping[code]['VERDICT_keep_or_remove']
+                        corrected_name = party_name_mapping[code]['CORRECTED_NAME']
+
+                    if in_csv and verdict == 'remove':
+                        summary['parties_skipped'] += 1
+                        skipped_parties_list.append(f"{code} ({legacy_name})")
+                        continue
+
                     if Party.objects.filter(facility=facility, code=code).exists():
                         summary['parties_matched'] += 1
-                    else:
-                        try:
-                            email_val = clean_email(row['email'])
-                            if email_val and '@' not in email_val:
-                                email_val = ""
-                            
-                            phone_val = clean_phone(row['phone'])
-                            phone_val = phone_val.replace(' ', '')
-                            if len(phone_val) > 20:
-                                phone_val = phone_val[:20]
+                        continue
 
-                            party = Party(
-                                facility=facility,
-                                name=title_name(row['name']),
-                                code=code,
-                                type=row['type'],
-                                phone=phone_val,
-                                email=email_val,
-                                address=clean_text(row['address']),
-                                gstin=clean_gstin(row['gstin']),
-                                is_active=row['is_active'].lower() == 'true'
-                            )
-                            party.full_clean()
-                            party.save()
-                            summary['parties_created'] += 1
-                        except DjangoValidationError as e:
-                            summary['parties_failed'] += 1
-                            record_failure(f"Party Validation: {e.messages if hasattr(e, 'messages') else str(e)}")
+                    try:
+                        email_val = clean_email(row['email'])
+                        if email_val and '@' not in email_val:
+                            email_val = ""
+                        
+                        phone_val = clean_phone(row['phone'])
+                        phone_val = phone_val.replace(' ', '')
+                        if len(phone_val) > 20:
+                            phone_val = phone_val[:20]
+
+                        if in_csv and (verdict == 'keep' or verdict == 'review') and corrected_name:
+                            name_to_use = corrected_name
+                        else:
+                            name_to_use = legacy_name
+
+                        party = Party(
+                            facility=facility,
+                            name=title_name(name_to_use),
+                            code=code,
+                            type=row['type'],
+                            phone=phone_val,
+                            email=email_val,
+                            address=clean_text(row['address']),
+                            gstin=clean_gstin(row['gstin']),
+                            is_active=row['is_active'].lower() == 'true'
+                        )
+                        party.full_clean()
+                        party.save()
+
+                        if in_csv and (verdict == 'keep' or verdict == 'review') and corrected_name:
+                            summary['parties_created_corrected'] += 1
+                        else:
+                            summary['parties_created_legacy'] += 1
+                        summary['parties_created'] += 1
+                    except DjangoValidationError as e:
+                        summary['parties_failed'] += 1
+                        record_failure(f"Party Validation: {e.messages if hasattr(e, 'messages') else str(e)}")
+
+                summary['parties_skipped_list'] = skipped_parties_list
 
                 # --- B. Commodities ---
                 for row in commodities_csv:
@@ -649,7 +717,7 @@ class Command(BaseCommand):
                                 receipt_date=receipt_date,
                                 vehicle_number=grn_row['vehicle_number'],
                                 remarks=grn_row['remarks'],
-                                status=grn_row['status'],
+                                status='DRAFT' if as_draft else grn_row['status'],
                                 items=items_data,
                                 require_location=False  # Legacy imports genuinely have no location recorded and must bypass this requirement
                             )
@@ -664,7 +732,10 @@ class Command(BaseCommand):
                             created_lots = list(grn.lots.order_by('id'))
                             for lot_obj, lot_row in zip(created_lots, imported_lot_rows):
                                 lot_obj.legacy_ref = lot_row['lot_number']
-                                original_remaining_qty = int(lot_row['remaining_qty'])
+                                if as_draft:
+                                    original_remaining_qty = int(lot_row['initial_qty'])
+                                else:
+                                    original_remaining_qty = int(lot_row['remaining_qty'])
                                 lot_obj.remaining_qty = original_remaining_qty
                                 if lot_row.get('inward_date'):
                                     try:
@@ -714,13 +785,14 @@ class Command(BaseCommand):
                             lot_num = line_row['lot_number']
                             del_sum_by_lot[lot_num] = del_sum_by_lot.get(lot_num, 0) + int(line_row['qty'])
 
-                        # Boost the remaining_qty of all lots in the database to prevent validation failures during note creation
-                        for lot_row in lots_csv:
-                            lot_num = lot_row['lot_number']
-                            final_rem = int(lot_row['remaining_qty'])
-                            sum_del = del_sum_by_lot.get(lot_num, 0)
-                            temp_rem = final_rem + sum_del
-                            Lot.objects.filter(facility=facility, legacy_ref=lot_num).update(remaining_qty=temp_rem)
+                        if not as_draft:
+                            # Boost the remaining_qty of all lots in the database to prevent validation failures during note creation
+                            for lot_row in lots_csv:
+                                lot_num = lot_row['lot_number']
+                                final_rem = int(lot_row['remaining_qty'])
+                                sum_del = del_sum_by_lot.get(lot_num, 0)
+                                temp_rem = final_rem + sum_del
+                                Lot.objects.filter(facility=facility, legacy_ref=lot_num).update(remaining_qty=temp_rem)
 
                         # Group delivery lines by DN legacy reference
                         lines_by_dn = {}
@@ -824,7 +896,7 @@ class Command(BaseCommand):
                                     dispatch_date=dispatch_date,
                                     vehicle_number=dn_row['vehicle_number'],
                                     remarks=dn_row['remarks'],
-                                    status=dn_row['status'],
+                                    status='DRAFT' if as_draft else dn_row['status'],
                                     lines=lines_data
                                 )
                                 dn.legacy_ref = dn_ref
@@ -847,7 +919,7 @@ class Command(BaseCommand):
                     # This aligns remaining_qty exactly to the legacy values, compensating for any potential deviations
                     for lot_row in lots_csv:
                         lot_inward_date = get_lot_row_inward_date(lot_row)
-                        target_qty = int(lot_row['remaining_qty'])
+                        target_qty = int(lot_row['initial_qty']) if as_draft else int(lot_row['remaining_qty'])
                         if zero_stock_before_date and lot_inward_date and lot_inward_date < zero_stock_before_date:
                             target_qty = 0
                         Lot.objects.filter(facility=facility, legacy_ref=lot_row['lot_number']).update(
@@ -868,13 +940,15 @@ class Command(BaseCommand):
             fy_start=fy_start,
             fy_end=fy_end,
             skipped_lines_reasons=skipped_lines_reasons,
-            include_referenced_lots=include_referenced_lots
+            include_referenced_lots=include_referenced_lots,
+            as_draft=as_draft
         )
 
     def _print_summary(
         self, summary, failures, dry_run, open_stock_only,
         parties_only=False, financial_year=None, fy_start=None, fy_end=None,
-        skipped_lines_reasons=None, include_referenced_lots=False
+        skipped_lines_reasons=None, include_referenced_lots=False,
+        as_draft=False
     ):
         self.stdout.write("")
         self.stdout.write("==================================================")
@@ -896,12 +970,19 @@ class Command(BaseCommand):
             self.stdout.write("Mode: Full History")
         else:
             self.stdout.write("Mode: Open Stock Only")
+
+        if as_draft:
+            self.stdout.write("  - Draft Mode         : Enabled (Documents imported as drafts. Stock reflects nothing dispatched yet; quantities become correct as notes are posted.)")
+
         self.stdout.write("--------------------------------------------------")
 
         self.stdout.write("Parties:")
-        self.stdout.write(f"  - Created            : {summary['parties_created']}")
+        self.stdout.write(f"  - Created (Corrected Name): {summary['parties_created_corrected']}")
+        self.stdout.write(f"  - Created (Legacy Name)   : {summary['parties_created_legacy']}")
         self.stdout.write(f"  - Matched            : {summary['parties_matched']}")
         self.stdout.write(f"  - Failed             : {summary['parties_failed']}")
+        if summary.get('parties_skipped', 0) > 0:
+            self.stdout.write(f"  - Skipped (Removed)  : {summary['parties_skipped']} ({', '.join(summary['parties_skipped_list'])})")
         
         self.stdout.write("Commodities:")
         self.stdout.write(f"  - Created            : {summary['commodities_created']}")

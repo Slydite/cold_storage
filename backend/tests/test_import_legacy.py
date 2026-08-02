@@ -909,4 +909,219 @@ def test_import_legacy_commodity_aliases(tmp_path, default_facility):
     assert "Lots Redirected    : 1" in summary_text
 
 
+@pytest.mark.django_db
+def test_import_legacy_as_draft(tmp_path, default_facility):
+    # Setup CSV files
+    setup_csv_files(
+        tmp_path,
+        grns=[{
+            'grn_number': 'GRN01', 'party_code': 'P01', 'receipt_date': '2026-06-01',
+            'vehicle_number': 'UP15-1234', 'remarks': 'Remarks', 'status': 'POSTED'
+        }],
+        lots=[{
+            'lot_number': 'LOT01', 'grn_number': 'GRN01', 'commodity_code': 'C01',
+            'chamber_ref_code': 'CH01', 'floor_ref_code': 'FL01', 'block_ref_code': 'BK01',
+            'initial_qty': '100', 'remaining_qty': '80', 'rent_rate_per_unit': '1.50',
+            'unit': 'BAGS', 'chamber': '1', 'floor': '1', 'rack': 'A', 'special_remarks': '',
+            'unit_weight': '50.00', 'inward_date': '2026-06-01'
+        }],
+        delivery_notes=[{
+            'dn_number': 'DN01', 'party_code': 'P01', 'dispatch_date': '2026-07-01',
+            'vehicle_number': 'UP15-5678', 'remarks': 'Remarks Note', 'status': 'POSTED'
+        }],
+        delivery_lines=[{
+            'dn_number': 'DN01', 'lot_number': 'LOT01', 'qty': '20', 'balance_after': '80'
+        }]
+    )
+
+    out = StringIO()
+    call_command(
+        'import_legacy',
+        facility=default_facility.id,
+        source=str(tmp_path),
+        as_draft=True,
+        full_history=True,
+        commit=True,
+        stdout=out
+    )
+
+    # 1. --as-draft creates GRNs and delivery notes with status DRAFT
+    grn = GRN.objects.get(facility=default_facility, legacy_ref='GRN01')
+    assert grn.status == 'DRAFT'
+
+    dn = DeliveryNote.objects.get(facility=default_facility, legacy_ref='DN01')
+    assert dn.status == 'DRAFT'
+
+    # 2. under --as-draft, a lot's remaining_qty equals its initial_qty, and the total is not inflated by delivery quantities
+    lot = Lot.objects.get(facility=default_facility, legacy_ref='LOT01')
+    assert lot.remaining_qty == 100
+    assert lot.initial_qty == 100
+
+    # Output details
+    output = out.getvalue()
+    assert "Draft Mode         : Enabled" in output
+    assert "Documents imported as drafts" in output
+
+
+@pytest.mark.django_db
+def test_import_legacy_without_as_draft(tmp_path, default_facility):
+    # Setup CSV files
+    setup_csv_files(
+        tmp_path,
+        grns=[{
+            'grn_number': 'GRN01', 'party_code': 'P01', 'receipt_date': '2026-06-01',
+            'vehicle_number': 'UP15-1234', 'remarks': 'Remarks', 'status': 'POSTED'
+        }],
+        lots=[{
+            'lot_number': 'LOT01', 'grn_number': 'GRN01', 'commodity_code': 'C01',
+            'chamber_ref_code': 'CH01', 'floor_ref_code': 'FL01', 'block_ref_code': 'BK01',
+            'initial_qty': '100', 'remaining_qty': '80', 'rent_rate_per_unit': '1.50',
+            'unit': 'BAGS', 'chamber': '1', 'floor': '1', 'rack': 'A', 'special_remarks': '',
+            'unit_weight': '50.00', 'inward_date': '2026-06-01'
+        }],
+        delivery_notes=[{
+            'dn_number': 'DN01', 'party_code': 'P01', 'dispatch_date': '2026-07-01',
+            'vehicle_number': 'UP15-5678', 'remarks': 'Remarks Note', 'status': 'POSTED'
+        }],
+        delivery_lines=[{
+            'dn_number': 'DN01', 'lot_number': 'LOT01', 'qty': '20', 'balance_after': '80'
+        }]
+    )
+
+    out = StringIO()
+    call_command(
+        'import_legacy',
+        facility=default_facility.id,
+        source=str(tmp_path),
+        full_history=True,
+        commit=True,
+        stdout=out
+    )
+
+    # 3. without --as-draft the existing behaviour is unchanged — assert a lot ends on the CSV's remaining_qty exactly as it does today, so this cannot regress
+    grn = GRN.objects.get(facility=default_facility, legacy_ref='GRN01')
+    assert grn.status == 'POSTED'
+
+    dn = DeliveryNote.objects.get(facility=default_facility, legacy_ref='DN01')
+    assert dn.status == 'POSTED'
+
+    lot = Lot.objects.get(facility=default_facility, legacy_ref='LOT01')
+    assert lot.remaining_qty == 80
+    assert lot.initial_qty == 100
+
+
+@pytest.mark.django_db
+def test_import_legacy_as_draft_with_zero_stock_before(tmp_path, default_facility):
+    # Setup CSV files
+    # inward_date is 2021-12-31 (before 2022-01-01) -> should be zeroed
+    setup_csv_files(
+        tmp_path,
+        grns=[{
+            'grn_number': 'GRN01', 'party_code': 'P01', 'receipt_date': '2021-12-31',
+            'vehicle_number': 'UP15-1234', 'remarks': 'Remarks', 'status': 'POSTED'
+        }],
+        lots=[{
+            'lot_number': 'LOT01', 'grn_number': 'GRN01', 'commodity_code': 'C01',
+            'chamber_ref_code': 'CH01', 'floor_ref_code': 'FL01', 'block_ref_code': 'BK01',
+            'initial_qty': '100', 'remaining_qty': '80', 'rent_rate_per_unit': '1.50',
+            'unit': 'BAGS', 'chamber': '1', 'floor': '1', 'rack': 'A', 'special_remarks': '',
+            'unit_weight': '50.00', 'inward_date': '2021-12-31'
+        }]
+    )
+
+    out = StringIO()
+    call_command(
+        'import_legacy',
+        facility=default_facility.id,
+        source=str(tmp_path),
+        as_draft=True,
+        zero_stock_before='2022-01-01',
+        commit=True,
+        stdout=out
+    )
+
+    # 4. --as-draft combined with --zero-stock-before still zeroes the confirmed empty lots and records the adjustment
+    lot = Lot.objects.get(facility=default_facility, legacy_ref='LOT01')
+    assert lot.remaining_qty == 0
+    # There should be exactly 1 StockAdjustment for LOT01
+    assert lot.adjustments.count() == 1
+    adj = lot.adjustments.first()
+    # The qty before is initial_qty under --as-draft, because the lot's starting quantity would have been 100
+    assert adj.qty_before == 100
+    assert adj.qty_delta == -100
+    assert adj.qty_after == 0
+
+
+@pytest.mark.django_db
+def test_import_legacy_party_names(tmp_path, default_facility):
+    from django.core.management.base import CommandError
+
+    # 1. Prepare parties CSV with valid phone and GSTIN to prevent validation failures
+    parties = [
+        {'code': 'P01', 'name': 'Legacy Party One', 'type': 'DEPOSITOR', 'phone': '1234567890', 'email': 'a@a.com', 'address': 'Addr1', 'gstin': '09AAAAA1111A1Z1', 'is_active': 'True'},
+        {'code': 'P02', 'name': 'Legacy Party Two', 'type': 'DEPOSITOR', 'phone': '1234567890', 'email': 'b@b.com', 'address': 'Addr2', 'gstin': '09AAAAA1111A1Z1', 'is_active': 'True'},
+        {'code': 'P03', 'name': 'Legacy Party Three', 'type': 'DEPOSITOR', 'phone': '1234567890', 'email': 'c@c.com', 'address': 'Addr3', 'gstin': '09AAAAA1111A1Z1', 'is_active': 'True'},
+        {'code': 'P04', 'name': 'Legacy Party Four', 'type': 'DEPOSITOR', 'phone': '1234567890', 'email': 'd@d.com', 'address': 'Addr4', 'gstin': '09AAAAA1111A1Z1', 'is_active': 'True'},
+    ]
+
+    # Write normal CSV files
+    setup_csv_files(tmp_path, parties=parties)
+
+    # 2. Write valid cleanup_parties CSV
+    party_names_csv = tmp_path / 'cleanup_parties.csv'
+    write_csv(party_names_csv, ['our_code', 'our_name', 'CORRECTED_NAME', 'VERDICT_keep_or_remove'], [
+        {'our_code': 'P01', 'our_name': 'Legacy Party One', 'CORRECTED_NAME': 'Corrected Party One', 'VERDICT_keep_or_remove': 'keep'},
+        {'our_code': 'P02', 'our_name': 'Legacy Party Two', 'CORRECTED_NAME': 'Corrected Party Two', 'VERDICT_keep_or_remove': 'review'}, # review treats as keep
+        {'our_code': 'P03', 'our_name': 'Legacy Party Three', 'CORRECTED_NAME': '', 'VERDICT_keep_or_remove': 'keep'},                 # blank name, fall back
+        {'our_code': 'P04', 'our_name': 'Legacy Party Four', 'CORRECTED_NAME': 'Should Skip', 'VERDICT_keep_or_remove': 'remove'},     # skip
+    ])
+
+    out = StringIO()
+    call_command(
+        'import_legacy',
+        facility=default_facility.id,
+        source=str(tmp_path),
+        party_names=str(party_names_csv),
+        commit=True,
+        stdout=out
+    )
+
+    # 5. --party-names creates parties under their corrected names
+    p1 = Party.objects.get(facility=default_facility, code='P01')
+    assert p1.name == "Corrected Party One"
+
+    # 6. a review verdict does not skip and uses CORRECTED_NAME
+    p2 = Party.objects.get(facility=default_facility, code='P02')
+    assert p2.name == "Corrected Party Two"
+
+    # 7. a blank CORRECTED_NAME falls back to the legacy name
+    p3 = Party.objects.get(facility=default_facility, code='P03')
+    assert p3.name == "Legacy Party Three"
+
+    # 6. a remove verdict skips that party
+    assert not Party.objects.filter(facility=default_facility, code='P04').exists()
+
+    output = out.getvalue()
+    assert "Created (Corrected Name): 2" in output
+    assert "Created (Legacy Name)   : 1" in output
+    assert "Skipped (Removed)  : 1 (P04 (Legacy Party Four))" in output
+
+
+@pytest.mark.django_db
+def test_import_legacy_party_names_missing_file_fails(tmp_path, default_facility):
+    from django.core.management.base import CommandError
+    setup_csv_files(tmp_path)
+
+    # 8. A missing --party-names file fails loudly
+    with pytest.raises(CommandError) as exc:
+        call_command(
+            'import_legacy',
+            facility=default_facility.id,
+            source=str(tmp_path),
+            party_names=str(tmp_path / 'nonexistent_file.csv'),
+            commit=True
+        )
+    assert "Party names file not found" in str(exc.value)
+
+
 
