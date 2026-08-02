@@ -2,6 +2,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.conf import settings
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from simple_history.models import HistoricalRecords
 from apps.facilities.models import Facility
 from apps.parties.models import Party
@@ -253,6 +254,29 @@ class CommodityAlias(models.Model):
             self.name = title_name(self.name)
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class LotRateChange(models.Model):
+    lot = models.ForeignKey(Lot, on_delete=models.CASCADE, related_name='rate_changes')
+    rate_per_unit = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.00'))]
+    )
+    effective_from = models.DateField()
+    note = models.CharField(max_length=255, blank=True)
+    entered_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ['effective_from']
+        unique_together = ('lot', 'effective_from')
+
+    def __str__(self):
+        return f"RateChange for Lot {self.lot.lot_number} to {self.rate_per_unit} on {self.effective_from}"
+
 
 
 

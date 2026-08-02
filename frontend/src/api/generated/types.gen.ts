@@ -412,6 +412,16 @@ export type LotAdjustmentInput = {
     adjustment_date?: string | null;
 };
 
+export type LotBulkRateChangeInput = {
+    facility_id: number;
+    rate_per_unit: string;
+    effective_from: string;
+    note?: string;
+    lot_ids?: Array<number>;
+    commodity_id?: number | null;
+    party_id?: number | null;
+};
+
 export type LotItemInput = {
     commodity_id: number;
     lot_number?: string;
@@ -461,8 +471,26 @@ export type LotOutput = {
     rent_rate_per_unit?: string;
     inward_date: string;
     readonly adjustments: Array<StockAdjustment>;
+    readonly rate_changes: Array<LotRateChange>;
     readonly created_at: string;
     readonly updated_at: string;
+};
+
+export type LotRateChange = {
+    readonly id: number;
+    readonly lot_id: number;
+    rate_per_unit: string;
+    effective_from: string;
+    note?: string;
+    readonly entered_by_id: number | null;
+    readonly entered_by_username: string | null;
+    readonly created_at: string;
+};
+
+export type LotRateChangeInput = {
+    rate_per_unit: string;
+    effective_from: string;
+    note?: string;
 };
 
 export type LotReserveNumberInput = {
@@ -817,6 +845,12 @@ export type LotOutputWritable = {
     unit_weight?: string;
     rent_rate_per_unit?: string;
     inward_date: string;
+};
+
+export type LotRateChangeWritable = {
+    rate_per_unit: string;
+    effective_from: string;
+    note?: string;
 };
 
 export type PartyOutputWritable = {
@@ -2403,6 +2437,60 @@ export type LotsAdjustCreateResponses = {
 
 export type LotsAdjustCreateResponse = LotsAdjustCreateResponses[keyof LotsAdjustCreateResponses];
 
+export type LotsRateChangesCreateData = {
+    body: LotRateChangeInput;
+    path: {
+        /**
+         * A unique integer value identifying this lot.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/lots/{id}/rate-changes/';
+};
+
+export type LotsRateChangesCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type LotsRateChangesCreateResponses = {
+    201: LotRateChange;
+};
+
+export type LotsRateChangesCreateResponse = LotsRateChangesCreateResponses[keyof LotsRateChangesCreateResponses];
+
+export type LotsRateChangesDestroyData = {
+    body?: never;
+    path: {
+        /**
+         * A unique integer value identifying this lot.
+         */
+        id: number;
+        rate_change_id: string;
+    };
+    query?: never;
+    url: '/api/lots/{id}/rate-changes/{rate_change_id}/';
+};
+
+export type LotsRateChangesDestroyErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type LotsRateChangesDestroyResponses = {
+    /**
+     * No response body
+     */
+    204: void;
+};
+
+export type LotsRateChangesDestroyResponse = LotsRateChangesDestroyResponses[keyof LotsRateChangesDestroyResponses];
+
 export type LotsWithdrawCreateData = {
     body: LotWithdrawalInput;
     path: {
@@ -2427,6 +2515,27 @@ export type LotsWithdrawCreateResponses = {
 };
 
 export type LotsWithdrawCreateResponse = LotsWithdrawCreateResponses[keyof LotsWithdrawCreateResponses];
+
+export type LotsBulkRateChangeCreateData = {
+    body: LotBulkRateChangeInput;
+    path?: never;
+    query?: never;
+    url: '/api/lots/bulk-rate-change/';
+};
+
+export type LotsBulkRateChangeCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type LotsBulkRateChangeCreateResponses = {
+    /**
+     * No response body
+     */
+    200: unknown;
+};
 
 export type LotsReserveNumberCreateData = {
     body: LotReserveNumberInput;

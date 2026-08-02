@@ -1887,6 +1887,71 @@ paths:
           description: ''
         '400':
           description: No response body
+  /api/lots/{id}/rate-changes/:
+    post:
+      operationId: lots_rate_changes_create
+      summary: Add a rate change for a lot
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lot.
+        required: true
+      tags:
+      - lots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LotRateChangeInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LotRateChangeInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LotRateChangeInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LotRateChange'
+          description: ''
+        '400':
+          description: No response body
+  /api/lots/{id}/rate-changes/{rate_change_id}/:
+    delete:
+      operationId: lots_rate_changes_destroy
+      summary: Remove a rate change for a lot
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lot.
+        required: true
+      - in: path
+        name: rate_change_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - lots
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          description: No response body
   /api/lots/{id}/withdraw/:
     post:
       operationId: lots_withdraw_create
@@ -1923,6 +1988,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/LotOutput'
           description: ''
+        '400':
+          description: No response body
+  /api/lots/bulk-rate-change/:
+    post:
+      operationId: lots_bulk_rate_change_create
+      summary: Bulk add rate changes for lots
+      tags:
+      - lots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LotBulkRateChangeInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LotBulkRateChangeInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LotBulkRateChangeInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
         '400':
           description: No response body
   /api/lots/reserve-number/:
@@ -3740,6 +3832,36 @@ components:
           nullable: true
       required:
       - reason
+    LotBulkRateChangeInput:
+      type: object
+      properties:
+        facility_id:
+          type: integer
+        rate_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        effective_from:
+          type: string
+          format: date
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+        lot_ids:
+          type: array
+          items:
+            type: integer
+        commodity_id:
+          type: integer
+          nullable: true
+        party_id:
+          type: integer
+          nullable: true
+      required:
+      - effective_from
+      - facility_id
+      - rate_per_unit
     LotItemInput:
       type: object
       properties:
@@ -3904,6 +4026,11 @@ components:
           items:
             $ref: '#/components/schemas/StockAdjustment'
           readOnly: true
+        rate_changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/LotRateChange'
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -3938,8 +4065,65 @@ components:
       - party_code
       - party_id
       - party_name
+      - rate_changes
       - remaining_qty
       - updated_at
+    LotRateChange:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        lot_id:
+          type: integer
+          readOnly: true
+        rate_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        effective_from:
+          type: string
+          format: date
+        note:
+          type: string
+          maxLength: 255
+        entered_by_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        entered_by_username:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - effective_from
+      - entered_by_id
+      - entered_by_username
+      - id
+      - lot_id
+      - rate_per_unit
+    LotRateChangeInput:
+      type: object
+      properties:
+        rate_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        effective_from:
+          type: string
+          format: date
+        note:
+          type: string
+          default: ''
+          maxLength: 255
+      required:
+      - effective_from
+      - rate_per_unit
     LotReserveNumberInput:
       type: object
       properties:

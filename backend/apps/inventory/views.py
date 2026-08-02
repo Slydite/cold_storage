@@ -32,7 +32,10 @@ from .services import (
     adjust_lot_stock,
     add_commodity_alias,
     remove_commodity_alias,
-    merge_commodity
+    merge_commodity,
+    add_lot_rate_change,
+    remove_lot_rate_change,
+    bulk_add_rate_change
 )
 from .serializers import (
     CommodityInputSerializer,
@@ -46,7 +49,10 @@ from .serializers import (
     LotAdjustmentInputSerializer,
     CommodityAliasSerializer,
     CommodityAliasInputSerializer,
-    CommodityMergeInputSerializer
+    CommodityMergeInputSerializer,
+    LotRateChangeSerializer,
+    LotRateChangeInputSerializer,
+    LotBulkRateChangeInputSerializer
 )
 from .models import Commodity, GRN, Lot, CommodityAlias
 
@@ -506,4 +512,68 @@ class LotViewSet(ViewSet):
 
         output_serializer = LotOutputSerializer(updated_lot)
         return Response(output_serializer.data)
+
+    @extend_schema(
+        request=LotRateChangeInputSerializer,
+        responses={201: LotRateChangeSerializer, 400: None},
+        summary="Add a rate change for a lot"
+    )
+    @action(detail=True, methods=['post'], url_path='rate-changes')
+    def add_rate_change(self, request, pk=None):
+        serializer = LotRateChangeInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            rc = add_lot_rate_change(
+                lot_id=pk,
+                rate_per_unit=serializer.validated_data['rate_per_unit'],
+                effective_from=serializer.validated_data['effective_from'],
+                note=serializer.validated_data.get('note', ''),
+                entered_by=request.user
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        output_serializer = LotRateChangeSerializer(rc)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        responses={204: None, 400: None},
+        summary="Remove a rate change for a lot"
+    )
+    @action(detail=True, methods=['delete'], url_path=r'rate-changes/(?P<rate_change_id>[^/.]+)')
+    def remove_rate_change(self, request, pk=None, rate_change_id=None):
+        try:
+            remove_lot_rate_change(rate_change_id=rate_change_id)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        request=LotBulkRateChangeInputSerializer,
+        responses={200: None, 400: None},
+        summary="Bulk add rate changes for lots"
+    )
+    @action(detail=False, methods=['post'], url_path='bulk-rate-change')
+    def bulk_rate_change(self, request):
+        serializer = LotBulkRateChangeInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = bulk_add_rate_change(
+                facility_id=serializer.validated_data['facility_id'],
+                rate_per_unit=serializer.validated_data['rate_per_unit'],
+                effective_from=serializer.validated_data['effective_from'],
+                note=serializer.validated_data.get('note', ''),
+                entered_by=request.user,
+                lot_ids=serializer.validated_data.get('lot_ids'),
+                commodity_id=serializer.validated_data.get('commodity_id'),
+                party_id=serializer.validated_data.get('party_id'),
+            )
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(result, status=status.HTTP_200_OK)
+
 

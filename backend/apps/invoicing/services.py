@@ -9,7 +9,7 @@ from libs.lookups import get_facility_or_raise
 from libs.pdf import render_pdf
 from libs.sequences import get_next_sequence_number
 from libs.fiscal import fy_label
-from apps.billing.services import compute_delivery_line_rent, days_stored
+from apps.billing.services import compute_delivery_line_rent, days_stored, compute_segmented_rent_details
 from apps.delivery.selectors import get_uninvoiced_delivery_lines
 from libs.choices import ChargeMode
 from .models import Invoice, InvoiceLine, Payment
@@ -120,27 +120,37 @@ def build_invoice_items(
 
     # 1. Rent for each delivery line
     for line in line_list:
-        rent_amount = compute_delivery_line_rent(line)
-        d_count = days_stored(line.lot.inward_date, line.delivery_note.dispatch_date)
-        desc = f"Rent - Lot {line.lot.lot_number} ({line.lot.commodity.name}) - Qty: {line.qty} ({d_count} days)"
-        invoice_items.append({
-            'description': desc,
-            'amount': rent_amount,
-            'delivery_line': line,
-            'lot_number': line.lot.lot_number,
-            'commodity_name': line.lot.commodity.name,
-            'qty': line.qty,
-            'inward_date': line.lot.inward_date,
-            'dispatch_date': line.delivery_note.dispatch_date,
-            'days_stored': d_count,
-            'quantity': line.qty,
-            'unit': line.lot.unit,
-            'rate_per_unit': line.lot.rent_rate_per_unit,
-            # Charge head: rent lines carry the storage period billed
-            'charge_type': InvoiceLine.ChargeType.RENT,
-            'period_from': line.lot.inward_date,
-            'period_to': line.delivery_note.dispatch_date,
-        })
+        segments = compute_segmented_rent_details(
+            qty=line.qty,
+            intake_rate=line.lot.rent_rate_per_unit,
+            rate_changes=line.lot.rate_changes.all(),
+            inward_date=line.lot.inward_date,
+            out_date=line.delivery_note.dispatch_date,
+        )
+        for seg in segments:
+            if len(segments) == 1:
+                desc = f"Rent - Lot {line.lot.lot_number} ({line.lot.commodity.name}) - Qty: {line.qty} ({seg['days_stored']} days)"
+            else:
+                desc = f"Rent - Lot {line.lot.lot_number} ({line.lot.commodity.name}) - Qty: {line.qty} ({seg['days_stored']} days) [Segment: {seg['period_from']} to {seg['period_to']} @ Rs {seg['rate_per_unit']}]"
+            
+            invoice_items.append({
+                'description': desc,
+                'amount': seg['amount'],
+                'delivery_line': line,
+                'lot_number': line.lot.lot_number,
+                'commodity_name': line.lot.commodity.name,
+                'qty': line.qty,
+                'inward_date': line.lot.inward_date,
+                'dispatch_date': line.delivery_note.dispatch_date,
+                'days_stored': seg['days_stored'],
+                'quantity': line.qty,
+                'unit': line.lot.unit,
+                'rate_per_unit': seg['rate_per_unit'],
+                # Charge head: rent lines carry the storage period billed
+                'charge_type': InvoiceLine.ChargeType.RENT,
+                'period_from': seg['period_from'],
+                'period_to': seg['period_to'],
+            })
 
     # 2. GRN loading/unloading charges (billed once on first withdrawal).
     # User-facing wording is "Loading/Unloading Charge" on the frontend and on

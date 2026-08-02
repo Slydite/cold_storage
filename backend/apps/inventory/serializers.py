@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from libs.choices import ChargeMode
-from .models import Commodity, GRN, Lot, StockAdjustment, CommodityAlias
+from .models import Commodity, GRN, Lot, StockAdjustment, CommodityAlias, LotRateChange
 
 class CommodityAliasSerializer(serializers.ModelSerializer):
     class Meta:
@@ -85,6 +85,23 @@ class StockAdjustmentSerializer(serializers.ModelSerializer):
         ]
 
 
+class LotRateChangeSerializer(serializers.ModelSerializer):
+    entered_by_username = serializers.CharField(source='entered_by.username', read_only=True, allow_null=True)
+
+    class Meta:
+        model = LotRateChange
+        fields = [
+            'id',
+            'lot_id',
+            'rate_per_unit',
+            'effective_from',
+            'note',
+            'entered_by_id',
+            'entered_by_username',
+            'created_at'
+        ]
+
+
 class LotOutputSerializer(serializers.ModelSerializer):
     commodity_name = serializers.CharField(source='commodity.name', read_only=True)
     commodity_code = serializers.CharField(source='commodity.code', read_only=True)
@@ -139,9 +156,12 @@ class LotOutputSerializer(serializers.ModelSerializer):
             'rent_rate_per_unit',
             'inward_date',
             'adjustments',
+            'rate_changes',
             'created_at',
             'updated_at'
         ]
+
+    rate_changes = LotRateChangeSerializer(many=True, read_only=True)
 
     def get_chamber_name(self, obj):
         return obj.chamber_ref.name if obj.chamber_ref else (obj.chamber or None)
@@ -237,8 +257,10 @@ class LotAdjustmentInputSerializer(serializers.Serializer):
     def validate(self, attrs):
         new_qty = attrs.get('new_qty')
         qty_delta = attrs.get('qty_delta')
-        if (new_qty is not None and qty_delta is not None) or (new_qty is None and qty_delta is None):
-            raise serializers.ValidationError("Specify either new_qty or qty_delta, not both or neither.")
+        if new_qty is not None and qty_delta is not None:
+            raise serializers.ValidationError("Cannot provide both new_qty and qty_delta.")
+        if new_qty is None and qty_delta is None:
+            raise serializers.ValidationError("Specify either new_qty or qty_delta.")
 
         reason = attrs.get('reason')
         note = attrs.get('note', '')
@@ -254,6 +276,23 @@ class CommodityAliasInputSerializer(serializers.Serializer):
 
 class CommodityMergeInputSerializer(serializers.Serializer):
     source_commodity_id = serializers.IntegerField()
+
+
+class LotRateChangeInputSerializer(serializers.Serializer):
+    rate_per_unit = serializers.DecimalField(max_digits=10, decimal_places=2)
+    effective_from = serializers.DateField()
+    note = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
+
+
+class LotBulkRateChangeInputSerializer(serializers.Serializer):
+    facility_id = serializers.IntegerField()
+    rate_per_unit = serializers.DecimalField(max_digits=10, decimal_places=2)
+    effective_from = serializers.DateField()
+    note = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
+    lot_ids = serializers.ListField(child=serializers.IntegerField(), required=False, allow_empty=True, default=None)
+    commodity_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    party_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+
 
 
 

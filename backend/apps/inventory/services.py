@@ -13,7 +13,7 @@ from libs.pdf import render_pdf
 from libs.choices import ChargeMode
 from libs.sanitizers import clean_text, title_name, upper_code
 from apps.locations.models import Chamber, Floor, Block
-from .models import Commodity, GRN, Lot, Sequence, StockAdjustment, CommodityAlias
+from .models import Commodity, GRN, Lot, Sequence, StockAdjustment, CommodityAlias, LotRateChange
 
 
 @transaction.atomic
@@ -557,6 +557,144 @@ def merge_commodity(*, source_commodity_id: int, target_commodity_id: int) -> No
     if target.name.lower() != source_name.lower():
         if not CommodityAlias.objects.filter(commodity=target, name__iexact=source_name).exists():
             add_commodity_alias(commodity_id=target.id, name=source_name)
+
+
+@transaction.atomic
+def add_lot_rate_change(
+    *,
+    lot_id: int,
+    rate_per_unit: Decimal,
+    effective_from: date,
+    note: str = '',
+    entered_by=None
+) -> LotRateChange:
+    try:
+        lot = Lot.objects.get(pk=lot_id)
+    except Lot.DoesNotExist:
+        raise ValidationError(f"Lot with ID {lot_id} does not exist.")
+
+    # 1. Reject rate below zero
+    rate_per_unit = Decimal(str(rate_per_unit))
+    if rate_per_unit < Decimal('0.00'):
+        raise ValidationError("Rate per unit cannot be negative.")
+
+    # 2. Reject effective_from before inward_date
+    if effective_from < lot.inward_date:
+        raise ValidationError(
+            f"Effective date {effective_from} cannot be before the lot's inward date {lot.inward_date}."
+        )
+
+    # 3. Reject duplicate effective_from on the same lot
+    if LotRateChange.objects.filter(lot=lot, effective_from=effective_from).exists():
+        raise ValidationError(
+            f"A rate change is already scheduled for lot {lot.lot_number} on {effective_from}."
+        )
+
+    # 4. Reject change effective on or before a date already invoiced
+    invoiced_dns = lot.delivery_lines.filter(invoiced_at__isnull=False)
+    if invoiced_dns.exists():
+        for dl in invoiced_dns:
+            if effective_from <= dl.delivery_note.dispatch_date:
+                raise ValidationError(
+                    f"Cannot alter rate for a period already billed. The lot has already been invoiced "
+                    f"up to {dl.delivery_note.dispatch_date} on delivery note {dl.delivery_note.dn_number} "
+                    f"(invoiced at {dl.invoiced_at})."
+                )
+
+    rc = LotRateChange(
+        lot=lot,
+        rate_per_unit=rate_per_unit,
+        effective_from=effective_from,
+        note=note,
+        entered_by=entered_by
+    )
+    rc.full_clean()
+    rc.save()
+    return rc
+
+
+@transaction.atomic
+def remove_lot_rate_change(*, rate_change_id: int) -> None:
+    try:
+        rc = LotRateChange.objects.get(pk=rate_change_id)
+    except LotRateChange.DoesNotExist:
+        raise ValidationError(f"Rate change with ID {rate_change_id} does not exist.")
+
+    lot = rc.lot
+    invoiced_dns = lot.delivery_lines.filter(invoiced_at__isnull=False)
+    if invoiced_dns.exists():
+        for dl in invoiced_dns:
+            if rc.effective_from <= dl.delivery_note.dispatch_date:
+                raise ValidationError(
+                    f"Cannot remove rate change: the lot has already been invoiced up to {dl.delivery_note.dispatch_date} "
+                    f"on delivery note {dl.delivery_note.dn_number} (invoiced at {dl.invoiced_at})."
+                )
+
+    rc.delete()
+
+
+@transaction.atomic
+def bulk_add_rate_change(
+    *,
+    facility_id: int,
+    rate_per_unit: Decimal,
+    effective_from: date,
+    note: str = '',
+    entered_by=None,
+    lot_ids: List[int] = None,
+    commodity_id: int = None,
+    party_id: int = None
+) -> dict:
+    # First, validate rate_per_unit
+    rate_per_unit = Decimal(str(rate_per_unit))
+    if rate_per_unit < Decimal('0.00'):
+        raise ValidationError("Rate per unit cannot be negative.")
+
+    lots_query = Lot.objects.filter(facility_id=facility_id, remaining_qty__gt=0)
+    if lot_ids is not None:
+        lots_query = lots_query.filter(id__in=lot_ids)
+    if commodity_id is not None:
+        lots_query = lots_query.filter(commodity_id=commodity_id)
+    if party_id is not None:
+        lots_query = lots_query.filter(grn__party_id=party_id)
+
+    # Order lots for deterministic execution
+    lots = list(lots_query.order_by('id'))
+
+    applied_count = 0
+    skipped_count = 0
+    skipped_details = []
+
+    for lot in lots:
+        try:
+            with transaction.atomic():
+                add_lot_rate_change(
+                    lot_id=lot.id,
+                    rate_per_unit=rate_per_unit,
+                    effective_from=effective_from,
+                    note=note,
+                    entered_by=entered_by
+                )
+            applied_count += 1
+        except ValidationError as e:
+            skipped_count += 1
+            reason = e.message if hasattr(e, 'message') else str(e)
+            if hasattr(e, 'message_dict'):
+                reason = "; ".join([f"{k}: {', '.join(v)}" for k, v in e.message_dict.items()])
+            elif hasattr(e, 'messages'):
+                reason = "; ".join(e.messages)
+            skipped_details.append({
+                'lot_id': lot.id,
+                'lot_number': lot.lot_number,
+                'reason': reason
+            })
+
+    return {
+        'applied_count': applied_count,
+        'skipped_count': skipped_count,
+        'skipped_details': skipped_details
+    }
+
 
 
 
