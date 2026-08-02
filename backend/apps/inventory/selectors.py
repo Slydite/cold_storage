@@ -2,13 +2,16 @@ from django.db.models import QuerySet
 from django.core.exceptions import ObjectDoesNotExist
 from .models import Commodity, GRN, Lot
 
-def get_commodities_list(facility_id: int, is_active: bool = None) -> QuerySet[Commodity]:
+def get_commodities_list(facility_id: int, is_active: bool = None, search: str = None) -> QuerySet[Commodity]:
     """
     Fetch all commodities for a facility.
     """
     qs = Commodity.objects.filter(facility_id=facility_id)
     if is_active is not None:
         qs = qs.filter(is_active=is_active)
+    if search:
+        from django.db.models import Q
+        qs = qs.filter(Q(name__icontains=search) | Q(aliases__name__icontains=search)).distinct()
     return qs.order_by('name')
 
 

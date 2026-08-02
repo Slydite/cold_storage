@@ -1,6 +1,7 @@
 from decimal import Decimal, ROUND_HALF_UP
 from django.conf import settings
 from django.db import models
+from django.core.exceptions import ValidationError
 from simple_history.models import HistoricalRecords
 from apps.facilities.models import Facility
 from apps.parties.models import Party
@@ -200,5 +201,58 @@ class StockAdjustment(models.Model):
 
     def __str__(self):
         return f"Adjustment to {self.lot.lot_number}: {self.qty_delta:+} ({self.reason})"
+
+
+class CommodityAlias(models.Model):
+    commodity = models.ForeignKey(Commodity, on_delete=models.CASCADE, related_name='aliases')
+    name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Commodity Alias"
+        verbose_name_plural = "Commodity Aliases"
+        constraints = [
+            models.UniqueConstraint(fields=['commodity', 'name'], name='unique_commodity_alias')
+        ]
+
+    def __str__(self):
+        return f"{self.name} (Alias of {self.commodity.name})"
+
+    def clean(self):
+        super().clean()
+        if not hasattr(self, 'commodity') or self.commodity is None:
+            return
+
+        from libs.sanitizers import title_name
+        self.name = title_name(self.name)
+
+        facility = self.commodity.facility
+        normalized_name = self.name
+
+        # Check if the name collides with a commodity name in the facility
+        if Commodity.objects.filter(facility=facility, name__iexact=normalized_name).exists():
+            raise ValidationError(
+                f"The name '{self.name}' already exists as a commodity in this facility."
+            )
+
+        # Check if the name collides with an alias name in the facility
+        alias_qs = CommodityAlias.objects.filter(
+            commodity__facility=facility,
+            name__iexact=normalized_name
+        )
+        if self.pk:
+            alias_qs = alias_qs.exclude(pk=self.pk)
+        if alias_qs.exists():
+            raise ValidationError(
+                f"The name '{self.name}' already exists as an alias in this facility."
+            )
+
+    def save(self, *args, **kwargs):
+        from libs.sanitizers import title_name
+        if self.name:
+            self.name = title_name(self.name)
+        self.full_clean()
+        super().save(*args, **kwargs)
+
 
 

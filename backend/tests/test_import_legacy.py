@@ -807,3 +807,106 @@ def test_zero_stock_before_import(tmp_path, default_facility):
     assert lot1.adjustments.count() == 1  # No new adjustments created!
 
 
+@pytest.mark.django_db
+def test_import_legacy_commodity_aliases(tmp_path, default_facility):
+    from apps.inventory.models import CommodityAlias
+    from django.core.management.base import CommandError
+
+    # 1. Prepare commodities CSV
+    commodities = [
+        {'code': 'C01', 'name': 'Jeera', 'unit': 'BAGS', 'description': 'Jeera desc', 'is_active': 'True'},
+        {'code': 'C02', 'name': 'Jira', 'unit': 'BAGS', 'description': 'Jira desc', 'is_active': 'True'},
+        {'code': 'C03', 'name': 'Cumin', 'unit': 'BAGS', 'description': 'Cumin desc', 'is_active': 'True'},
+    ]
+
+    # Write normal CSV files
+    setup_csv_files(
+        tmp_path,
+        commodities=commodities,
+        grns=[{
+            'grn_number': 'GRN01', 'party_code': 'P01', 'receipt_date': '2026-06-01',
+            'vehicle_number': 'UP15-1234', 'remarks': 'Remarks', 'status': 'POSTED'
+        }],
+        lots=[{
+            'lot_number': 'LOT01', 'grn_number': 'GRN01', 'commodity_code': 'C02',  # references Jira (alias)
+            'chamber_ref_code': 'CH01', 'floor_ref_code': 'FL01', 'block_ref_code': 'BK01',
+            'initial_qty': '100', 'remaining_qty': '80', 'rent_rate_per_unit': '1.50',
+            'unit': 'BAGS', 'chamber': '1', 'floor': '1', 'rack': 'A', 'special_remarks': '',
+            'unit_weight': '50.00', 'inward_date': '2026-06-01'
+        }]
+    )
+
+    # 2. Write clean-up CSV with a dangling/invalid alias of target
+    aliases_invalid_csv = tmp_path / 'cleanup_invalid.csv'
+    write_csv(aliases_invalid_csv, ['our_code', 'CORRECTED_NAME', 'VERDICT_keep_or_alias', 'ALIAS_OF'], [
+        {'our_code': 'C01', 'CORRECTED_NAME': 'Jeera', 'VERDICT_keep_or_alias': 'keep', 'ALIAS_OF': ''},
+        {'our_code': 'C02', 'CORRECTED_NAME': 'Jira', 'VERDICT_keep_or_alias': 'alias', 'ALIAS_OF': 'C99'}, # C99 is missing!
+    ])
+
+    out = StringIO()
+    with pytest.raises(CommandError) as exc:
+        call_command(
+            'import_legacy',
+            facility=default_facility.id,
+            source=str(tmp_path),
+            commodity_aliases=str(aliases_invalid_csv),
+            commit=True,
+            stdout=out
+        )
+    assert "ALIAS_OF target 'C99' for commodity C02 is missing" in str(exc.value)
+
+    # 3. Write clean-up CSV with transitive alias
+    aliases_transitive_csv = tmp_path / 'cleanup_transitive.csv'
+    write_csv(aliases_transitive_csv, ['our_code', 'CORRECTED_NAME', 'VERDICT_keep_or_alias', 'ALIAS_OF'], [
+        {'our_code': 'C01', 'CORRECTED_NAME': 'Jeera', 'VERDICT_keep_or_alias': 'alias', 'ALIAS_OF': 'C02'}, # C02 is itself an alias
+        {'our_code': 'C02', 'CORRECTED_NAME': 'Jira', 'VERDICT_keep_or_alias': 'alias', 'ALIAS_OF': 'C03'},
+        {'our_code': 'C03', 'CORRECTED_NAME': 'Cumin', 'VERDICT_keep_or_alias': 'keep', 'ALIAS_OF': ''},
+    ])
+
+    with pytest.raises(CommandError) as exc:
+        call_command(
+            'import_legacy',
+            facility=default_facility.id,
+            source=str(tmp_path),
+            commodity_aliases=str(aliases_transitive_csv),
+            commit=True,
+            stdout=out
+        )
+    assert "ALIAS_OF target 'C02' for commodity C01 is itself an alias" in str(exc.value)
+
+    # 4. Write valid clean-up CSV
+    aliases_valid_csv = tmp_path / 'cleanup_valid.csv'
+    write_csv(aliases_valid_csv, ['our_code', 'CORRECTED_NAME', 'VERDICT_keep_or_alias', 'ALIAS_OF'], [
+        {'our_code': 'C01', 'CORRECTED_NAME': 'Jeera Corrected', 'VERDICT_keep_or_alias': 'keep', 'ALIAS_OF': ''},
+        {'our_code': 'C02', 'CORRECTED_NAME': 'Jira', 'VERDICT_keep_or_alias': 'alias', 'ALIAS_OF': 'C01'}, # C02 alias of C01
+        {'our_code': 'C03', 'CORRECTED_NAME': 'Cumin', 'VERDICT_keep_or_alias': 'review', 'ALIAS_OF': ''},  # review treated as keep
+    ])
+
+    out_valid = StringIO()
+    call_command(
+        'import_legacy',
+        facility=default_facility.id,
+        source=str(tmp_path),
+        commodity_aliases=str(aliases_valid_csv),
+        commit=True,
+        stdout=out_valid
+    )
+
+    c1 = Commodity.objects.get(facility=default_facility, code='C01')
+    assert c1.name == "Jeera Corrected"
+
+    assert not Commodity.objects.filter(facility=default_facility, code='C02').exists()
+
+    assert Commodity.objects.filter(facility=default_facility, code='C03').exists()
+
+    lot = Lot.objects.get(facility=default_facility, legacy_ref='LOT01')
+    assert lot.commodity == c1
+
+    assert CommodityAlias.objects.filter(commodity=c1, name='Jira').exists()
+
+    summary_text = out_valid.getvalue()
+    assert "Aliases Registered : 1" in summary_text
+    assert "Lots Redirected    : 1" in summary_text
+
+
+

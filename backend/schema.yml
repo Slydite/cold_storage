@@ -395,6 +395,11 @@ paths:
         schema:
           type: boolean
         description: Filter by active status
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search by commodity name or alias
       tags:
       - commodities
       security:
@@ -501,6 +506,108 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommodityOutput'
           description: ''
+        '400':
+          description: No response body
+  /api/commodities/{id}/aliases/:
+    post:
+      operationId: commodities_aliases_create
+      summary: Add an alias to a commodity
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this commodity.
+        required: true
+      tags:
+      - commodities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommodityAliasInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommodityAliasInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommodityAliasInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommodityAlias'
+          description: ''
+        '400':
+          description: No response body
+  /api/commodities/{id}/aliases/{alias_id}/:
+    delete:
+      operationId: commodities_aliases_destroy
+      summary: Remove an alias from a commodity
+      parameters:
+      - in: path
+        name: alias_id
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this commodity.
+        required: true
+      tags:
+      - commodities
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          description: No response body
+        '404':
+          description: No response body
+  /api/commodities/{id}/merge/:
+    post:
+      operationId: commodities_merge_create
+      summary: Merge another commodity into this one
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this commodity.
+        required: true
+      tags:
+      - commodities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommodityMergeInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommodityMergeInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommodityMergeInput'
+        required: true
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          description: No response body
         '400':
           description: No response body
   /api/delivery-notes/:
@@ -2570,6 +2677,31 @@ components:
         * `TRANSPORT` - Transport
         * `WEIGHING` - Weighing
         * `OTHER` - Other
+    CommodityAlias:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+    CommodityAliasInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+      required:
+      - name
     CommodityInput:
       type: object
       properties:
@@ -2592,6 +2724,13 @@ components:
       required:
       - facility_id
       - name
+    CommodityMergeInput:
+      type: object
+      properties:
+        source_commodity_id:
+          type: integer
+      required:
+      - source_commodity_id
     CommodityOutput:
       type: object
       properties:
@@ -2614,6 +2753,11 @@ components:
           type: string
         is_active:
           type: boolean
+        aliases:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommodityAlias'
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -2623,6 +2767,7 @@ components:
           format: date-time
           readOnly: true
       required:
+      - aliases
       - code
       - created_at
       - facility_id

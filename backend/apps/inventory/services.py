@@ -13,7 +13,7 @@ from libs.pdf import render_pdf
 from libs.choices import ChargeMode
 from libs.sanitizers import clean_text, title_name, upper_code
 from apps.locations.models import Chamber, Floor, Block
-from .models import Commodity, GRN, Lot, Sequence, StockAdjustment
+from .models import Commodity, GRN, Lot, Sequence, StockAdjustment, CommodityAlias
 
 
 @transaction.atomic
@@ -472,6 +472,92 @@ def adjust_lot_stock(
     adjustment.save()
 
     return adjustment
+
+
+@transaction.atomic
+def add_commodity_alias(*, commodity_id: int, name: str) -> CommodityAlias:
+    try:
+        commodity = Commodity.objects.get(pk=commodity_id)
+    except Commodity.DoesNotExist:
+        raise ValidationError(f"Commodity with ID {commodity_id} does not exist.")
+
+    normalized_name = title_name(name)
+    if not normalized_name:
+        raise ValidationError("Alias name cannot be blank.")
+
+    # Check against its own commodity's name
+    if commodity.name.lower() == normalized_name.lower():
+        raise ValidationError("Alias cannot be the same as the commodity's own name.")
+
+    facility = commodity.facility
+
+    # Check if the name collides with a commodity name in the facility
+    if Commodity.objects.filter(facility=facility, name__iexact=normalized_name).exists():
+        raise ValidationError(
+            f"The name '{normalized_name}' already exists as a commodity in this facility."
+        )
+
+    # Check if the name collides with an alias name in the facility
+    if CommodityAlias.objects.filter(commodity__facility=facility, name__iexact=normalized_name).exists():
+        raise ValidationError(
+            f"The name '{normalized_name}' already exists as an alias in this facility."
+        )
+
+    alias = CommodityAlias(commodity=commodity, name=normalized_name)
+    alias.full_clean()
+    alias.save()
+    return alias
+
+
+@transaction.atomic
+def remove_commodity_alias(*, alias_id: int) -> None:
+    try:
+        alias = CommodityAlias.objects.get(pk=alias_id)
+    except CommodityAlias.DoesNotExist:
+        raise ValidationError(f"Commodity alias with ID {alias_id} does not exist.")
+    alias.delete()
+
+
+@transaction.atomic
+def merge_commodity(*, source_commodity_id: int, target_commodity_id: int) -> None:
+    if source_commodity_id == target_commodity_id:
+        raise ValidationError("Cannot merge a commodity into itself.")
+
+    try:
+        source = Commodity.objects.get(pk=source_commodity_id)
+    except Commodity.DoesNotExist:
+        raise ValidationError(f"Source commodity with ID {source_commodity_id} does not exist.")
+
+    try:
+        target = Commodity.objects.get(pk=target_commodity_id)
+    except Commodity.DoesNotExist:
+        raise ValidationError(f"Target commodity with ID {target_commodity_id} does not exist.")
+
+    if source.facility_id != target.facility_id:
+        raise ValidationError("Cannot merge commodities across different facilities.")
+
+    # Save name for alias creation later
+    source_name = source.name
+
+    # 1. Move Lots from source to target
+    Lot.objects.filter(commodity=source).update(commodity=target)
+
+    # 2. Move existing aliases from source to target, deleting any that would duplicate
+    target_alias_names = set(CommodityAlias.objects.filter(commodity=target).values_list('name', flat=True))
+    # Delete from source if it exists on target
+    CommodityAlias.objects.filter(commodity=source, name__in=target_alias_names).delete()
+    # Update the remaining aliases
+    CommodityAlias.objects.filter(commodity=source).update(commodity=target)
+
+    # 3. Delete the source commodity
+    source.delete()
+
+    # 4. Create alias on target carrying the source's name if it doesn't already exist
+    # and isn't the target's own name
+    if target.name.lower() != source_name.lower():
+        if not CommodityAlias.objects.filter(commodity=target, name__iexact=source_name).exists():
+            add_commodity_alias(commodity_id=target.id, name=source_name)
+
 
 
 

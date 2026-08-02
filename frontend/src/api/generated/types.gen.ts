@@ -72,12 +72,26 @@ export type ChamberUpdateInput = {
  */
 export type ChargeTypeEnum = 'RENT' | 'LOADING_UNLOADING' | 'TRANSPORT' | 'WEIGHING' | 'OTHER';
 
+export type CommodityAlias = {
+    readonly id: number;
+    name: string;
+    readonly created_at: string;
+};
+
+export type CommodityAliasInput = {
+    name: string;
+};
+
 export type CommodityInput = {
     facility_id: number;
     name: string;
     unit?: string;
     description?: string;
     is_active?: boolean;
+};
+
+export type CommodityMergeInput = {
+    source_commodity_id: number;
 };
 
 export type CommodityOutput = {
@@ -88,6 +102,7 @@ export type CommodityOutput = {
     unit?: string;
     description?: string;
     is_active?: boolean;
+    readonly aliases: Array<CommodityAlias>;
     readonly created_at: string;
     readonly updated_at: string;
 };
@@ -663,6 +678,10 @@ export type ChamberOutputWritable = {
     is_active?: boolean;
 };
 
+export type CommodityAliasWritable = {
+    name: string;
+};
+
 export type CommodityOutputWritable = {
     name: string;
     code: string;
@@ -1193,6 +1212,10 @@ export type CommoditiesListData = {
          * Filter by active status
          */
         is_active?: boolean;
+        /**
+         * Search by commodity name or alias
+         */
+        search?: string;
     };
     url: '/api/commodities/';
 };
@@ -1272,6 +1295,90 @@ export type CommoditiesUpdateResponses = {
 };
 
 export type CommoditiesUpdateResponse = CommoditiesUpdateResponses[keyof CommoditiesUpdateResponses];
+
+export type CommoditiesAliasesCreateData = {
+    body: CommodityAliasInput;
+    path: {
+        /**
+         * A unique integer value identifying this commodity.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/commodities/{id}/aliases/';
+};
+
+export type CommoditiesAliasesCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type CommoditiesAliasesCreateResponses = {
+    201: CommodityAlias;
+};
+
+export type CommoditiesAliasesCreateResponse = CommoditiesAliasesCreateResponses[keyof CommoditiesAliasesCreateResponses];
+
+export type CommoditiesAliasesDestroyData = {
+    body?: never;
+    path: {
+        alias_id: string;
+        /**
+         * A unique integer value identifying this commodity.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/commodities/{id}/aliases/{alias_id}/';
+};
+
+export type CommoditiesAliasesDestroyErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+    /**
+     * No response body
+     */
+    404: unknown;
+};
+
+export type CommoditiesAliasesDestroyResponses = {
+    /**
+     * No response body
+     */
+    204: void;
+};
+
+export type CommoditiesAliasesDestroyResponse = CommoditiesAliasesDestroyResponses[keyof CommoditiesAliasesDestroyResponses];
+
+export type CommoditiesMergeCreateData = {
+    body: CommodityMergeInput;
+    path: {
+        /**
+         * A unique integer value identifying this commodity.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/commodities/{id}/merge/';
+};
+
+export type CommoditiesMergeCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type CommoditiesMergeCreateResponses = {
+    /**
+     * No response body
+     */
+    200: unknown;
+};
 
 export type DeliveryNotesListData = {
     body?: never;

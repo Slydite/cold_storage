@@ -420,3 +420,64 @@ def test_adjust_lot_stock_api_success_and_failures(auth_client, default_facility
     assert res_neg.status_code == status.HTTP_400_BAD_REQUEST
     assert 'resulting quantity may not be negative' in res_neg.data['detail']
 
+
+@pytest.mark.django_db
+def test_commodity_alias_and_merge_api(auth_client, default_facility):
+    from rest_framework import status
+    from rest_framework.test import APIClient
+    from apps.inventory.services import create_commodity
+    from apps.inventory.models import Commodity, CommodityAlias
+
+    c1 = create_commodity(facility_id=default_facility.id, name="Jeera", unit="BAGS")
+    c2 = create_commodity(facility_id=default_facility.id, name="Cumin", unit="BAGS")
+
+    # 1. API Endpoints require authentication (using a fresh APIClient)
+    anon_client = APIClient()
+
+    # POST /api/commodities/{id}/aliases/
+    res_anon_add = anon_client.post(f'/api/commodities/{c1.id}/aliases/', {'name': 'Jira'})
+    assert res_anon_add.status_code == status.HTTP_403_FORBIDDEN
+
+    # DELETE /api/commodities/{id}/aliases/{alias_id}/
+    res_anon_del = anon_client.delete(f'/api/commodities/{c1.id}/aliases/999/')
+    assert res_anon_del.status_code == status.HTTP_403_FORBIDDEN
+
+    # POST /api/commodities/{id}/merge/
+    res_anon_merge = anon_client.post(f'/api/commodities/{c1.id}/merge/', {'source_commodity_id': c2.id})
+    assert res_anon_merge.status_code == status.HTTP_403_FORBIDDEN
+
+    # 2. Add alias via API (authenticated)
+    res_add = auth_client.post(f'/api/commodities/{c1.id}/aliases/', {'name': 'Jira'}, format='json')
+    assert res_add.status_code == status.HTTP_201_CREATED
+    alias_id = res_add.data['id']
+    assert res_add.data['name'] == "Jira"
+
+    # Check nested aliases list
+    res_ret = auth_client.get(f'/api/commodities/{c1.id}/')
+    assert res_ret.status_code == status.HTTP_200_OK
+    assert len(res_ret.data['aliases']) == 1
+    assert res_ret.data['aliases'][0]['name'] == "Jira"
+
+    # 3. Search matches aliases
+    res_search = auth_client.get(f'/api/commodities/?facility_id={default_facility.id}&search=Jira')
+    assert res_search.status_code == status.HTTP_200_OK
+    assert len(res_search.data) == 1
+    assert res_search.data[0]['id'] == c1.id
+
+    # 4. Remove alias via API
+    res_del_wrong = auth_client.delete(f'/api/commodities/{c2.id}/aliases/{alias_id}/')
+    assert res_del_wrong.status_code == status.HTTP_400_BAD_REQUEST
+    assert "Alias does not belong to this commodity" in res_del_wrong.data['detail']
+
+    res_del = auth_client.delete(f'/api/commodities/{c1.id}/aliases/{alias_id}/')
+    assert res_del.status_code == status.HTTP_204_NO_CONTENT
+    assert not CommodityAlias.objects.filter(id=alias_id).exists()
+
+    # 5. Merge via API
+    res_merge = auth_client.post(f'/api/commodities/{c1.id}/merge/', {'source_commodity_id': c2.id}, format='json')
+    assert res_merge.status_code == status.HTTP_200_OK
+
+    assert not Commodity.objects.filter(id=c2.id).exists()
+    assert CommodityAlias.objects.filter(commodity=c1, name="Cumin").exists()
+
+

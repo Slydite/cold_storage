@@ -36,6 +36,11 @@ class Command(BaseCommand):
             help='Directory containing cleaned CSV files.',
         )
         parser.add_argument(
+            '--commodity-aliases',
+            type=str,
+            help='Path to CSV file with commodity clean-up / alias mappings.',
+        )
+        parser.add_argument(
             '--commit',
             action='store_true',
             help='Commit the transaction to the database. If not specified, runs in dry-run mode.',
@@ -128,6 +133,41 @@ class Command(BaseCommand):
             project_root = settings.BASE_DIR.parent
             source_dir = os.path.join(project_root, source_dir)
 
+        # Parse and validate commodity aliases mapping
+        commodity_aliases_path = options.get('commodity_aliases')
+        alias_mapping = {}
+        if commodity_aliases_path:
+            if not os.path.isabs(commodity_aliases_path):
+                from django.conf import settings
+                project_root = settings.BASE_DIR.parent
+                commodity_aliases_path = os.path.join(project_root, commodity_aliases_path)
+
+            if not os.path.exists(commodity_aliases_path):
+                from django.core.management.base import CommandError
+                raise CommandError(f"Commodity aliases file not found: {commodity_aliases_path}")
+
+            with open(commodity_aliases_path, mode='r', encoding='utf-8-sig') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    alias_mapping[row['our_code'].strip()] = {
+                        'our_code': row['our_code'].strip(),
+                        'CORRECTED_NAME': row['CORRECTED_NAME'].strip(),
+                        'VERDICT_keep_or_alias': row['VERDICT_keep_or_alias'].strip().lower(),
+                        'ALIAS_OF': row['ALIAS_OF'].strip() if row.get('ALIAS_OF') else ''
+                    }
+
+            # Validation: fail loudly if ALIAS_OF is missing or itself an alias
+            from django.core.management.base import CommandError
+            for code, item in alias_mapping.items():
+                if item['VERDICT_keep_or_alias'] == 'alias':
+                    alias_target = item['ALIAS_OF']
+                    if not alias_target:
+                        raise CommandError(f"Validation Error: Commodity {code} is marked as alias but has no ALIAS_OF target.")
+                    if alias_target not in alias_mapping:
+                        raise CommandError(f"Validation Error: ALIAS_OF target '{alias_target}' for commodity {code} is missing from the CSV.")
+                    if alias_mapping[alias_target]['VERDICT_keep_or_alias'] == 'alias':
+                        raise CommandError(f"Validation Error: ALIAS_OF target '{alias_target}' for commodity {code} is itself an alias.")
+
         # 1. Fetch Facility
         try:
             facility = Facility.objects.get(pk=facility_id)
@@ -203,6 +243,8 @@ class Command(BaseCommand):
             'supporting_grns_pulled': 0,
             'zeroed_lots_count': 0,
             'zeroed_bags_removed': 0,
+            'aliases_registered': 0,
+            'lots_redirected': 0,
         }
 
         failures = {}
@@ -296,13 +338,24 @@ class Command(BaseCommand):
                 # --- B. Commodities ---
                 for row in commodities_csv:
                     code = row['code']
+                    verdict = 'keep'
+                    corrected_name = row['name']
+                    if alias_mapping and code in alias_mapping:
+                        item = alias_mapping[code]
+                        verdict = item['VERDICT_keep_or_alias']
+                        corrected_name = item['CORRECTED_NAME']
+
+                    if verdict == 'alias':
+                        # "a row whose verdict is alias creates no commodity"
+                        continue
+
                     if Commodity.objects.filter(facility=facility, code=code).exists():
                         summary['commodities_matched'] += 1
                     else:
                         try:
                             commodity = Commodity(
                                 facility=facility,
-                                name=title_name(row['name']),
+                                name=title_name(corrected_name),
                                 code=code,
                                 unit=row['unit'],
                                 description=clean_text(row['description']),
@@ -314,6 +367,32 @@ class Command(BaseCommand):
                         except DjangoValidationError as e:
                             summary['commodities_failed'] += 1
                             record_failure(f"Commodity Validation: {e.messages if hasattr(e, 'messages') else str(e)}")
+
+                # --- Register Commodity Aliases ---
+                if alias_mapping:
+                    from apps.inventory.services import add_commodity_alias
+                    from apps.inventory.models import CommodityAlias
+                    for row in commodities_csv:
+                        code = row['code']
+                        if code in alias_mapping and alias_mapping[code]['VERDICT_keep_or_alias'] == 'alias':
+                            original_name = row['name']
+                            target_code = alias_mapping[code]['ALIAS_OF']
+
+                            try:
+                                target_commodity = Commodity.objects.get(facility=facility, code=target_code)
+                            except Commodity.DoesNotExist:
+                                record_failure(f"Alias Register: Target commodity '{target_code}' not found")
+                                continue
+
+                            normalized_alias_name = title_name(original_name)
+
+                            if target_commodity.name.lower() != normalized_alias_name.lower():
+                                if not CommodityAlias.objects.filter(commodity=target_commodity, name__iexact=normalized_alias_name).exists():
+                                    try:
+                                        add_commodity_alias(commodity_id=target_commodity.id, name=normalized_alias_name)
+                                        summary['aliases_registered'] += 1
+                                    except DjangoValidationError as e:
+                                        record_failure(f"Alias Register: {e.messages if hasattr(e, 'messages') else str(e)}")
 
                 # --- C. Locations (Chambers, Floors, Blocks) ---
                 for row in chambers_csv:
@@ -482,7 +561,17 @@ class Command(BaseCommand):
 
                             # Lookup Commodity
                             try:
-                                commodity = Commodity.objects.get(facility=facility, code=lot_row['commodity_code'])
+                                commodity_code = lot_row['commodity_code']
+                                is_redirected = False
+                                if alias_mapping and commodity_code in alias_mapping:
+                                    item = alias_mapping[commodity_code]
+                                    if item['VERDICT_keep_or_alias'] == 'alias':
+                                        commodity_code = item['ALIAS_OF']
+                                        is_redirected = True
+
+                                commodity = Commodity.objects.get(facility=facility, code=commodity_code)
+                                if is_redirected:
+                                    summary['lots_redirected'] += 1
                             except Commodity.DoesNotExist:
                                 summary['lots_failed'] += 1
                                 record_failure(f"Lot Import: Commodity '{lot_row['commodity_code']}' not found")
@@ -818,6 +907,10 @@ class Command(BaseCommand):
         self.stdout.write(f"  - Created            : {summary['commodities_created']}")
         self.stdout.write(f"  - Matched            : {summary['commodities_matched']}")
         self.stdout.write(f"  - Failed             : {summary['commodities_failed']}")
+        if 'aliases_registered' in summary:
+            self.stdout.write(f"  - Aliases Registered : {summary['aliases_registered']}")
+        if 'lots_redirected' in summary:
+            self.stdout.write(f"  - Lots Redirected    : {summary['lots_redirected']}")
         
         self.stdout.write("Locations:")
         self.stdout.write(f"  - Chambers (New/Match): {summary['chambers_created']} / {summary['chambers_matched']}")

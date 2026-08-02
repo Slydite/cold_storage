@@ -29,7 +29,10 @@ from .services import (
     withdraw_stock_from_lot,
     build_grn_pdf,
     email_grn_to_party,
-    adjust_lot_stock
+    adjust_lot_stock,
+    add_commodity_alias,
+    remove_commodity_alias,
+    merge_commodity
 )
 from .serializers import (
     CommodityInputSerializer,
@@ -40,9 +43,12 @@ from .serializers import (
     LotWithdrawalInputSerializer,
     LotReserveNumberInputSerializer,
     LotReserveNumberOutputSerializer,
-    LotAdjustmentInputSerializer
+    LotAdjustmentInputSerializer,
+    CommodityAliasSerializer,
+    CommodityAliasInputSerializer,
+    CommodityMergeInputSerializer
 )
-from .models import Commodity, GRN, Lot
+from .models import Commodity, GRN, Lot, CommodityAlias
 
 class CommodityViewSet(ViewSet):
     permission_classes = [IsAuthenticated]
@@ -52,6 +58,7 @@ class CommodityViewSet(ViewSet):
         parameters=[
             OpenApiParameter('facility_id', OpenApiTypes.INT, OpenApiParameter.QUERY, required=True, description="Filter by Facility ID"),
             OpenApiParameter('is_active', OpenApiTypes.BOOL, OpenApiParameter.QUERY, required=False, description="Filter by active status"),
+            OpenApiParameter('search', OpenApiTypes.STR, OpenApiParameter.QUERY, required=False, description="Search by commodity name or alias"),
         ],
         responses={200: CommodityOutputSerializer(many=True)},
         summary="List all commodities for a facility"
@@ -66,8 +73,14 @@ class CommodityViewSet(ViewSet):
         if is_active_param is not None:
             is_active_filter = is_active_param.lower() in ['true', '1', 'yes']
 
+        search_query = request.query_params.get('search') or request.query_params.get('q')
+
         try:
-            commodities = get_commodities_list(facility_id=int(facility_id), is_active=is_active_filter)
+            commodities = get_commodities_list(
+                facility_id=int(facility_id),
+                is_active=is_active_filter,
+                search=search_query
+            )
         except ValueError:
             raise ValidationError({"facility_id": "Must be an integer."})
 
@@ -104,7 +117,12 @@ class CommodityViewSet(ViewSet):
                 is_active=serializer.validated_data.get('is_active', True)
             )
         except DjangoValidationError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            detail = e.messages if hasattr(e, 'messages') else str(e)
+            if isinstance(detail, list) and len(detail) == 1:
+                detail = detail[0]
+            elif isinstance(detail, list):
+                detail = "; ".join(detail)
+            return Response({"detail": detail}, status=status.HTTP_400_BAD_REQUEST)
 
         output_serializer = CommodityOutputSerializer(commodity)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
@@ -127,10 +145,86 @@ class CommodityViewSet(ViewSet):
                 is_active=serializer.validated_data.get('is_active', True)
             )
         except DjangoValidationError as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            detail = e.messages if hasattr(e, 'messages') else str(e)
+            if isinstance(detail, list) and len(detail) == 1:
+                detail = detail[0]
+            elif isinstance(detail, list):
+                detail = "; ".join(detail)
+            return Response({"detail": detail}, status=status.HTTP_400_BAD_REQUEST)
 
         output_serializer = CommodityOutputSerializer(commodity)
         return Response(output_serializer.data)
+
+    @extend_schema(
+        request=CommodityAliasInputSerializer,
+        responses={201: CommodityAliasSerializer, 400: None},
+        summary="Add an alias to a commodity"
+    )
+    @action(detail=True, methods=['post'], url_path='aliases')
+    def add_alias(self, request, pk=None):
+        serializer = CommodityAliasInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            alias = add_commodity_alias(
+                commodity_id=pk,
+                name=serializer.validated_data['name']
+            )
+        except DjangoValidationError as e:
+            detail = e.messages if hasattr(e, 'messages') else str(e)
+            if isinstance(detail, list) and len(detail) == 1:
+                detail = detail[0]
+            elif isinstance(detail, list):
+                detail = "; ".join(detail)
+            return Response({"detail": detail}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(CommodityAliasSerializer(alias).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        responses={204: None, 400: None, 404: None},
+        summary="Remove an alias from a commodity"
+    )
+    @action(detail=True, methods=['delete'], url_path=r'aliases/(?P<alias_id>[0-9]+)')
+    def remove_alias(self, request, pk=None, alias_id=None):
+        try:
+            alias = CommodityAlias.objects.get(pk=alias_id)
+        except CommodityAlias.DoesNotExist:
+            return Response({"detail": f"Commodity alias with ID {alias_id} does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if str(alias.commodity_id) != str(pk):
+            return Response({"detail": "Alias does not belong to this commodity."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            remove_commodity_alias(alias_id=alias_id)
+        except DjangoValidationError as e:
+            detail = e.messages if hasattr(e, 'messages') else str(e)
+            if isinstance(detail, list) and len(detail) == 1:
+                detail = detail[0]
+            elif isinstance(detail, list):
+                detail = "; ".join(detail)
+            return Response({"detail": detail}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(
+        request=CommodityMergeInputSerializer,
+        responses={200: None, 400: None},
+        summary="Merge another commodity into this one"
+    )
+    @action(detail=True, methods=['post'], url_path='merge')
+    def merge(self, request, pk=None):
+        serializer = CommodityMergeInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            merge_commodity(
+                source_commodity_id=serializer.validated_data['source_commodity_id'],
+                target_commodity_id=pk
+            )
+        except DjangoValidationError as e:
+            detail = e.messages if hasattr(e, 'messages') else str(e)
+            if isinstance(detail, list) and len(detail) == 1:
+                detail = detail[0]
+            elif isinstance(detail, list):
+                detail = "; ".join(detail)
+            return Response({"detail": detail}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": "Commodities merged successfully."}, status=status.HTTP_200_OK)
 
 
 

@@ -1,6 +1,11 @@
 from rest_framework import serializers
 from libs.choices import ChargeMode
-from .models import Commodity, GRN, Lot, StockAdjustment
+from .models import Commodity, GRN, Lot, StockAdjustment, CommodityAlias
+
+class CommodityAliasSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommodityAlias
+        fields = ['id', 'name', 'created_at']
 
 class CommodityInputSerializer(serializers.Serializer):
     facility_id = serializers.IntegerField()
@@ -12,6 +17,8 @@ class CommodityInputSerializer(serializers.Serializer):
 
 
 class CommodityOutputSerializer(serializers.ModelSerializer):
+    aliases = CommodityAliasSerializer(many=True, read_only=True)
+
     class Meta:
         model = Commodity
         fields = [
@@ -22,6 +29,7 @@ class CommodityOutputSerializer(serializers.ModelSerializer):
             'unit',
             'description',
             'is_active',
+            'aliases',
             'created_at',
             'updated_at'
         ]
@@ -238,5 +246,14 @@ class LotAdjustmentInputSerializer(serializers.Serializer):
             raise serializers.ValidationError({"note": "Note is mandatory when reason is OTHER."})
 
         return attrs
+
+
+class CommodityAliasInputSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+
+
+class CommodityMergeInputSerializer(serializers.Serializer):
+    source_commodity_id = serializers.IntegerField()
+
 
 

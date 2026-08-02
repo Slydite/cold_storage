@@ -625,3 +625,93 @@ def test_adjust_lot_stock_validation_failures(default_facility, test_party, test
         )
     assert "must be POSTED" in str(exc.value)
 
+
+@pytest.mark.django_db
+def test_commodity_alias_services(default_facility):
+    from apps.inventory.services import add_commodity_alias, remove_commodity_alias, merge_commodity
+    from apps.inventory.models import Commodity, CommodityAlias
+    from apps.inventory.services import create_commodity, create_grn
+    from apps.locations.services import create_chamber, create_floor, create_block
+    from apps.parties.services import create_party
+
+    c1 = create_commodity(facility_id=default_facility.id, name="Jeera", unit="BAGS")
+    c2 = create_commodity(facility_id=default_facility.id, name="Cumin", unit="BAGS")
+
+    # 1. Adding an alias works
+    alias = add_commodity_alias(commodity_id=c1.id, name="Jira")
+    assert alias.name == "Jira"
+    assert alias.commodity == c1
+
+    # 2. An alias colliding with an existing commodity name is rejected
+    with pytest.raises(ValidationError) as exc:
+        add_commodity_alias(commodity_id=c1.id, name="Cumin")
+    assert "already exists as a commodity" in str(exc.value)
+
+    # 3. An alias colliding with another alias in the same facility is rejected
+    with pytest.raises(ValidationError) as exc:
+        add_commodity_alias(commodity_id=c2.id, name="Jira")
+    assert "already exists as an alias" in str(exc.value)
+
+    # 4. Same alias name IS allowed in a different facility
+    from apps.facilities.models import Facility
+    other_fac = Facility.objects.create(code="FAC-99", name="Other Facility", address="456 Cold Rd")
+    other_c = create_commodity(facility_id=other_fac.id, name="Jeera", unit="BAGS")
+    alias_other = add_commodity_alias(commodity_id=other_c.id, name="Jira")
+    assert alias_other.name == "Jira"
+
+    # 5. Case and whitespace variants are treated as collisions
+    with pytest.raises(ValidationError):
+        add_commodity_alias(commodity_id=c1.id, name=" jira ")
+    with pytest.raises(ValidationError):
+        add_commodity_alias(commodity_id=c1.id, name="JIRA")
+
+    # 6. Reject alias equal to own commodity name
+    with pytest.raises(ValidationError):
+        add_commodity_alias(commodity_id=c1.id, name="Jeera")
+    with pytest.raises(ValidationError):
+        add_commodity_alias(commodity_id=c1.id, name=" jeera ")
+
+    # 7. Merging a commodity into itself is rejected
+    with pytest.raises(ValidationError):
+        merge_commodity(source_commodity_id=c1.id, target_commodity_id=c1.id)
+
+    # 8. Merging across facilities is rejected
+    with pytest.raises(ValidationError):
+        merge_commodity(source_commodity_id=c1.id, target_commodity_id=other_c.id)
+
+    # 9. Merging moves all lots, leaves quantities untouched, creates back-alias, and deletes source
+    party = create_party(facility_id=default_facility.id, name="API Farmer", type="DEPOSITOR")
+    chamber = create_chamber(facility_id=default_facility.id, name="Chamber A")
+    floor = create_floor(chamber_id=chamber.id, name="Floor A")
+    block = create_block(floor_id=floor.id, name="Block A")
+
+    grn = create_grn(
+        facility_id=default_facility.id,
+        party_id=party.id,
+        receipt_date=date(2026, 7, 25),
+        items=[{
+            "commodity_id": c2.id,
+            "initial_qty": 150,
+            "block_id": block.id,
+        }]
+    )
+    lot = grn.lots.first()
+    assert lot.commodity == c2
+    assert lot.remaining_qty == 150
+
+    source_alias = add_commodity_alias(commodity_id=c2.id, name="Cumin Powder")
+
+    merge_commodity(source_commodity_id=c2.id, target_commodity_id=c1.id)
+
+    assert not Commodity.objects.filter(id=c2.id).exists()
+
+    lot.refresh_from_db()
+    assert lot.commodity == c1
+    assert lot.remaining_qty == 150
+
+    assert CommodityAlias.objects.filter(commodity=c1, name="Cumin").exists()
+
+    source_alias.refresh_from_db()
+    assert source_alias.commodity == c1
+
+
