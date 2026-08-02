@@ -49,3 +49,5 @@ Thumbs.db
 .secret_report
 
 FASstuff/
+
+*.stackdump
