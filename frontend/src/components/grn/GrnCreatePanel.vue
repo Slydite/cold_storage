@@ -117,6 +117,15 @@ const onFloorChange = (itemIdx: number) => {
     itemErrors.value[itemIdx].block_id = ''
   }
 }
+
+// Clearing the error once a block is picked. Kept as a handler rather than an
+// inline template expression: an inline `if (...)` is not a valid expression
+// and fails at build time, which type-checking does not catch.
+const onBlockChange = (itemIdx: number) => {
+  if (itemErrors.value[itemIdx]) {
+    itemErrors.value[itemIdx].block_id = ''
+  }
+}
 </script>
 
 <template>
@@ -359,7 +368,7 @@ const onFloorChange = (itemIdx: number) => {
                 <td>
                   <Select
                     v-model="item.block_id"
-                    @change="if (itemErrors[idx]) itemErrors[idx].block_id = ''"
+                    @change="onBlockChange(idx)"
                     :options="getBlocksForFloor(item.floor_id, item.chamber_id)"
                     optionLabel="label"
                     optionValue="value"
@@ -496,7 +505,7 @@ const onFloorChange = (itemIdx: number) => {
                 <label class="card-field-label">{{ t('grn.block') }} <span class="req">*</span></label>
                 <Select
                   v-model="item.block_id"
-                  @change="if (itemErrors[idx]) itemErrors[idx].block_id = ''"
+                  @change="onBlockChange(idx)"
                   :options="getBlocksForFloor(item.floor_id, item.chamber_id)"
                   optionLabel="label"
                   optionValue="value"
