@@ -107,12 +107,12 @@ def test_create_grn_with_sequence_and_lots(default_facility, test_party, test_co
     lots = list(grn1.lots.order_by('id'))
     assert lots[0].initial_qty == 100
     assert lots[0].remaining_qty == 100
-    assert lots[0].lot_number == "LOT-000001"
+    assert lots[0].lot_number == "20260725-02607-00100"
     assert lots[0].chamber == "Chamber A"
 
     assert lots[1].initial_qty == 50
     assert lots[1].remaining_qty == 50
-    assert lots[1].lot_number == "LOT-000002"
+    assert lots[1].lot_number == "20260725-02608-00050"
 
     # Create a second GRN to verify sequence auto-increments to GRN-000002
     grn2 = create_grn(
@@ -454,7 +454,8 @@ def test_client_supplied_lot_number_bogus_format_rejected(default_facility, test
                     "block_id": default_block.id,
                 }]
             )
-            assert grn.lots.first().lot_number.startswith("LOT-")
+            lot_num = grn.lots.first().lot_number
+            assert len(lot_num) == 20 and lot_num[8] == '-' and lot_num[14] == '-'
         else:
             with pytest.raises(ValidationError) as exc:
                 create_grn(
@@ -483,7 +484,7 @@ def test_omitting_lot_number_auto_generates(default_facility, test_party, test_c
             "block_id": default_block.id,
         }]
     )
-    assert grn.lots.first().lot_number == "LOT-000001"
+    assert grn.lots.first().lot_number == "20260725-02607-00100"
 
 
 @pytest.mark.django_db

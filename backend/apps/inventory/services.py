@@ -12,6 +12,7 @@ from libs.lookups import get_facility_or_raise, get_party_or_raise
 from libs.pdf import render_pdf
 from libs.choices import ChargeMode
 from libs.sanitizers import clean_text, title_name, upper_code
+from libs.lot_numbers import build_lot_number, is_valid_lot_number
 from apps.locations.models import Chamber, Floor, Block
 from .models import Commodity, GRN, Lot, Sequence, StockAdjustment, CommodityAlias, LotRateChange
 
@@ -94,7 +95,8 @@ def create_grn(
     inward_time: Any = None,
     status: str = GRN.Status.POSTED,
     items: List[Dict[str, Any]] = None,
-    require_location: bool = True
+    require_location: bool = True,
+    validate_lot_number_format: bool = True
 ) -> GRN:
     """
     Create a Goods Receipt Note (GRN) with lots/items.
@@ -160,12 +162,39 @@ def create_grn(
 
         lot_number = item_data.get('lot_number')
         if lot_number:
-            seq = Sequence.objects.filter(facility=facility, sequence_type='LOT').first()
-            prefix = seq.prefix if seq else DEFAULT_PREFIXES.get('LOT', 'LOT-')
-            if not re.match(r'^' + re.escape(prefix) + r'\d+$', lot_number):
-                raise ValidationError(f"Invalid lot number format: {lot_number}. Expected prefix '{prefix}' followed by digits.")
+            if validate_lot_number_format:
+                seq = Sequence.objects.filter(facility=facility, sequence_type='LOT').first()
+                prefix = seq.prefix if seq else DEFAULT_PREFIXES.get('LOT', 'LOT-')
+                is_new_pattern = is_valid_lot_number(lot_number)
+                is_old_pattern = re.match(r'^' + re.escape(prefix) + r'\d+$', lot_number)
+                if not (is_new_pattern or is_old_pattern):
+                    raise ValidationError(
+                        f"Invalid lot number format: {lot_number}. "
+                        f"Expected either YYYYMMDD-SSSSS-BBBBB or prefix '{prefix}' followed by digits."
+                    )
         else:
-            lot_number = get_next_sequence_number(facility=facility, sequence_type='LOT')
+            # Generate lot number in new format: YYYYMMDD-SSSSS-BBBBB using LOT_SERIAL
+            seq, created = Sequence.objects.select_for_update().get_or_create(
+                facility=facility,
+                sequence_type='LOT_SERIAL',
+                defaults={'prefix': '', 'current_value': 2606}
+            )
+            if not created and seq.current_value == 0:
+                seq.current_value = 2606
+                seq.save(update_fields=['current_value'])
+            
+            seq.current_value += 1
+            seq.save(update_fields=['current_value'])
+            
+            # Built through the shared helper so the app and the ETL cannot
+            # drift apart, and so an oversized serial or quantity is clamped
+            # rather than widening the field into a number this function's own
+            # validation would reject.
+            lot_number, _warning = build_lot_number(
+                receipt_date=receipt_date,
+                serial=seq.current_value,
+                bags=initial_qty,
+            )
 
         chamber_id = item_data.get('chamber_id')
         floor_id = item_data.get('floor_id')

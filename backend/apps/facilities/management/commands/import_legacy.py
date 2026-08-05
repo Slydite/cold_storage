@@ -1,4 +1,5 @@
 import os
+import re
 import csv
 from decimal import Decimal
 from datetime import datetime
@@ -248,6 +249,7 @@ class Command(BaseCommand):
             'parties_skipped_list': [],
             'parties_matched': 0,
             'parties_failed': 0,
+            'disambiguated_lots': [],
             'commodities_created': 0,
             'commodities_matched': 0,
             'commodities_failed': 0,
@@ -284,6 +286,13 @@ class Command(BaseCommand):
             'aliases_registered': 0,
             'lots_redirected': 0,
         }
+
+        if not parties_only:
+            for lot_row in lots_csv:
+                match = re.search(r'-([B-Z])$', lot_row['lot_number'])
+                if match:
+                    base_num = lot_row['lot_number'][:match.start()]
+                    summary['disambiguated_lots'].append(f"{base_num} -> {lot_row['lot_number']}")
 
         failures = {}
         skipped_lines_reasons = {}
@@ -573,10 +582,10 @@ class Command(BaseCommand):
                             if is_supporting_grn:
                                 summary['supporting_grns_pulled'] += 1
                             for lot_row in lots_by_grn.get(grn_ref, []):
-                                if Lot.objects.filter(facility=facility, legacy_ref=lot_row['lot_number']).exists():
+                                if Lot.objects.filter(facility=facility, lot_number=lot_row['lot_number']).exists():
                                     summary['lots_skipped'] += 1
                                     try:
-                                        lot_obj = Lot.objects.get(facility=facility, legacy_ref=lot_row['lot_number'])
+                                        lot_obj = Lot.objects.get(facility=facility, lot_number=lot_row['lot_number'])
                                         original_remaining_qty = lot_obj.remaining_qty
                                         if zero_stock_before_date and lot_obj.inward_date < zero_stock_before_date:
                                             from apps.inventory.models import StockAdjustment
@@ -623,7 +632,7 @@ class Command(BaseCommand):
                         has_error = False
 
                         for lot_row in lots_by_grn.get(grn_ref, []):
-                            if Lot.objects.filter(facility=facility, legacy_ref=lot_row['lot_number']).exists():
+                            if Lot.objects.filter(facility=facility, lot_number=lot_row['lot_number']).exists():
                                 summary['lots_skipped'] += 1
                                 continue
 
@@ -680,6 +689,7 @@ class Command(BaseCommand):
                                     break
 
                             item_dict = {
+                                'lot_number': lot_row['lot_number'],
                                 'commodity_id': commodity.id,
                                 'initial_qty': int(lot_row['initial_qty']),
                                 'rent_rate_per_unit': Decimal(lot_row['rent_rate_per_unit']),
@@ -719,7 +729,8 @@ class Command(BaseCommand):
                                 remarks=grn_row['remarks'],
                                 status='DRAFT' if as_draft else grn_row['status'],
                                 items=items_data,
-                                require_location=False  # Legacy imports genuinely have no location recorded and must bypass this requirement
+                                require_location=False,  # Legacy imports genuinely have no location recorded and must bypass this requirement
+                                validate_lot_number_format=False
                             )
                             # Set legacy_ref on GRN
                             grn.legacy_ref = grn_ref
@@ -731,7 +742,7 @@ class Command(BaseCommand):
                             # Set legacy_ref, remaining_qty, and inward_date on created Lots
                             created_lots = list(grn.lots.order_by('id'))
                             for lot_obj, lot_row in zip(created_lots, imported_lot_rows):
-                                lot_obj.legacy_ref = lot_row['lot_number']
+                                lot_obj.legacy_ref = lot_row.get('legacy_ref') or lot_row['lot_number']
                                 if as_draft:
                                     original_remaining_qty = int(lot_row['initial_qty'])
                                 else:
@@ -792,7 +803,7 @@ class Command(BaseCommand):
                                 final_rem = int(lot_row['remaining_qty'])
                                 sum_del = del_sum_by_lot.get(lot_num, 0)
                                 temp_rem = final_rem + sum_del
-                                Lot.objects.filter(facility=facility, legacy_ref=lot_num).update(remaining_qty=temp_rem)
+                                Lot.objects.filter(facility=facility, lot_number=lot_num).update(remaining_qty=temp_rem)
 
                         # Group delivery lines by DN legacy reference
                         lines_by_dn = {}
@@ -841,7 +852,7 @@ class Command(BaseCommand):
                             for line_row in lines_for_this_dn:
                                 lot_num = line_row['lot_number']
                                 try:
-                                    lot = Lot.objects.get(facility=facility, legacy_ref=lot_num)
+                                    lot = Lot.objects.get(facility=facility, lot_number=lot_num)
                                     lines_data.append({
                                         'lot_id': lot.id,
                                         'qty': int(line_row['qty'])
@@ -922,7 +933,7 @@ class Command(BaseCommand):
                         target_qty = int(lot_row['initial_qty']) if as_draft else int(lot_row['remaining_qty'])
                         if zero_stock_before_date and lot_inward_date and lot_inward_date < zero_stock_before_date:
                             target_qty = 0
-                        Lot.objects.filter(facility=facility, legacy_ref=lot_row['lot_number']).update(
+                        Lot.objects.filter(facility=facility, lot_number=lot_row['lot_number']).update(
                             remaining_qty=target_qty
                         )
 
@@ -1017,6 +1028,10 @@ class Command(BaseCommand):
             if 'zeroed_lots_count' in summary:
                 self.stdout.write(f"  - Zeroed Lots        : {summary['zeroed_lots_count']}")
                 self.stdout.write(f"  - Zeroed Bags Removed: {summary['zeroed_bags_removed']}")
+            if 'disambiguated_lots' in summary and summary['disambiguated_lots']:
+                self.stdout.write(f"  - Disambiguated Lots : {len(summary['disambiguated_lots'])}")
+                for item in summary['disambiguated_lots']:
+                    self.stdout.write(f"    * {item}")
 
             if not open_stock_only:
                 self.stdout.write("Delivery Notes:")
