@@ -164,7 +164,7 @@ function handleExportLotsCsv() {
       <div class="meta-grid">
         <div class="meta-item">
           <span class="meta-label">{{ t('grn.grnNumber') }}</span>
-          <strong class="meta-value">{{ grn.grn_number }}</strong>
+          <strong class="meta-value doc-number">{{ grn.grn_number }}</strong>
         </div>
         <div class="meta-item">
           <span class="meta-label">{{ t('common.date') }}</span>
@@ -221,9 +221,9 @@ function handleExportLotsCsv() {
           responsiveLayout="scroll"
           class="custom-datatable"
         >
-          <Column field="lot_number" :header="t('inventory.lotNo')">
+          <Column field="lot_number" :header="t('inventory.lotNo')" style="min-width: 13.5rem">
             <template #body="{ data }">
-              <span class="code-link">{{ data.lot_number }}</span>
+              <span class="code-link doc-number">{{ data.lot_number }}</span>
             </template>
           </Column>
 
@@ -285,7 +285,7 @@ function handleExportLotsCsv() {
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   background: var(--bg-surface-hover);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
   padding: 16px;
 }

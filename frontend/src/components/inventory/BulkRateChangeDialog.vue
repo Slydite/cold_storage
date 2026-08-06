@@ -170,9 +170,9 @@ const onSubmit = handleSubmit(async (formValues) => {
         <h4 class="details-title">{{ t('inventory.skippedReasons') }}</h4>
         <div class="reasons-table-wrapper">
           <DataTable :value="results.skipped_details" size="small" stripedRows responsiveLayout="scroll" paginator :rows="5">
-            <Column field="lot_number" :header="t('inventory.lotNo')">
+            <Column field="lot_number" :header="t('inventory.lotNo')" style="min-width: 13.5rem">
               <template #body="{ data }">
-                <span class="code-link">{{ data.lot_number }}</span>
+                <span class="code-link doc-number">{{ data.lot_number }}</span>
               </template>
             </Column>
             <Column field="reason" :header="t('common.remarks')">

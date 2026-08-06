@@ -412,9 +412,9 @@ const handleExport = () => {
             </template>
           </Column>
 
-          <Column field="lot_number" :header="t('inventory.lotNo')" sortable>
+          <Column field="lot_number" :header="t('inventory.lotNo')" sortable style="min-width: 13.5rem">
             <template #body="{ data }">
-              <span class="code-link clickable" @click="handleViewLotDetails(data)">{{ data.lot_number }}</span>
+              <span class="code-link clickable doc-number" @click="handleViewLotDetails(data)">{{ data.lot_number }}</span>
             </template>
             <template #filter="{ filterModel, filterCallback }">
               <InputText
@@ -533,7 +533,7 @@ const handleExport = () => {
       <div class="mobile-list-cards show-on-mobile">
         <div v-for="data in props.lots" :key="data.id" class="mobile-list-card">
           <div class="card-header clickable" @click="handleViewGrn(data)">
-            <span class="card-title">{{ data.lot_number }}</span>
+            <span class="card-title doc-number">{{ data.lot_number }}</span>
             <span
               class="status-pill"
               :class="data.remaining_qty > 0 ? 'success' : 'danger'"

@@ -32,9 +32,9 @@ const { t } = useI18n()
           </template>
         </Column>
 
-        <Column field="lot_number" :header="t('inventory.lotNo')">
+        <Column field="lot_number" :header="t('inventory.lotNo')" style="min-width: 13.5rem">
           <template #body="{ data }: { data: InvoicePreviewLineOutput }">
-            <span>{{ data.lot_number ?? '—' }}</span>
+            <span class="doc-number">{{ data.lot_number ?? '—' }}</span>
           </template>
         </Column>
 

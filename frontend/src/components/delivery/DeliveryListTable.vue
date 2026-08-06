@@ -280,9 +280,9 @@ const handleExport = () => {
             </template>
           </Column>
 
-          <Column field="dn_number" :header="t('delivery.deliveryNumber')" sortable>
+          <Column field="dn_number" :header="t('delivery.deliveryNumber')" sortable style="min-width: 11rem">
             <template #body="{ data }">
-              <span class="code-link clickable" @click="emit('view', data)">{{ data.dn_number }}</span>
+              <span class="code-link clickable doc-number" @click="emit('view', data)">{{ data.dn_number }}</span>
             </template>
             <template #filter="{ filterModel, filterCallback }">
               <InputText
@@ -353,7 +353,7 @@ const handleExport = () => {
       <div class="mobile-list-cards show-on-mobile">
         <div v-for="data in props.deliveries" :key="data.id" class="mobile-list-card">
           <div class="card-header clickable" @click="emit('view', data)">
-            <span class="card-title">{{ data.dn_number }}</span>
+            <span class="card-title doc-number">{{ data.dn_number }}</span>
             <Tag
               :value="t(`status.${(data.status || 'draft').toLowerCase()}`)"
               :severity="data.status === 'POSTED' ? 'success' : data.status === 'CANCELLED' ? 'danger' : 'warn'"

@@ -202,11 +202,11 @@ const handleDeleteRate = async () => {
       <div class="info-card">
         <div class="info-item">
           <span class="info-label">{{ t('inventory.lotNo') }}</span>
-          <span class="info-val code-link">{{ props.lot.lot_number }}</span>
+          <span class="info-val code-link doc-number">{{ props.lot.lot_number }}</span>
         </div>
         <div class="info-item">
           <span class="info-label">{{ t('grn.grnNumber') }}</span>
-          <span class="info-val code-link clickable" @click="emit('view-grn', props.lot.grn_id)">{{ props.lot.grn_number }}</span>
+          <span class="info-val code-link clickable doc-number" @click="emit('view-grn', props.lot.grn_id)">{{ props.lot.grn_number }}</span>
         </div>
         <div class="info-item">
           <span class="info-label">{{ t('inventory.party') }}</span>

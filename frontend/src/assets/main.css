@@ -364,6 +364,13 @@ html, body {
   color: var(--accent-primary);
 }
 
+.doc-number {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  white-space: nowrap;
+}
+
 .party-name {
   font-weight: 600;
   color: var(--text-primary);
@@ -405,6 +412,14 @@ html, body {
   .hide-on-mobile {
     display: none !important;
   }
+  .doc-number {
+    /* Wrap rather than force horizontal scroll, but break at the hyphens the
+       number already has. break-all would split it mid-group -- "20260725-0260"
+       / "6-00594" -- which is unreadable for a value someone is comparing
+       against a label on a bag. */
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
 }
 
 /* Mobile List Cards Styling */
@@ -427,6 +442,8 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   border-bottom: 1px solid var(--border-subtle);
   padding-bottom: 8px;
 }

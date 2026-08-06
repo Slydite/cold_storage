@@ -302,9 +302,9 @@ const handleExport = () => {
             </template>
           </Column>
 
-          <Column field="grn_number" :header="t('grn.grnNumber')" sortable>
+          <Column field="grn_number" :header="t('grn.grnNumber')" sortable style="min-width: 11rem">
             <template #body="{ data }">
-              <span class="code-link clickable" @click="emit('view', data)">{{ data.grn_number }}</span>
+              <span class="code-link clickable doc-number" @click="emit('view', data)">{{ data.grn_number }}</span>
             </template>
             <template #filter="{ filterModel, filterCallback }">
               <InputText
@@ -388,7 +388,7 @@ const handleExport = () => {
       <div class="mobile-list-cards show-on-mobile">
         <div v-for="data in props.grns" :key="data.id" class="mobile-list-card">
           <div class="card-header clickable" @click="emit('view', data)">
-            <span class="card-title">{{ data.grn_number }}</span>
+            <span class="card-title doc-number">{{ data.grn_number }}</span>
             <span
               class="status-pill"
               :class="{

@@ -143,7 +143,7 @@ const handleExportLines = () => {
       <div class="info-card">
         <div class="info-item">
           <span class="info-label">{{ t('delivery.dnNumber') }}</span>
-          <span class="info-val code-link">{{ props.deliveryNote.dn_number }}</span>
+          <span class="info-val code-link doc-number">{{ props.deliveryNote.dn_number }}</span>
         </div>
         <div class="info-item">
           <span class="info-label">{{ t('delivery.dispatchDate') }}</span>
@@ -247,9 +247,9 @@ const handleExportLines = () => {
           paginator
           :rows="8"
         >
-          <Column field="lot_number" :header="t('inventory.lotNo')">
+          <Column field="lot_number" :header="t('inventory.lotNo')" style="min-width: 13.5rem">
             <template #body="{ data }">
-              <span class="code-link">{{ data.lot_number || '—' }}</span>
+              <span class="code-link doc-number">{{ data.lot_number || '—' }}</span>
             </template>
           </Column>
 
@@ -330,7 +330,7 @@ const handleExportLines = () => {
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   background: var(--bg-surface-hover);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
   padding: 14px 16px;
 }

@@ -201,7 +201,7 @@ async function handleDownloadCsv() {
         <tbody>
           <tr v-for="(row, idx) in previewRows.slice(0, 5)" :key="idx">
             <template v-if="reportType === 'grn'">
-              <td class="code-link">{{ String(row.grn_number || '-') }}</td>
+              <td class="code-link doc-number">{{ String(row.grn_number || '-') }}</td>
               <td>{{ String(row.receipt_date || '-') }}</td>
               <td>{{ String(row.party_name || '-') }}</td>
               <td>
@@ -212,7 +212,7 @@ async function handleDownloadCsv() {
             </template>
 
             <template v-else-if="reportType === 'dn'">
-              <td class="code-link">{{ String(row.dn_number || '-') }}</td>
+              <td class="code-link doc-number">{{ String(row.dn_number || '-') }}</td>
               <td>{{ String(row.dispatch_date || '-') }}</td>
               <td>{{ String(row.party_name || '-') }}</td>
               <td>
