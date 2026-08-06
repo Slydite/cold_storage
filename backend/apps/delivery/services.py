@@ -7,11 +7,12 @@ from django.utils import timezone
 from django.core.mail import EmailMessage
 
 from libs.sequences import get_next_sequence_number
+from libs.lot_numbers import build_voucher_number, is_valid_voucher_number
 from libs.lookups import get_facility_or_raise, get_party_or_raise
 from libs.pdf import render_pdf
 from libs.choices import ChargeMode
 from libs.sanitizers import clean_text, title_name, upper_code
-from apps.inventory.models import Lot
+from apps.inventory.models import Lot, Sequence
 from apps.inventory.services import withdraw_stock_from_lot
 from .models import DeliveryNote, DeliveryLine
 
@@ -30,7 +31,9 @@ def create_delivery_note(
     loading_unloading_rate_per_unit: Decimal = Decimal('0.00'),
     loading_charge_mode: str = ChargeMode.FLAT,
     status: str = DeliveryNote.Status.DRAFT,
-    lines: List[Dict[str, Any]] = None
+    lines: List[Dict[str, Any]] = None,
+    dn_number: str = None,
+    validate_dn_number_format: bool = True
 ) -> DeliveryNote:
     """
     Create a Delivery Note with lines.
@@ -76,7 +79,27 @@ def create_delivery_note(
 
         validated_lines.append((lot, qty))
 
-    dn_number = get_next_sequence_number(facility=facility, sequence_type='DN')
+    if dn_number:
+        if validate_dn_number_format:
+            if not is_valid_voucher_number(dn_number):
+                raise ValidationError(
+                    f"Invalid DN number format: {dn_number}. "
+                    f"Expected YYYYMMDD-SSSSS."
+                )
+    else:
+        seq, created = Sequence.objects.select_for_update().get_or_create(
+            facility=facility,
+            sequence_type='DN_VNO',
+            defaults={'prefix': '', 'current_value': 2905}
+        )
+        if not created and seq.current_value == 0:
+            seq.current_value = 2905
+            seq.save(update_fields=['current_value'])
+
+        seq.current_value += 1
+        seq.save(update_fields=['current_value'])
+
+        dn_number, _warning = build_voucher_number(doc_date=dispatch_date, voucher_no=seq.current_value)
 
     dn = DeliveryNote(
         facility=facility,

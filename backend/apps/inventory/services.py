@@ -12,7 +12,7 @@ from libs.lookups import get_facility_or_raise, get_party_or_raise
 from libs.pdf import render_pdf
 from libs.choices import ChargeMode
 from libs.sanitizers import clean_text, title_name, upper_code
-from libs.lot_numbers import build_lot_number, is_valid_lot_number
+from libs.lot_numbers import build_lot_number, is_valid_lot_number, build_voucher_number, is_valid_voucher_number
 from apps.locations.models import Chamber, Floor, Block
 from .models import Commodity, GRN, Lot, Sequence, StockAdjustment, CommodityAlias, LotRateChange
 
@@ -96,7 +96,9 @@ def create_grn(
     status: str = GRN.Status.POSTED,
     items: List[Dict[str, Any]] = None,
     require_location: bool = True,
-    validate_lot_number_format: bool = True
+    validate_lot_number_format: bool = True,
+    grn_number: str = None,
+    validate_grn_number_format: bool = True
 ) -> GRN:
     """
     Create a Goods Receipt Note (GRN) with lots/items.
@@ -118,7 +120,27 @@ def create_grn(
     bilty_no = upper_code(bilty_no)
     remarks = clean_text(remarks)
 
-    grn_number = get_next_sequence_number(facility=facility, sequence_type='GRN')
+    if grn_number:
+        if validate_grn_number_format:
+            if not is_valid_voucher_number(grn_number):
+                raise ValidationError(
+                    f"Invalid GRN number format: {grn_number}. "
+                    f"Expected YYYYMMDD-SSSSS."
+                )
+    else:
+        seq, created = Sequence.objects.select_for_update().get_or_create(
+            facility=facility,
+            sequence_type='GRN_VNO',
+            defaults={'prefix': '', 'current_value': 1068}
+        )
+        if not created and seq.current_value == 0:
+            seq.current_value = 1068
+            seq.save(update_fields=['current_value'])
+
+        seq.current_value += 1
+        seq.save(update_fields=['current_value'])
+
+        grn_number, _warning = build_voucher_number(doc_date=receipt_date, voucher_no=seq.current_value)
 
     grn = GRN(
         facility=facility,

@@ -97,7 +97,7 @@ def test_create_grn_with_sequence_and_lots(default_facility, test_party, test_co
         items=items
     )
 
-    assert grn1.grn_number == "GRN-000001"
+    assert grn1.grn_number == "20260725-01069"
     assert grn1.vehicle_number == "KA-01-AB-1234"
     assert grn1.driver_name == "Ramesh"
     assert grn1.party == test_party
@@ -121,7 +121,7 @@ def test_create_grn_with_sequence_and_lots(default_facility, test_party, test_co
         receipt_date=receipt_date,
         items=items
     )
-    assert grn2.grn_number == "GRN-000002"
+    assert grn2.grn_number == "20260725-01070"
 
 @pytest.mark.django_db
 def test_withdraw_stock_from_lot_success(default_facility, test_party, test_commodity, default_block):

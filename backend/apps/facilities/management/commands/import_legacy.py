@@ -554,8 +554,9 @@ class Command(BaseCommand):
                         lots_by_grn.setdefault(lot_row['grn_number'], []).append(lot_row)
 
                     for grn_row in grns_csv:
-                        grn_ref = grn_row['grn_number']
-                        if open_stock_only and grn_ref not in lots_by_grn:
+                        grn_key = grn_row['grn_number']
+                        grn_ref = grn_row.get('legacy_ref') or grn_row['grn_number']
+                        if open_stock_only and grn_key not in lots_by_grn:
                             continue
 
                         # Parse receipt_date early to apply year filter
@@ -569,7 +570,7 @@ class Command(BaseCommand):
                         is_supporting_grn = False
                         if fy_start and fy_end:
                             is_in_fy = (fy_start <= receipt_date <= fy_end)
-                            is_referenced = include_referenced_lots and (grn_ref in referenced_grn_numbers)
+                            is_referenced = include_referenced_lots and (grn_key in referenced_grn_numbers)
                             if not is_in_fy and not is_referenced:
                                 summary['grns_skipped_fy'] += 1
                                 continue
@@ -581,7 +582,7 @@ class Command(BaseCommand):
                             summary['grns_skipped'] += 1
                             if is_supporting_grn:
                                 summary['supporting_grns_pulled'] += 1
-                            for lot_row in lots_by_grn.get(grn_ref, []):
+                            for lot_row in lots_by_grn.get(grn_key, []):
                                 if Lot.objects.filter(facility=facility, lot_number=lot_row['lot_number']).exists():
                                     summary['lots_skipped'] += 1
                                     try:
@@ -620,7 +621,7 @@ class Command(BaseCommand):
                             party = Party.objects.get(facility=facility, code=grn_row['party_code'])
                         except Party.DoesNotExist:
                             summary['grns_failed'] += 1
-                            for lot_row in lots_by_grn.get(grn_ref, []):
+                            for lot_row in lots_by_grn.get(grn_key, []):
                                 summary['lots_failed'] += 1
                                 record_failure(f"Lot Import: GRN Party '{grn_row['party_code']}' not found")
                             record_failure(f"GRN Import: Party '{grn_row['party_code']}' not found")
@@ -631,7 +632,7 @@ class Command(BaseCommand):
                         imported_lot_rows = []
                         has_error = False
 
-                        for lot_row in lots_by_grn.get(grn_ref, []):
+                        for lot_row in lots_by_grn.get(grn_key, []):
                             if Lot.objects.filter(facility=facility, lot_number=lot_row['lot_number']).exists():
                                 summary['lots_skipped'] += 1
                                 continue
@@ -730,7 +731,9 @@ class Command(BaseCommand):
                                 status='DRAFT' if as_draft else grn_row['status'],
                                 items=items_data,
                                 require_location=False,  # Legacy imports genuinely have no location recorded and must bypass this requirement
-                                validate_lot_number_format=False
+                                validate_lot_number_format=False,
+                                grn_number=grn_key,
+                                validate_grn_number_format=False
                             )
                             # Set legacy_ref on GRN
                             grn.legacy_ref = grn_ref
@@ -811,7 +814,8 @@ class Command(BaseCommand):
                             lines_by_dn.setdefault(line_row['dn_number'], []).append(line_row)
 
                         for dn_row in delivery_notes_csv:
-                            dn_ref = dn_row['dn_number']
+                            dn_key = dn_row['dn_number']
+                            dn_ref = dn_row.get('legacy_ref') or dn_row['dn_number']
 
                             # Parse dispatch_date early to apply year filter
                             try:
@@ -828,7 +832,7 @@ class Command(BaseCommand):
 
                             if DeliveryNote.objects.filter(facility=facility, legacy_ref=dn_ref).exists():
                                 summary['dns_skipped'] += 1
-                                for line_row in lines_by_dn.get(dn_ref, []):
+                                for line_row in lines_by_dn.get(dn_key, []):
                                     summary['lines_skipped'] += 1
                                 continue
 
@@ -837,7 +841,7 @@ class Command(BaseCommand):
                                 party = Party.objects.get(facility=facility, code=dn_row['party_code'])
                             except Party.DoesNotExist:
                                 summary['dns_failed'] += 1
-                                for line_row in lines_by_dn.get(dn_ref, []):
+                                for line_row in lines_by_dn.get(dn_key, []):
                                     summary['lines_failed'] += 1
                                     record_failure(f"DeliveryLine Import: DN Party '{dn_row['party_code']}' not found")
                                 record_failure(f"DeliveryNote Import: Party '{dn_row['party_code']}' not found")
@@ -846,7 +850,7 @@ class Command(BaseCommand):
                             # Prepare delivery lines
                             lines_data = []
                             imported_line_rows = []
-                            lines_for_this_dn = lines_by_dn.get(dn_ref, [])
+                            lines_for_this_dn = lines_by_dn.get(dn_key, [])
                             resolved_lines_count = 0
 
                             for line_row in lines_for_this_dn:
@@ -908,7 +912,9 @@ class Command(BaseCommand):
                                     vehicle_number=dn_row['vehicle_number'],
                                     remarks=dn_row['remarks'],
                                     status='DRAFT' if as_draft else dn_row['status'],
-                                    lines=lines_data
+                                    lines=lines_data,
+                                    dn_number=dn_key,
+                                    validate_dn_number_format=False
                                 )
                                 dn.legacy_ref = dn_ref
                                 dn.save(update_fields=['legacy_ref'])

@@ -62,7 +62,7 @@ def test_delivery_note_api_create_list_retrieve_post(auth_client, default_facili
     res = auth_client.post('/api/delivery-notes/', payload, format='json')
     assert res.status_code == status.HTTP_201_CREATED
     dn_id = res.data['id']
-    assert res.data['dn_number'] == "DN-000001"
+    assert res.data['dn_number'] == "20260725-02906"
     assert res.data['status'] == DeliveryNote.Status.DRAFT
     assert res.data['party_name'] == "DN Api Customer"
     assert len(res.data['lines']) == 1
@@ -81,7 +81,7 @@ def test_delivery_note_api_create_list_retrieve_post(auth_client, default_facili
     # Retrieve single Delivery Note
     res_get = auth_client.get(f'/api/delivery-notes/{dn_id}/')
     assert res_get.status_code == status.HTTP_200_OK
-    assert res_get.data['dn_number'] == "DN-000001"
+    assert res_get.data['dn_number'] == "20260725-02906"
 
     # Post Delivery Note
     res_post = auth_client.post(f'/api/delivery-notes/{dn_id}/post/')

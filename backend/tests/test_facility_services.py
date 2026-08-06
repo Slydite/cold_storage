@@ -92,8 +92,8 @@ def test_second_facilitys_first_grn_dn_invoice_do_not_collide_with_first_facilit
 
     # Both facilities' first documents get the same per-facility number...
     # Invoice numbers are now FY-scoped per GST Rule 46(b): INV-YYYY-YY-NNNNNN.
-    assert grn1.grn_number == grn2.grn_number == "GRN-000001"
-    assert dn1.dn_number == dn2.dn_number == "DN-000001"
+    assert grn1.grn_number == grn2.grn_number == "20260701-01069"
+    assert dn1.dn_number == dn2.dn_number == "20260710-02906"
     from libs.fiscal import fy_label
     from datetime import date
     expected_inv_num = f"INV-{fy_label(date.today())}-000001"

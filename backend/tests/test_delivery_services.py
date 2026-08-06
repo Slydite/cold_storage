@@ -74,7 +74,7 @@ def test_create_delivery_note_draft_does_not_change_stock(default_facility, test
         ]
     )
 
-    assert dn.dn_number == "DN-000001"
+    assert dn.dn_number == "20260725-02906"
     assert dn.status == DeliveryNote.Status.DRAFT
     assert dn.lines.count() == 2
 
@@ -224,8 +224,8 @@ def test_dn_number_sequence_and_increment(default_facility, test_party, posted_g
         lines=[{"lot_id": lot.id, "qty": 5}]
     )
 
-    assert dn1.dn_number == "DN-000001"
-    assert dn2.dn_number == "DN-000002"
+    assert dn1.dn_number == "20260725-02906"
+    assert dn2.dn_number == "20260725-02907"
 
 
 @pytest.mark.django_db

@@ -70,3 +70,30 @@ def build_lot_number(*, receipt_date: date, serial: int, bags: int) -> tuple[str
 
 def is_valid_lot_number(value: str) -> bool:
     return bool(LOT_NUMBER_RE.match(value or ''))
+
+
+VOUCHER_NUMBER_RE = re.compile(r'^\d{8}-\d{5}(?:-[A-Z]+)?$')
+
+
+def build_voucher_number(*, doc_date: date, voucher_no: int) -> tuple[str, str]:
+    """
+    Return (voucher_number, warning). The warning is empty when nothing was clamped.
+
+    Clamps an oversized voucher number to 99999 and names the original in the warning.
+    """
+    warning = ""
+    clamped_vno = voucher_no
+    if voucher_no < 0:
+        clamped_vno = 0
+        warning = f"Negative voucher number {voucher_no} treated as 0"
+    elif voucher_no > 99999:
+        clamped_vno = 99999
+        warning = f"Oversized voucher number clamped to 99999 (original: {voucher_no})"
+
+    number = f"{doc_date.strftime('%Y%m%d')}-{clamped_vno:05d}"
+    return number, warning
+
+
+def is_valid_voucher_number(value: str) -> bool:
+    return bool(VOUCHER_NUMBER_RE.match(value or ''))
+
