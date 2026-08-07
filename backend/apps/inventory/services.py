@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.core.mail import EmailMessage
 
-from libs.sequences import get_next_sequence_number, DEFAULT_PREFIXES
+from libs.sequences import get_next_sequence_number
 from libs.lookups import get_facility_or_raise, get_party_or_raise
 from libs.pdf import render_pdf
 from libs.choices import ChargeMode
@@ -182,17 +182,14 @@ def create_grn(
         if initial_qty <= 0:
             raise ValidationError(f"Initial quantity for commodity '{commodity.name}' must be greater than 0.")
 
+        # lot_number exists for the importer to preserve legacy numbering and is deliberately not exposed through the API
         lot_number = item_data.get('lot_number')
         if lot_number:
             if validate_lot_number_format:
-                seq = Sequence.objects.filter(facility=facility, sequence_type='LOT').first()
-                prefix = seq.prefix if seq else DEFAULT_PREFIXES.get('LOT', 'LOT-')
-                is_new_pattern = is_valid_lot_number(lot_number)
-                is_old_pattern = re.match(r'^' + re.escape(prefix) + r'\d+$', lot_number)
-                if not (is_new_pattern or is_old_pattern):
+                if not is_valid_lot_number(lot_number):
                     raise ValidationError(
                         f"Invalid lot number format: {lot_number}. "
-                        f"Expected either YYYYMMDD-SSSSS-BBBBB or prefix '{prefix}' followed by digits."
+                        f"Expected YYYYMMDD-SSSSS-BBBBB."
                     )
         else:
             # Generate lot number in new format: YYYYMMDD-SSSSS-BBBBB using LOT_SERIAL

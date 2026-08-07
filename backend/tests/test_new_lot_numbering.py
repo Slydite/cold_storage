@@ -207,7 +207,24 @@ def test_explicit_lot_number_validation(default_facility, party, commodity):
     )
     assert grn.lots.first().lot_number == "20260725-01234-00500"
 
-    # Valid explicit old format (LOT-000099)
+    # Explicit old format (LOT-000099) is now rejected when validated
+    with pytest.raises(ValidationError):
+        create_grn(
+            facility_id=default_facility.id,
+            party_id=party.id,
+            receipt_date=date(2026, 7, 25),
+            items=[
+                {
+                    "commodity_id": commodity.id,
+                    "initial_qty": 500,
+                    "lot_number": "LOT-000099",
+                    "rent_rate_per_unit": Decimal("10.00")
+                }
+            ],
+            require_location=False
+        )
+
+    # But accepted when validation is bypassed (as the importer does)
     grn2 = create_grn(
         facility_id=default_facility.id,
         party_id=party.id,
@@ -220,7 +237,8 @@ def test_explicit_lot_number_validation(default_facility, party, commodity):
                 "rent_rate_per_unit": Decimal("10.00")
             }
         ],
-        require_location=False
+        require_location=False,
+        validate_lot_number_format=False
     )
     assert grn2.lots.first().lot_number == "LOT-000099"
 
@@ -363,3 +381,67 @@ def test_generated_lot_numbers_always_satisfy_their_own_validation():
             receipt_date=date(2026, 1, 1), serial=serial, bags=bags
         )
         assert is_valid_lot_number(number), f"{number} fails its own validation"
+
+
+@pytest.mark.django_db
+def test_data_migration_renames_legacy_lot_and_leaves_new_ones(default_facility, party, commodity):
+    import importlib
+    migration_mod = importlib.import_module("apps.inventory.migrations.0022_auto_20260807_1926")
+    rename_legacy_lots = migration_mod.rename_legacy_lots
+    reverse_rename_legacy_lots = migration_mod.reverse_rename_legacy_lots
+    from django.apps import apps as django_apps
+    
+    # Create a legacy-pattern lot (validate_lot_number_format=False)
+    grn_legacy = create_grn(
+        facility_id=default_facility.id,
+        party_id=party.id,
+        receipt_date=date(2026, 8, 7),
+        items=[
+            {
+                "commodity_id": commodity.id,
+                "initial_qty": 100,
+                "lot_number": "LOT-000001",
+                "rent_rate_per_unit": Decimal("10.00")
+            }
+        ],
+        require_location=False,
+        validate_lot_number_format=False
+    )
+    lot_legacy = grn_legacy.lots.first()
+    assert lot_legacy.lot_number == "LOT-000001"
+
+    # Create a new-format lot
+    grn_new = create_grn(
+        facility_id=default_facility.id,
+        party_id=party.id,
+        receipt_date=date(2026, 8, 7),
+        items=[
+            {
+                "commodity_id": commodity.id,
+                "initial_qty": 200,
+                "lot_number": "20260807-02606-00200",
+                "rent_rate_per_unit": Decimal("10.00")
+            }
+        ],
+        require_location=False
+    )
+    lot_new = grn_new.lots.first()
+    assert lot_new.lot_number == "20260807-02606-00200"
+
+    # Run the migration
+    rename_legacy_lots(django_apps, None)
+
+    # Reload from db
+    lot_legacy.refresh_from_db()
+    lot_new.refresh_from_db()
+
+    # Legacy lot should have been renamed
+    # Sequence current_val starts at 2606 by default defaults, so incremented value should be 2607
+    assert lot_legacy.lot_number == "20260807-02607-00100"
+
+    # New lot should remain untouched
+    assert lot_new.lot_number == "20260807-02606-00200"
+
+    # Reverse migration raises IrreversibleMigration
+    with pytest.raises(Exception):
+        reverse_rename_legacy_lots(django_apps, None)

@@ -13,7 +13,6 @@ DEFAULT_PREFIXES = {
     'GRN': 'GRN-',
     'DN': 'DN-',
     'INV': 'INV-',
-    'LOT': 'LOT-',
 }
 
 @transaction.atomic

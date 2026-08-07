@@ -330,15 +330,7 @@ const onBlockChange = (itemIdx: number) => {
                   />
                 </td>
                 <td>
-                  <div class="lot-no-cell">
-                    <span v-if="item.lot_number_loading" class="lot-loading">
-                      <i class="pi pi-spin pi-spinner text-muted mr-1"></i>
-                      <span>{{ t('grn.reserving') }}</span>
-                    </span>
-                    <span v-else class="lot-code">
-                      {{ item.lot_number || '—' }}
-                    </span>
-                  </div>
+                  <div class="lot-no-cell"></div>
                 </td>
                 <td>
                   <Select
@@ -436,16 +428,7 @@ const onBlockChange = (itemIdx: number) => {
             <div class="card-header">
               <div class="card-header-left">
                 <span class="card-index">#{{ idx + 1 }}</span>
-                <div class="lot-no-cell">
-                  <span class="card-label-lot">{{ t('inventory.lotNo') }}:</span>
-                  <span v-if="item.lot_number_loading" class="lot-loading">
-                    <i class="pi pi-spin pi-spinner text-muted mr-1"></i>
-                    <span>{{ t('grn.reserving') }}</span>
-                  </span>
-                  <span v-else class="lot-code">
-                    {{ item.lot_number || '—' }}
-                  </span>
-                </div>
+                <div class="lot-no-cell"></div>
               </div>
               <button
                 class="icon-btn danger-hover"

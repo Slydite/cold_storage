@@ -149,33 +149,18 @@ def test_grn_api_roundtrip_loading_charge_mode(auth_client, default_facility, pa
 
 
 @pytest.mark.django_db
-def test_reserve_number_returns_sequential_values_and_never_repeats(auth_client, default_facility):
-    res1 = auth_client.post('/api/lots/reserve-number/', {"facility_id": default_facility.id})
-    assert res1.status_code == status.HTTP_201_CREATED
-    lot1 = res1.data['lot_number']
-    assert lot1.startswith("LOT-")
-
-    res2 = auth_client.post('/api/lots/reserve-number/', {"facility_id": default_facility.id})
-    assert res2.status_code == status.HTTP_201_CREATED
-    lot2 = res2.data['lot_number']
-    assert lot2.startswith("LOT-")
-
-    assert lot1 != lot2
-    num1 = int(lot1.split('-')[1])
-    num2 = int(lot2.split('-')[1])
-    assert num2 == num1 + 1
+def test_reserve_number_returns_404(auth_client, default_facility):
+    res = auth_client.post('/api/lots/reserve-number/', {"facility_id": default_facility.id})
+    assert res.status_code == status.HTTP_404_NOT_FOUND
 
 
 @pytest.mark.django_db
-def test_grn_created_with_previously_reserved_lot_number(auth_client, default_facility, party, commodity):
+def test_grn_created_with_ignored_lot_number(auth_client, default_facility, party, commodity):
     from apps.locations.services import create_chamber, create_floor, create_block
+    from libs.lot_numbers import is_valid_lot_number
     chamber = create_chamber(facility_id=default_facility.id, name="Chamber 1")
     floor = create_floor(chamber_id=chamber.id, name="Floor 1")
     block = create_block(floor_id=floor.id, name="Block 1")
-
-    res_reserve = auth_client.post('/api/lots/reserve-number/', {"facility_id": default_facility.id})
-    assert res_reserve.status_code == status.HTTP_201_CREATED
-    reserved_number = res_reserve.data['lot_number']
 
     grn_payload = {
         "facility_id": default_facility.id,
@@ -185,14 +170,16 @@ def test_grn_created_with_previously_reserved_lot_number(auth_client, default_fa
             {
                 "commodity_id": commodity.id,
                 "initial_qty": 300,
-                "lot_number": reserved_number,
+                "lot_number": "LOT-123456",
                 "block_id": block.id
             }
         ]
     }
     res_grn = auth_client.post('/api/grns/', grn_payload, format='json')
     assert res_grn.status_code == status.HTTP_201_CREATED
-    assert res_grn.data['lots'][0]['lot_number'] == reserved_number
+    created_lot_number = res_grn.data['lots'][0]['lot_number']
+    assert created_lot_number != "LOT-123456"
+    assert is_valid_lot_number(created_lot_number)
 
 
 @pytest.mark.django_db

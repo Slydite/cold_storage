@@ -37,7 +37,6 @@ class CommodityOutputSerializer(serializers.ModelSerializer):
 
 class LotItemInputSerializer(serializers.Serializer):
     commodity_id = serializers.IntegerField()
-    lot_number = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
     chamber = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
     floor = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
     rack = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
@@ -237,14 +236,6 @@ class GRNOutputSerializer(serializers.ModelSerializer):
 
 class LotWithdrawalInputSerializer(serializers.Serializer):
     qty = serializers.IntegerField(min_value=1)
-
-
-class LotReserveNumberInputSerializer(serializers.Serializer):
-    facility_id = serializers.IntegerField()
-
-
-class LotReserveNumberOutputSerializer(serializers.Serializer):
-    lot_number = serializers.CharField()
 
 
 class LotAdjustmentInputSerializer(serializers.Serializer):

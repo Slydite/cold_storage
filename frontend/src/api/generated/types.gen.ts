@@ -424,7 +424,6 @@ export type LotBulkRateChangeInput = {
 
 export type LotItemInput = {
     commodity_id: number;
-    lot_number?: string;
     chamber?: string;
     floor?: string;
     rack?: string;
@@ -491,14 +490,6 @@ export type LotRateChangeInput = {
     rate_per_unit: string;
     effective_from: string;
     note?: string;
-};
-
-export type LotReserveNumberInput = {
-    facility_id: number;
-};
-
-export type LotReserveNumberOutput = {
-    lot_number: string;
 };
 
 export type LotWithdrawalInput = {
@@ -2390,10 +2381,7 @@ export type LotsListResponse = LotsListResponses[keyof LotsListResponses];
 export type LotsRetrieveData = {
     body?: never;
     path: {
-        /**
-         * A unique integer value identifying this lot.
-         */
-        id: number;
+        id: string;
     };
     query?: never;
     url: '/api/lots/{id}/';
@@ -2415,10 +2403,7 @@ export type LotsRetrieveResponse = LotsRetrieveResponses[keyof LotsRetrieveRespo
 export type LotsAdjustCreateData = {
     body: LotAdjustmentInput;
     path: {
-        /**
-         * A unique integer value identifying this lot.
-         */
-        id: number;
+        id: string;
     };
     query?: never;
     url: '/api/lots/{id}/adjust/';
@@ -2440,10 +2425,7 @@ export type LotsAdjustCreateResponse = LotsAdjustCreateResponses[keyof LotsAdjus
 export type LotsRateChangesCreateData = {
     body: LotRateChangeInput;
     path: {
-        /**
-         * A unique integer value identifying this lot.
-         */
-        id: number;
+        id: string;
     };
     query?: never;
     url: '/api/lots/{id}/rate-changes/';
@@ -2465,10 +2447,7 @@ export type LotsRateChangesCreateResponse = LotsRateChangesCreateResponses[keyof
 export type LotsRateChangesDestroyData = {
     body?: never;
     path: {
-        /**
-         * A unique integer value identifying this lot.
-         */
-        id: number;
+        id: string;
         rate_change_id: string;
     };
     query?: never;
@@ -2494,10 +2473,7 @@ export type LotsRateChangesDestroyResponse = LotsRateChangesDestroyResponses[key
 export type LotsWithdrawCreateData = {
     body: LotWithdrawalInput;
     path: {
-        /**
-         * A unique integer value identifying this lot.
-         */
-        id: number;
+        id: string;
     };
     query?: never;
     url: '/api/lots/{id}/withdraw/';
@@ -2536,26 +2512,6 @@ export type LotsBulkRateChangeCreateResponses = {
      */
     200: unknown;
 };
-
-export type LotsReserveNumberCreateData = {
-    body: LotReserveNumberInput;
-    path?: never;
-    query?: never;
-    url: '/api/lots/reserve-number/';
-};
-
-export type LotsReserveNumberCreateErrors = {
-    /**
-     * No response body
-     */
-    400: unknown;
-};
-
-export type LotsReserveNumberCreateResponses = {
-    201: LotReserveNumberOutput;
-};
-
-export type LotsReserveNumberCreateResponse = LotsReserveNumberCreateResponses[keyof LotsReserveNumberCreateResponses];
 
 export type PartiesListData = {
     body?: never;

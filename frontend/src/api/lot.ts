@@ -11,7 +11,7 @@ import type {
   LotRateChangeInput,
   LotBulkRateChangeInput
 } from './generated/types.gen'
-import { apiFetch } from './client'
+
 
 export type { LotOutput }
 
@@ -58,33 +58,10 @@ export async function fetchLots(params: {
   return (res.data ?? []) as LotOutput[]
 }
 
-export async function reserveLotNumber(facilityId: number): Promise<string> {
-  const res = await apiFetch('/api/lots/reserve-number/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ facility_id: facilityId })
-  })
-
-  if (!res.ok) {
-    let errorDetail = 'Failed to reserve lot number'
-    try {
-      const errorJson = await res.json()
-      errorDetail = extractErrorMessage(errorJson, errorDetail)
-    } catch {
-      // ignore
-    }
-    throw new Error(errorDetail)
-  }
-
-  const data = await res.json()
-  return data.lot_number as string
-}
 
 export async function adjustLotStock(id: number, body: LotAdjustmentInput): Promise<unknown> {
   const res = await lotsAdjustCreate({
-    path: { id },
+    path: { id: String(id) },
     body
   })
   if (res.error) {
@@ -95,7 +72,7 @@ export async function adjustLotStock(id: number, body: LotAdjustmentInput): Prom
 
 export async function addLotRateChange(id: number, body: LotRateChangeInput): Promise<unknown> {
   const res = await lotsRateChangesCreate({
-    path: { id },
+    path: { id: String(id) },
     body
   })
   if (res.error) {
@@ -107,7 +84,7 @@ export async function addLotRateChange(id: number, body: LotRateChangeInput): Pr
 export async function deleteLotRateChange(id: number, rateChangeId: number): Promise<void> {
   const res = await lotsRateChangesDestroy({
     path: {
-      id,
+      id: String(id),
       rate_change_id: String(rateChangeId)
     }
   })

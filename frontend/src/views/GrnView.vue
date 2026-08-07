@@ -128,6 +128,15 @@ const handleRetry = () => {
   grnsQuery.refetch()
 }
 
+const handleCreated = async (grnNumber: string) => {
+  isPanelOpen.value = false
+  await grnsQuery.refetch()
+  const newGrn = grnList.value.find((g) => g.grn_number === grnNumber)
+  if (newGrn) {
+    handleView(newGrn)
+  }
+}
+
 onMounted(() => {
   if (route.query.action === 'create') isPanelOpen.value = true
 })
@@ -163,7 +172,7 @@ onMounted(() => {
         :loadingParties="partiesQuery.isLoading.value"
         :loadingCommodities="commoditiesQuery.isLoading.value"
         @close="isPanelOpen = false"
-        @created="isPanelOpen = false"
+        @created="handleCreated"
       />
     </transition>
   </div>

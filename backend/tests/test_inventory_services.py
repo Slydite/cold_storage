@@ -380,7 +380,7 @@ def test_duplicate_lot_number_same_facility_fails(default_facility, test_party, 
         items=[{
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
-            "lot_number": "LOT-000001",
+            "lot_number": "20260725-00001-00100",
             "block_id": default_block.id,
         }]
     )
@@ -392,7 +392,7 @@ def test_duplicate_lot_number_same_facility_fails(default_facility, test_party, 
             items=[{
                 "commodity_id": test_commodity.id,
                 "initial_qty": 100,
-                "lot_number": "LOT-000001",
+                "lot_number": "20260725-00001-00100",
                 "block_id": default_block.id,
             }]
         )
@@ -420,7 +420,7 @@ def test_same_lot_number_different_facility_allowed(default_facility, test_party
         items=[{
             "commodity_id": test_commodity.id,
             "initial_qty": 100,
-            "lot_number": "LOT-000001",
+            "lot_number": "20260725-00001-00100",
             "block_id": default_block.id,
         }]
     )
@@ -432,11 +432,11 @@ def test_same_lot_number_different_facility_allowed(default_facility, test_party
         items=[{
             "commodity_id": other_commodity.id,
             "initial_qty": 100,
-            "lot_number": "LOT-000001",
+            "lot_number": "20260725-00001-00100",
             "block_id": other_block.id,
         }]
     )
-    assert grn_other.lots.first().lot_number == "LOT-000001"
+    assert grn_other.lots.first().lot_number == "20260725-00001-00100"
 
 
 @pytest.mark.django_db
