@@ -1,7 +1,7 @@
 import { computed, type Ref, type ComputedRef } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { fetchGrns, createGrn, postGrn, cancelGrn } from '../api/grn'
-import type { GrnCreateInput } from '../api/grn'
+import { fetchGrns, createGrn, postGrn, cancelGrn, updateGrn, updateAndPostGrn } from '../api/grn'
+import type { GrnCreateInput, GrnUpdateInput } from '../api/grn'
 
 export function useGrnList(
   facilityId: Ref<number | undefined> | ComputedRef<number | undefined>,
@@ -30,6 +30,27 @@ export function useCreateGrn() {
     mutationFn: (body: GrnCreateInput) => createGrn(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['grns'] })
+    }
+  })
+}
+
+export function useUpdateGrn() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: GrnUpdateInput }) => updateGrn(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['grns'] })
+    }
+  })
+}
+
+export function useUpdateAndPostGrn() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: GrnUpdateInput }) => updateAndPostGrn(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['grns'] })
+      queryClient.invalidateQueries({ queryKey: ['lots'] })
     }
   })
 }

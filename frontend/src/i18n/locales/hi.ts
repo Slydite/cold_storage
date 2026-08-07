@@ -243,7 +243,13 @@ const hi: MessageSchema = {
     selectFloorFirst: 'पहले मंज़िल चुनें',
     reserving: 'आरक्षित किया जा रहा है...',
     reservationFailedSummary: 'आरक्षण विफल',
-    reservationFailedDetail: 'लॉट नंबर आरक्षित नहीं किया जा सका। सबमिट करने पर स्वतः उत्पन्न होगा।'
+    reservationFailedDetail: 'लॉट नंबर आरक्षित नहीं किया जा सका। सबमिट करने पर स्वतः उत्पन्न होगा।',
+    editDraftGrn: 'ड्राफ्ट आवक रसीद (GRN) संपादित करें',
+    updateFailed: 'GRN अद्यतन करने में विफल',
+    updatedToastSummary: 'GRN अद्यतन किया गया',
+    updatedToastDetail: 'GRN {number} सफलतापूर्वक अद्यतन किया गया।',
+    confirmDeleteLotsTitle: 'लॉट हटाने की पुष्टि करें',
+    confirmDeleteLotsMessage: 'आपने इस GRN से {count} लॉट हटा दिए हैं। सहेजने पर ये लॉट स्थायी रूप से हटा दिए जाएंगे और उनके लॉट नंबर हमेशा के लिए समाप्त हो जाएंगे। इन्हें दोबारा उपयोग नहीं किया जा सकता। क्या आप आगे बढ़ना चाहते हैं?'
   },
   delivery: {
     title: 'निकासी पर्ची (DN)',
@@ -304,7 +310,13 @@ const hi: MessageSchema = {
     computedLoadingUnloadingCharge: 'गणना किया गया लोडिंग/अनलोडिंग शुल्क',
     balanceAfter: 'निकासी के बाद शेष',
     balanceBefore: 'निकासी से पहले शेष',
-    couldNotGeneratePdf: 'PDF जनरेट नहीं किया जा सका'
+    couldNotGeneratePdf: 'PDF जनरेट नहीं किया जा सका',
+    editDraftDeliveryNote: 'ड्राफ्ट निकासी पर्ची (DN) संपादित करें',
+    updateFailed: 'निकासी पर्ची (DN) अद्यतन करने में विफल',
+    updatedToastSummary: 'निकासी पर्ची (DN) अद्यतन की गई',
+    updatedToastDetail: 'निकासी पर्ची {number} सफलतापूर्वक अद्यतन की गई।',
+    confirmDeleteLinesTitle: 'पंक्तियां हटाने की पुष्टि करें',
+    confirmDeleteLinesMessage: 'आपने इस निकासी पर्ची से {count} पंक्तियाँ हटा दी हैं। सहेजने पर ये पंक्तियाँ स्थायी रूप से हटा दी जाएंगी। क्या आप आगे बढ़ना चाहते हैं?'
   },
   inventory: {
     title: 'भंडार (Inventory)',

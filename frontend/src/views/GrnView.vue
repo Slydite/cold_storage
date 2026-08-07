@@ -108,6 +108,28 @@ const handleCancel = async (id: number) => {
   }
 }
 
+const editingGrn = ref<GrnOutput | undefined>(undefined)
+
+const handleNewGrn = () => {
+  editingGrn.value = undefined
+  isPanelOpen.value = true
+}
+
+const handleClosePanel = () => {
+  isPanelOpen.value = false
+  editingGrn.value = undefined
+}
+
+const handleEdit = (grn: GrnOutput) => {
+  editingGrn.value = grn
+  isPanelOpen.value = true
+}
+
+const handleEditFromDialog = (grn: GrnOutput) => {
+  isDetailOpen.value = false
+  handleEdit(grn)
+}
+
 const handleView = (grn: GrnOutput) => {
   selectedGrn.value = grn
   isDetailOpen.value = true
@@ -123,13 +145,9 @@ const handleRefresh = async () => {
   }
 }
 
-const handleRetry = () => {
-  refetchFacility()
-  grnsQuery.refetch()
-}
-
 const handleCreated = async (grnNumber: string) => {
   isPanelOpen.value = false
+  editingGrn.value = undefined
   await grnsQuery.refetch()
   const newGrn = grnList.value.find((g) => g.grn_number === grnNumber)
   if (newGrn) {
@@ -137,8 +155,15 @@ const handleCreated = async (grnNumber: string) => {
   }
 }
 
+const handleRetry = () => {
+  refetchFacility()
+  grnsQuery.refetch()
+}
+
 onMounted(() => {
-  if (route.query.action === 'create') isPanelOpen.value = true
+  if (route.query.action === 'create') {
+    handleNewGrn()
+  }
 })
 </script>
 
@@ -153,15 +178,16 @@ onMounted(() => {
       :chambers="chambersQuery.data.value || []"
       v-model:selectedChamberId="selectedChamberId"
       v-model:selectedPeriod="selectedPeriod"
-      @openCreate="isPanelOpen = true"
+      @openCreate="handleNewGrn"
       @retry="handleRetry"
       @view="handleView"
+      @edit="handleEdit"
       @post="handlePost"
       @cancel="handleCancel"
       :class="{ 'shrink-list': isPanelOpen }"
     />
 
-    <GrnDetailDialog v-model:visible="isDetailOpen" :grn="selectedGrn" @refresh="handleRefresh" />
+    <GrnDetailDialog v-model:visible="isDetailOpen" :grn="selectedGrn" @refresh="handleRefresh" @edit="handleEditFromDialog" />
 
     <transition name="panel-slide">
       <GrnCreatePanel
@@ -171,7 +197,8 @@ onMounted(() => {
         :commodities="commoditiesQuery.data.value || []"
         :loadingParties="partiesQuery.isLoading.value"
         :loadingCommodities="commoditiesQuery.isLoading.value"
-        @close="isPanelOpen = false"
+        :grn="editingGrn"
+        @close="handleClosePanel"
         @created="handleCreated"
       />
     </transition>

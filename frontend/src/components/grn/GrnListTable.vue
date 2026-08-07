@@ -21,7 +21,8 @@ import {
   Package,
   FileCheck,
   XCircle,
-  Printer
+  Printer,
+  Pencil
 } from 'lucide-vue-next'
 import { formatQty } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
@@ -50,6 +51,7 @@ const emit = defineEmits<{
   openCreate: []
   retry: []
   view: [grn: GrnOutput]
+  edit: [grn: GrnOutput]
   post: [id: number]
   cancel: [id: number]
 }>()
@@ -273,6 +275,15 @@ const handleExport = () => {
                 <button
                   v-if="data.status === 'DRAFT'"
                   class="icon-btn"
+                  :title="t('common.edit')"
+                  type="button"
+                  @click="emit('edit', data)"
+                >
+                  <Pencil :size="16" />
+                </button>
+                <button
+                  v-if="data.status === 'DRAFT'"
+                  class="icon-btn"
                   :title="t('grn.postTooltip')"
                   type="button"
                   @click="emit('post', data.id)"
@@ -418,6 +429,16 @@ const handleExport = () => {
             <button class="btn-outlined btn-sm" :title="t('common.details')" type="button" @click="emit('view', data)">
               <Eye :size="15" />
               <span>{{ t('common.details') }}</span>
+            </button>
+            <button
+              v-if="data.status === 'DRAFT'"
+              class="btn-outlined btn-sm"
+              :title="t('common.edit')"
+              type="button"
+              @click="emit('edit', data)"
+            >
+              <Pencil :size="15" />
+              <span>{{ t('common.edit') }}</span>
             </button>
             <button
               v-if="data.status === 'DRAFT'"

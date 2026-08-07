@@ -244,7 +244,13 @@ const en = {
     selectFloorFirst: 'Select a Floor first',
     reserving: 'Reserving...',
     reservationFailedSummary: 'Reservation Failed',
-    reservationFailedDetail: 'Could not reserve lot number. Intake will proceed with auto-generation on submit.'
+    reservationFailedDetail: 'Could not reserve lot number. Intake will proceed with auto-generation on submit.',
+    editDraftGrn: 'Edit Draft GRN',
+    updateFailed: 'Failed to update GRN',
+    updatedToastSummary: 'GRN Updated',
+    updatedToastDetail: 'GRN {number} has been successfully updated.',
+    confirmDeleteLotsTitle: 'Confirm Lot Deletions',
+    confirmDeleteLotsMessage: 'You have removed {count} lot(s) from this GRN. Saving will permanently delete these lot(s) and burn their lot numbers. They cannot be reused. Are you sure you want to proceed?'
   },
   delivery: {
     title: 'Delivery / Outward',
@@ -305,7 +311,13 @@ const en = {
     computedLoadingUnloadingCharge: 'Computed Loading/Unloading Charge',
     balanceAfter: 'Balance After',
     balanceBefore: 'Balance Before',
-    couldNotGeneratePdf: 'Could not generate PDF'
+    couldNotGeneratePdf: 'Could not generate PDF',
+    editDraftDeliveryNote: 'Edit Draft Delivery Note',
+    updateFailed: 'Failed to update Delivery Note',
+    updatedToastSummary: 'Delivery Note Updated',
+    updatedToastDetail: 'Delivery Note {number} has been successfully updated.',
+    confirmDeleteLinesTitle: 'Confirm Line Deletions',
+    confirmDeleteLinesMessage: 'You have removed {count} line(s) from this Delivery Note. Saving will permanently delete these line(s) from the Delivery Note. Are you sure you want to proceed?'
   },
   inventory: {
     title: 'Inventory / Lots',

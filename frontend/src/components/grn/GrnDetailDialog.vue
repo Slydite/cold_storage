@@ -6,7 +6,7 @@ import Column from 'primevue/column'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
-import { Printer, Mail } from 'lucide-vue-next'
+import { Printer, Mail, Pencil } from 'lucide-vue-next'
 import { formatCurrency, formatQty } from '../../utils/format'
 import { downloadPdf } from '../../utils/downloadPdf'
 import { exportToCsv } from '../../utils/csvExport'
@@ -23,6 +23,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
   refresh: []
+  edit: [grn: GrnOutput]
 }>()
 
 const visibleRef = toRef(props, 'visible')
@@ -145,6 +146,15 @@ function handleExportLotsCsv() {
           >
             <Printer :size="15" />
             <span>PDF</span>
+          </button>
+          <button
+            v-if="grn.status === 'DRAFT'"
+            class="btn-outlined btn-sm"
+            type="button"
+            @click="emit('edit', grn)"
+          >
+            <Pencil :size="15" />
+            <span>{{ t('common.edit') }}</span>
           </button>
           <button
             v-if="EMAIL_TO_CLIENT_ENABLED"

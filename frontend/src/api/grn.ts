@@ -4,12 +4,16 @@ import {
   grnsCreate,
   grnsPostCreate,
   grnsCancelCreate,
-  grnsEmailCreate
+  grnsEmailCreate,
+  grnsPartialUpdate,
+  grnsUpdateAndPostCreate
 } from './generated/sdk.gen'
 import type {
   GrnOutput,
   GrnCreateInput,
+  GrnUpdateInput,
   LotItemInput,
+  LotItemUpdateInput,
   LotOutput,
   LoadingChargeModeEnum,
   StatusEnum
@@ -18,7 +22,9 @@ import type {
 export type {
   GrnOutput,
   GrnCreateInput,
+  GrnUpdateInput,
   LotItemInput,
+  LotItemUpdateInput,
   LotOutput,
   LoadingChargeModeEnum,
   StatusEnum
@@ -122,4 +128,33 @@ export async function emailGrn(id: number): Promise<GrnOutput> {
   }
   return res.data
 }
+
+export async function updateGrn(id: number, body: GrnUpdateInput): Promise<GrnOutput> {
+  const res = await grnsPartialUpdate({
+    path: { id },
+    body
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to update Goods Receipt Note'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from GRN update')
+  }
+  return res.data
+}
+
+export async function updateAndPostGrn(id: number, body: GrnUpdateInput): Promise<GrnOutput> {
+  const res = await grnsUpdateAndPostCreate({
+    path: { id },
+    body
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to post Goods Receipt Note'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from posting GRN')
+  }
+  return res.data
+}
+
 

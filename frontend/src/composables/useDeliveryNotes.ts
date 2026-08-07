@@ -4,9 +4,11 @@ import {
   fetchDeliveryNotes,
   createDeliveryNote,
   postDeliveryNote,
-  cancelDeliveryNote
+  cancelDeliveryNote,
+  updateDeliveryNote,
+  updateAndPostDeliveryNote
 } from '../api/delivery'
-import type { DeliveryNoteCreateInput } from '../api/delivery'
+import type { DeliveryNoteCreateInput, DeliveryNoteUpdateInput } from '../api/delivery'
 
 export function useDeliveryNoteList(
   facilityId: Ref<number | undefined> | ComputedRef<number | undefined>,
@@ -35,6 +37,27 @@ export function useCreateDeliveryNote() {
     mutationFn: (body: DeliveryNoteCreateInput) => createDeliveryNote(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['delivery-notes'] })
+    }
+  })
+}
+
+export function useUpdateDeliveryNote() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: DeliveryNoteUpdateInput }) => updateDeliveryNote(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['delivery-notes'] })
+    }
+  })
+}
+
+export function useUpdateAndPostDeliveryNote() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: DeliveryNoteUpdateInput }) => updateAndPostDeliveryNote(id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['delivery-notes'] })
+      queryClient.invalidateQueries({ queryKey: ['lots'] })
     }
   })
 }

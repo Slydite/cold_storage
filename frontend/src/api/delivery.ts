@@ -3,11 +3,14 @@ import {
   deliveryNotesCreate,
   deliveryNotesPostCreate,
   deliveryNotesCancelCreate,
-  deliveryNotesEmailCreate
+  deliveryNotesEmailCreate,
+  deliveryNotesPartialUpdate,
+  deliveryNotesUpdateAndPostCreate
 } from './generated/sdk.gen'
 import type {
   DeliveryNoteOutput,
   DeliveryNoteCreateInput,
+  DeliveryNoteUpdateInput,
   DeliveryLineInput,
   DeliveryLineOutput,
   LoadingChargeModeEnum,
@@ -17,6 +20,7 @@ import type {
 export type {
   DeliveryNoteOutput,
   DeliveryNoteCreateInput,
+  DeliveryNoteUpdateInput,
   DeliveryLineInput,
   DeliveryLineOutput,
   LoadingChargeModeEnum,
@@ -110,4 +114,33 @@ export async function emailDeliveryNote(id: number): Promise<DeliveryNoteOutput>
   }
   return res.data
 }
+
+export async function updateDeliveryNote(id: number, body: DeliveryNoteUpdateInput): Promise<DeliveryNoteOutput> {
+  const res = await deliveryNotesPartialUpdate({
+    path: { id },
+    body
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to update Delivery Note'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from Delivery Note update')
+  }
+  return res.data
+}
+
+export async function updateAndPostDeliveryNote(id: number, body: DeliveryNoteUpdateInput): Promise<DeliveryNoteOutput> {
+  const res = await deliveryNotesUpdateAndPostCreate({
+    path: { id },
+    body
+  })
+  if (res.error) {
+    throw new Error(extractErrorMessage(res.error, 'Failed to post Delivery Note'))
+  }
+  if (!res.data) {
+    throw new Error('No data returned from posting Delivery Note')
+  }
+  return res.data
+}
+
 

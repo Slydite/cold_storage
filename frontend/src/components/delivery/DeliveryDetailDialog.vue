@@ -5,7 +5,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
-import { Download, Printer, Mail } from 'lucide-vue-next'
+import { Download, Printer, Mail, Pencil } from 'lucide-vue-next'
 import { formatQty, formatCurrency } from '../../utils/format'
 import { exportToCsv } from '../../utils/csvExport'
 import { downloadPdf } from '../../utils/downloadPdf'
@@ -24,6 +24,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:visible': [visible: boolean]
   refresh: []
+  edit: [dn: DeliveryNoteOutput]
 }>()
 
 const visibleRef = toRef(props, 'visible')
@@ -309,6 +310,15 @@ const handleExportLines = () => {
           >
             <Mail :size="15" />
             <span>{{ emailing ? t('common.loading') : t('common.emailToClient') }}</span>
+          </button>
+          <button
+            v-if="props.deliveryNote && props.deliveryNote.status === 'DRAFT'"
+            class="btn-outlined"
+            type="button"
+            @click="emit('edit', props.deliveryNote)"
+          >
+            <Pencil :size="15" />
+            <span>{{ t('common.edit') }}</span>
           </button>
         </div>
         <button class="btn-outlined" type="button" @click="handleClose">{{ t('common.close') }}</button>

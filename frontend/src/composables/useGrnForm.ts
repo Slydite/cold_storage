@@ -1,13 +1,15 @@
-import { ref, computed, type Ref, type ComputedRef } from 'vue'
+import { ref, computed, watch, type Ref, type ComputedRef } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
 import { useI18n } from 'vue-i18n'
-import { useCreateGrn } from './useGrns'
+import { useCreateGrn, useUpdateGrn, useUpdateAndPostGrn } from './useGrns'
 import { useToast } from 'primevue/usetoast'
-import type { GrnCreateInput, LotItemInput, LoadingChargeModeEnum } from '../api/grn'
+import { useConfirm } from 'primevue/useconfirm'
+import type { GrnCreateInput, GrnUpdateInput, LotItemInput, LotItemUpdateInput, LoadingChargeModeEnum, GrnOutput } from '../api/grn'
 
 export interface FormLineItem {
+  id?: number | null
   commodity_id: number | null
   chamber_id?: number | null
   floor_id?: number | null
@@ -19,6 +21,7 @@ export interface FormLineItem {
 }
 
 const createDefaultLineItem = (): FormLineItem => ({
+  id: null,
   commodity_id: null,
   chamber_id: null,
   floor_id: null,
@@ -31,14 +34,19 @@ const createDefaultLineItem = (): FormLineItem => ({
 
 export function useGrnForm(
   facilityId: Ref<number | undefined> | ComputedRef<number | undefined>,
+  grn?: Ref<GrnOutput | undefined> | ComputedRef<GrnOutput | undefined>,
   onSuccessCallback?: (grnNumber: string, status: string) => void
 ) {
   const toast = useToast()
+  const confirm = useConfirm()
   const { t } = useI18n()
   const createGrnMutation = useCreateGrn()
+  const updateGrnMutation = useUpdateGrn()
+  const updateAndPostGrnMutation = useUpdateAndPostGrn()
 
   const lineItemSchema = computed(() =>
     z.object({
+      id: z.number().nullable().optional(),
       commodity_id: z
         .number()
         .nullable()
@@ -100,6 +108,42 @@ export function useGrnForm(
 
   const items = ref<FormLineItem[]>([createDefaultLineItem()])
 
+  if (grn) {
+    watch(
+      () => grn.value,
+      (newGrn) => {
+        if (newGrn) {
+          resetForm({
+            values: {
+              party_id: newGrn.party_id,
+              receipt_date: newGrn.receipt_date ? new Date(newGrn.receipt_date) : new Date(),
+              vehicle_number: newGrn.vehicle_number || '',
+              driver_name: newGrn.driver_name || '',
+              remarks: newGrn.remarks || '',
+              loading_charge_mode: newGrn.loading_charge_mode || 'FLAT',
+              loading_charge: newGrn.loading_charge || '',
+              loading_unloading_rate_per_bag: newGrn.loading_unloading_rate_per_bag || ''
+            }
+          })
+          if (newGrn.lots) {
+            items.value = newGrn.lots.map((lot) => ({
+              id: lot.id,
+              commodity_id: lot.commodity_id,
+              chamber_id: lot.chamber_ref_id,
+              floor_id: lot.floor_ref_id,
+              block_id: lot.block_ref_id,
+              initial_qty: lot.initial_qty,
+              unit: lot.unit || 'Bags',
+              unit_weight: lot.unit_weight ? Number(lot.unit_weight) : null,
+              rent_rate_per_unit: lot.rent_rate_per_unit ? Number(lot.rent_rate_per_unit) : null
+            }))
+          }
+        }
+      },
+      { immediate: true }
+    )
+  }
+
   const itemErrors = ref<Record<number, Record<string, string>>>({})
 
   const addItemRow = () => {
@@ -160,6 +204,8 @@ export function useGrnForm(
       return
     }
 
+    const isEdit = grn?.value !== undefined
+
     const submitFn = handleSubmit(async (formValues) => {
       itemErrors.value = {}
       const parsed = z
@@ -190,12 +236,41 @@ export function useGrnForm(
         return
       }
 
+      if (isEdit && grn.value) {
+        const originalLots = grn.value.lots || []
+        const currentIds = items.value.map((i) => i.id).filter((id) => id != null)
+        const removedLotsCount = originalLots.filter((lot) => !currentIds.includes(lot.id)).length
+
+        if (removedLotsCount > 0) {
+          const confirmed = await new Promise<boolean>((resolve) => {
+            confirm.require({
+              message: t('grn.confirmDeleteLotsMessage', { count: removedLotsCount }),
+              header: t('grn.confirmDeleteLotsTitle'),
+              icon: 'pi pi-exclamation-triangle',
+              rejectProps: {
+                label: t('common.cancel'),
+                severity: 'secondary',
+                outlined: true
+              },
+              acceptProps: {
+                label: t('common.confirm'),
+                severity: 'danger'
+              },
+              accept: () => resolve(true),
+              reject: () => resolve(false)
+            })
+          })
+          if (!confirmed) return
+        }
+      }
+
       const yyyy = formValues.receipt_date.getFullYear()
       const mm = String(formValues.receipt_date.getMonth() + 1).padStart(2, '0')
       const dd = String(formValues.receipt_date.getDate()).padStart(2, '0')
       const formattedDate = `${yyyy}-${mm}-${dd}`
 
-      const formattedItems: LotItemInput[] = parsed.data.map((item) => ({
+      const formattedItems: LotItemUpdateInput[] = parsed.data.map((item) => ({
+        id: item.id || undefined,
         commodity_id: item.commodity_id!,
         chamber_id: item.chamber_id || undefined,
         floor_id: item.floor_id || undefined,
@@ -206,36 +281,68 @@ export function useGrnForm(
         rent_rate_per_unit: item.rent_rate_per_unit != null ? String(item.rent_rate_per_unit) : undefined
       }))
 
-      const payload: GrnCreateInput = {
-        facility_id: facilityId.value!,
-        party_id: formValues.party_id,
-        receipt_date: formattedDate,
-        vehicle_number: formValues.vehicle_number || undefined,
-        driver_name: formValues.driver_name || undefined,
-        remarks: formValues.remarks || undefined,
-        loading_charge_mode: formValues.loading_charge_mode,
-        loading_charge: formValues.loading_charge_mode === 'FLAT' ? formValues.loading_charge || '0' : undefined,
-        loading_unloading_rate_per_bag: formValues.loading_charge_mode === 'PER_UNIT' ? formValues.loading_unloading_rate_per_bag || '0' : undefined,
-        status: targetStatus,
-        items: formattedItems
-      }
-
       try {
-        const result = await createGrnMutation.mutateAsync(payload)
-        const isDraft = targetStatus === 'DRAFT'
-        toast.add({
-          severity: isDraft ? 'info' : 'success',
-          summary: isDraft ? t('grn.draftSavedToastSummary') : t('grn.createdToastSummary'),
-          detail: isDraft
-            ? t('grn.draftSavedToastDetail', { number: result.grn_number })
-            : t('grn.createdToastDetail', { number: result.grn_number }),
-          life: 4000
-        })
+        let result: GrnOutput
+        if (isEdit && grn.value) {
+          const payload: GrnUpdateInput = {
+            party_id: formValues.party_id,
+            receipt_date: formattedDate,
+            vehicle_number: formValues.vehicle_number || undefined,
+            driver_name: formValues.driver_name || undefined,
+            remarks: formValues.remarks || undefined,
+            loading_charge_mode: formValues.loading_charge_mode,
+            loading_charge: formValues.loading_charge_mode === 'FLAT' ? formValues.loading_charge || '0' : undefined,
+            loading_unloading_rate_per_bag: formValues.loading_charge_mode === 'PER_UNIT' ? formValues.loading_unloading_rate_per_bag || '0' : undefined,
+            items: formattedItems
+          }
+
+          if (targetStatus === 'DRAFT') {
+            result = await updateGrnMutation.mutateAsync({ id: grn.value.id, body: payload })
+          } else {
+            result = await updateAndPostGrnMutation.mutateAsync({ id: grn.value.id, body: payload })
+          }
+
+          const isDraft = targetStatus === 'DRAFT'
+          toast.add({
+            severity: isDraft ? 'info' : 'success',
+            summary: isDraft ? t('grn.draftSavedToastSummary') : t('grn.updatedToastSummary'),
+            detail: isDraft
+              ? t('grn.draftSavedToastDetail', { number: result.grn_number })
+              : t('grn.updatedToastDetail', { number: result.grn_number }),
+            life: 4000
+          })
+        } else {
+          const payload: GrnCreateInput = {
+            facility_id: facilityId.value!,
+            party_id: formValues.party_id,
+            receipt_date: formattedDate,
+            vehicle_number: formValues.vehicle_number || undefined,
+            driver_name: formValues.driver_name || undefined,
+            remarks: formValues.remarks || undefined,
+            loading_charge_mode: formValues.loading_charge_mode,
+            loading_charge: formValues.loading_charge_mode === 'FLAT' ? formValues.loading_charge || '0' : undefined,
+            loading_unloading_rate_per_bag: formValues.loading_charge_mode === 'PER_UNIT' ? formValues.loading_unloading_rate_per_bag || '0' : undefined,
+            status: targetStatus,
+            items: formattedItems as LotItemInput[]
+          }
+
+          result = await createGrnMutation.mutateAsync(payload)
+          const isDraft = targetStatus === 'DRAFT'
+          toast.add({
+            severity: isDraft ? 'info' : 'success',
+            summary: isDraft ? t('grn.draftSavedToastSummary') : t('grn.createdToastSummary'),
+            detail: isDraft
+              ? t('grn.draftSavedToastDetail', { number: result.grn_number })
+              : t('grn.createdToastDetail', { number: result.grn_number }),
+            life: 4000
+          })
+        }
+
         if (onSuccessCallback) {
           onSuccessCallback(result.grn_number, targetStatus)
         }
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : t('grn.createFailed')
+        const msg = err instanceof Error ? err.message : t(isEdit ? 'grn.updateFailed' : 'grn.createFailed')
         toast.add({
           severity: 'error',
           summary: t('common.error'),
@@ -273,7 +380,7 @@ export function useGrnForm(
     totalQty,
     computedReceivingChargeEstimate,
     submitForm,
-    isSubmitting: createGrnMutation.isPending,
+    isSubmitting: computed(() => createGrnMutation.isPending.value || updateGrnMutation.isPending.value || updateAndPostGrnMutation.isPending.value),
     resetForm: handleResetForm
   }
 }

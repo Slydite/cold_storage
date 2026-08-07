@@ -1,11 +1,12 @@
-import { ref, computed, type Ref, type ComputedRef } from 'vue'
+import { ref, computed, watch, type Ref, type ComputedRef } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
 import { useI18n } from 'vue-i18n'
-import { useCreateDeliveryNote } from './useDeliveryNotes'
+import { useCreateDeliveryNote, useUpdateDeliveryNote, useUpdateAndPostDeliveryNote } from './useDeliveryNotes'
 import { useToast } from 'primevue/usetoast'
-import type { DeliveryNoteCreateInput, DeliveryLineInput, LoadingChargeModeEnum } from '../api/delivery'
+import { useConfirm } from 'primevue/useconfirm'
+import type { DeliveryNoteCreateInput, DeliveryNoteUpdateInput, DeliveryLineInput, LoadingChargeModeEnum, DeliveryNoteOutput } from '../api/delivery'
 import type { LotOutput } from '../api/lot'
 
 export interface FormDeliveryLine {
@@ -21,11 +22,15 @@ const createDefaultLine = (): FormDeliveryLine => ({
 export function useDeliveryNoteForm(
   facilityId: Ref<number | undefined> | ComputedRef<number | undefined>,
   availableLots: Ref<LotOutput[]> | ComputedRef<LotOutput[]>,
+  deliveryNote?: Ref<DeliveryNoteOutput | undefined> | ComputedRef<DeliveryNoteOutput | undefined>,
   onSuccessCallback?: (dnNumber: string, status: string) => void
 ) {
   const toast = useToast()
+  const confirm = useConfirm()
   const { t } = useI18n()
   const createMutation = useCreateDeliveryNote()
+  const updateMutation = useUpdateDeliveryNote()
+  const updateAndPostMutation = useUpdateAndPostDeliveryNote()
 
   const lineItemSchema = computed(() =>
     z.object({
@@ -80,6 +85,35 @@ export function useDeliveryNoteForm(
   const [loading_unloading_rate_per_unit, loadingRateProps] = defineField('loading_unloading_rate_per_unit')
 
   const lines = ref<FormDeliveryLine[]>([createDefaultLine()])
+
+  if (deliveryNote) {
+    watch(
+      () => deliveryNote.value,
+      (newNote) => {
+        if (newNote) {
+          resetForm({
+            values: {
+              party_id: newNote.party_id,
+              dispatch_date: newNote.dispatch_date ? new Date(newNote.dispatch_date) : new Date(),
+              vehicle_number: newNote.vehicle_number || '',
+              driver_name: newNote.driver_name || '',
+              remarks: newNote.remarks || '',
+              loading_charge_mode: newNote.loading_charge_mode || 'FLAT',
+              loading_charge: newNote.loading_charge || '',
+              loading_unloading_rate_per_unit: newNote.loading_unloading_rate_per_unit || ''
+            }
+          })
+          if (newNote.lines) {
+            lines.value = newNote.lines.map((line) => ({
+              lot_id: line.lot_id,
+              qty: line.qty
+            }))
+          }
+        }
+      },
+      { immediate: true }
+    )
+  }
 
   const addLineRow = () => {
     lines.value.push({
@@ -152,6 +186,8 @@ export function useDeliveryNoteForm(
       return
     }
 
+    const isEdit = deliveryNote?.value !== undefined
+
     const submitFn = handleSubmit(async (formValues) => {
       const parsed = z
         .array(lineItemSchema.value)
@@ -168,6 +204,34 @@ export function useDeliveryNoteForm(
           life: 4000
         })
         return
+      }
+
+      if (isEdit && deliveryNote.value) {
+        const originalLines = deliveryNote.value.lines || []
+        const currentLotIds = lines.value.map((l) => l.lot_id).filter((id) => id != null)
+        const removedLinesCount = originalLines.filter((line) => !currentLotIds.includes(line.lot_id)).length
+
+        if (removedLinesCount > 0) {
+          const confirmed = await new Promise<boolean>((resolve) => {
+            confirm.require({
+              message: t('delivery.confirmDeleteLinesMessage', { count: removedLinesCount }),
+              header: t('delivery.confirmDeleteLinesTitle'),
+              icon: 'pi pi-exclamation-triangle',
+              rejectProps: {
+                label: t('common.cancel'),
+                severity: 'secondary',
+                outlined: true
+              },
+              acceptProps: {
+                label: t('common.confirm'),
+                severity: 'danger'
+              },
+              accept: () => resolve(true),
+              reject: () => resolve(false)
+            })
+          })
+          if (!confirmed) return
+        }
       }
 
       for (let i = 0; i < parsed.data.length; i++) {
@@ -195,27 +259,61 @@ export function useDeliveryNoteForm(
         qty: line.qty
       }))
 
-      const payload: DeliveryNoteCreateInput = {
-        facility_id: facilityId.value!,
-        party_id: formValues.party_id,
-        dispatch_date: formattedDate,
-        vehicle_number: formValues.vehicle_number || undefined,
-        driver_name: formValues.driver_name || undefined,
-        remarks: formValues.remarks || undefined,
-        loading_charge_mode: formValues.loading_charge_mode,
-        loading_charge: formValues.loading_charge_mode === 'FLAT' ? formValues.loading_charge || '0' : undefined,
-        loading_unloading_rate_per_unit: formValues.loading_charge_mode === 'PER_UNIT' ? formValues.loading_unloading_rate_per_unit || '0' : undefined,
-        status: targetStatus,
-        lines: formattedLines
-      }
-
       try {
-        const result = await createMutation.mutateAsync(payload)
+        let result: DeliveryNoteOutput
+        if (isEdit && deliveryNote.value) {
+          const payload: DeliveryNoteUpdateInput = {
+            party_id: formValues.party_id,
+            dispatch_date: formattedDate,
+            vehicle_number: formValues.vehicle_number || undefined,
+            driver_name: formValues.driver_name || undefined,
+            remarks: formValues.remarks || undefined,
+            loading_charge_mode: formValues.loading_charge_mode,
+            loading_charge: formValues.loading_charge_mode === 'FLAT' ? formValues.loading_charge || '0' : undefined,
+            loading_unloading_rate_per_unit: formValues.loading_charge_mode === 'PER_UNIT' ? formValues.loading_unloading_rate_per_unit || '0' : undefined,
+            lines: formattedLines
+          }
+
+          if (targetStatus === 'DRAFT') {
+            result = await updateMutation.mutateAsync({ id: deliveryNote.value.id, body: payload })
+          } else {
+            result = await updateAndPostMutation.mutateAsync({ id: deliveryNote.value.id, body: payload })
+          }
+        } else {
+          const payload: DeliveryNoteCreateInput = {
+            facility_id: facilityId.value!,
+            party_id: formValues.party_id,
+            dispatch_date: formattedDate,
+            vehicle_number: formValues.vehicle_number || undefined,
+            driver_name: formValues.driver_name || undefined,
+            remarks: formValues.remarks || undefined,
+            loading_charge_mode: formValues.loading_charge_mode,
+            loading_charge: formValues.loading_charge_mode === 'FLAT' ? formValues.loading_charge || '0' : undefined,
+            loading_unloading_rate_per_unit: formValues.loading_charge_mode === 'PER_UNIT' ? formValues.loading_unloading_rate_per_unit || '0' : undefined,
+            status: targetStatus,
+            lines: formattedLines
+          }
+
+          result = await createMutation.mutateAsync(payload)
+        }
+
+        const isDraft = targetStatus === 'DRAFT'
+        toast.add({
+          severity: isDraft ? 'info' : 'success',
+          summary: isDraft
+            ? t('delivery.draftSavedToastSummary')
+            : (isEdit ? t('delivery.updatedToastSummary') : t('delivery.createdToastSummary')),
+          detail: isDraft
+            ? t('delivery.draftSavedToastDetail', { number: result.dn_number })
+            : (isEdit ? t('delivery.updatedToastDetail', { number: result.dn_number }) : t('delivery.createdToastDetail', { number: result.dn_number })),
+          life: 4000
+        })
+
         if (onSuccessCallback) {
           onSuccessCallback(result.dn_number, targetStatus)
         }
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : t('delivery.createFailed')
+        const msg = err instanceof Error ? err.message : t(isEdit ? 'delivery.updateFailed' : 'delivery.createFailed')
         toast.add({
           severity: 'error',
           summary: t('common.error'),
@@ -254,7 +352,7 @@ export function useDeliveryNoteForm(
     getLineQtyError,
     hasQtyExceeded,
     submitForm,
-    isSubmitting: createMutation.isPending,
+    isSubmitting: computed(() => createMutation.isPending.value || updateMutation.isPending.value || updateAndPostMutation.isPending.value),
     resetForm: handleResetForm
   }
 }

@@ -91,6 +91,28 @@ const handleCancel = async (id: number) => {
   }
 }
 
+const editingDelivery = ref<DeliveryNoteOutput | undefined>(undefined)
+
+const handleNewDelivery = () => {
+  editingDelivery.value = undefined
+  isPanelOpen.value = true
+}
+
+const handleClosePanel = () => {
+  isPanelOpen.value = false
+  editingDelivery.value = undefined
+}
+
+const handleEdit = (dn: DeliveryNoteOutput) => {
+  editingDelivery.value = dn
+  isPanelOpen.value = true
+}
+
+const handleEditFromDialog = (dn: DeliveryNoteOutput) => {
+  isDetailOpen.value = false
+  handleEdit(dn)
+}
+
 const handleView = (dn: DeliveryNoteOutput) => {
   selectedDelivery.value = dn
   isDetailOpen.value = true
@@ -106,17 +128,9 @@ const handleRefresh = async () => {
   }
 }
 
-const handleCreated = (dnNumber: string, status: string) => {
+const handleCreated = () => {
   isPanelOpen.value = false
-  const isDraft = status === 'DRAFT'
-  toast.add({
-    severity: isDraft ? 'info' : 'success',
-    summary: isDraft ? t('delivery.draftSavedToastSummary') : t('delivery.createdToastSummary'),
-    detail: isDraft
-      ? t('delivery.draftSavedToastDetail', { number: dnNumber })
-      : t('delivery.createdToastDetail', { number: dnNumber }),
-    life: 4000
-  })
+  editingDelivery.value = undefined
 }
 
 const handleRetry = () => {
@@ -126,7 +140,7 @@ const handleRetry = () => {
 
 onMounted(() => {
   if (route.query.action === 'create') {
-    isPanelOpen.value = true
+    handleNewDelivery()
   }
 })
 </script>
@@ -140,15 +154,16 @@ onMounted(() => {
       :errorDetail="errorMessage"
       v-model:searchQuery="searchQuery"
       v-model:selectedStatus="selectedStatus"
-      @newDelivery="isPanelOpen = true"
+      @newDelivery="handleNewDelivery"
       @retry="handleRetry"
       @view="handleView"
+      @edit="handleEdit"
       @post="handlePost"
       @cancel="handleCancel"
       :class="{ 'shrink-list': isPanelOpen }"
     />
 
-    <DeliveryDetailDialog v-model:visible="isDetailOpen" :deliveryNote="selectedDelivery" @refresh="handleRefresh" />
+    <DeliveryDetailDialog v-model:visible="isDetailOpen" :deliveryNote="selectedDelivery" @refresh="handleRefresh" @edit="handleEditFromDialog" />
 
     <transition name="panel-slide">
       <DeliveryCreatePanel
@@ -156,7 +171,8 @@ onMounted(() => {
         :facilityId="facilityId"
         :parties="partiesQuery.data.value || []"
         :loadingParties="partiesQuery.isLoading.value"
-        @close="isPanelOpen = false"
+        :deliveryNote="editingDelivery"
+        @close="handleClosePanel"
         @created="handleCreated"
       />
     </transition>
