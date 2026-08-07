@@ -58,7 +58,7 @@ const downloadingId = ref<number | null>(null)
 async function handleDownloadPdf(id: number, docNumber: string) {
   downloadingId.value = id
   try {
-    await downloadPdf(`/api/deliveries/${id}/pdf/`, `${docNumber}.pdf`)
+    await downloadPdf(`/api/delivery-notes/${id}/pdf/`, `${docNumber}.pdf`)
   } catch (err) {
     toast.add({
       severity: 'error',

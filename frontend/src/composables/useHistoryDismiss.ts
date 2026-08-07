@@ -30,7 +30,24 @@ export function useHistoryDismiss(isOpen: Ref<boolean>, close: () => void): void
       if (newVal) {
         if (!hasPushedEntry) {
           hasPushedEntry = true
-          history.pushState({ __dismiss: true, __dismiss_id: myStateId }, '')
+          // Preserve whatever vue-router keeps in history.state and only add our
+          // marker. Replacing the state wholesale wipes router bookkeeping --
+          // it computes navigation deltas as `history.state.position - n`, so a
+          // missing position yields NaN and the router resolves a bad location,
+          // which is how a click on a row could land on "/undefined".
+          const current = (history.state ?? {}) as Record<string, unknown>
+          const position = current.position
+          history.pushState(
+            {
+              ...current,
+              // Each entry must carry a distinct, increasing position for those
+              // delta calculations to stay correct.
+              ...(typeof position === 'number' ? { position: position + 1 } : {}),
+              __dismiss: true,
+              __dismiss_id: myStateId
+            },
+            ''
+          )
           window.addEventListener('popstate', handlePopState)
         }
       } else {
