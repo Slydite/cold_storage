@@ -243,3 +243,91 @@ def email_delivery_note_to_party(*, delivery_note_id: int) -> None:
     dn.save()
 
 
+@transaction.atomic
+def update_delivery_note(
+    *,
+    delivery_note_id: int,
+    **changes
+) -> DeliveryNote:
+    """
+    Update a Delivery Note and its lines in place.
+    Only DRAFT notes can be updated.
+    Does not touch remaining_qty (since it is DRAFT).
+    Validates that each line's lot belongs to the same facility.
+    """
+    try:
+        dn = DeliveryNote.objects.select_for_update().get(pk=delivery_note_id)
+    except DeliveryNote.DoesNotExist:
+        raise ValidationError(f"Delivery Note with ID {delivery_note_id} does not exist.")
+
+    if dn.status != DeliveryNote.Status.DRAFT:
+        raise ValidationError(
+            f"Cannot update Delivery Note: current status is '{dn.status}', must be DRAFT."
+        )
+
+    # Header fields update
+    if 'party_id' in changes and changes['party_id'] is not None:
+        dn.party = get_party_or_raise(changes['party_id'], dn.facility)
+    if 'dispatch_date' in changes and changes['dispatch_date'] is not None:
+        dn.dispatch_date = changes['dispatch_date']
+    if 'vehicle_number' in changes and changes['vehicle_number'] is not None:
+        dn.vehicle_number = upper_code(changes['vehicle_number'])
+    if 'driver_name' in changes and changes['driver_name'] is not None:
+        dn.driver_name = title_name(changes['driver_name'])
+    if 'transporter' in changes and changes['transporter'] is not None:
+        dn.transporter = title_name(changes['transporter'])
+    if 'remarks' in changes and changes['remarks'] is not None:
+        dn.remarks = clean_text(changes['remarks'])
+    if 'loading_charge' in changes and changes['loading_charge'] is not None:
+        dn.loading_charge = changes['loading_charge']
+    if 'loading_unloading_rate_per_unit' in changes and changes['loading_unloading_rate_per_unit'] is not None:
+        dn.loading_unloading_rate_per_unit = changes['loading_unloading_rate_per_unit']
+    if 'loading_charge_mode' in changes and changes['loading_charge_mode'] is not None:
+        mode = changes['loading_charge_mode']
+        if mode not in ChargeMode.values:
+            raise ValidationError(f"Invalid loading_charge_mode: {mode}. Allowed: {ChargeMode.values}")
+        dn.loading_charge_mode = mode
+
+    dn.full_clean()
+    dn.save()
+
+    # Lines update
+    if 'lines' in changes:
+        lines = changes['lines'] or []
+        lot_ids = [line_data.get('lot_id') for line_data in lines if line_data.get('lot_id') is not None]
+
+        lots_by_id = Lot.objects.in_bulk(lot_ids, field_name='pk')
+        lots_by_id = {
+            lid: lot for lid, lot in lots_by_id.items()
+            if lot.facility_id == dn.facility.id
+        }
+
+        validated_lines = []
+        for line_data in lines:
+            lot_id = line_data.get('lot_id')
+            qty = line_data.get('qty', 0)
+
+            lot = lots_by_id.get(lot_id)
+            if lot is None:
+                raise ValidationError(f"Lot with ID {lot_id} does not exist in facility {dn.facility.id}.")
+
+            if qty <= 0:
+                raise ValidationError(f"Quantity for lot '{lot.lot_number}' must be greater than 0.")
+
+            validated_lines.append((lot, qty))
+
+        # Replaced by the supplied set: delete old lines and insert new
+        dn.lines.all().delete()
+        for lot, qty in validated_lines:
+            line = DeliveryLine(
+                facility=dn.facility,
+                delivery_note=dn,
+                lot=lot,
+                qty=qty
+            )
+            line.full_clean()
+            line.save()
+
+    return dn
+
+

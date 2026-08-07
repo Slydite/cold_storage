@@ -17,6 +17,7 @@ from .selectors import (
 )
 from .services import (
     create_delivery_note,
+    update_delivery_note,
     post_delivery_note,
     cancel_delivery_note,
     build_delivery_note_pdf,
@@ -24,6 +25,7 @@ from .services import (
 )
 from .serializers import (
     DeliveryNoteCreateInputSerializer,
+    DeliveryNoteUpdateInputSerializer,
     DeliveryNoteOutputSerializer
 )
 from .models import DeliveryNote
@@ -104,6 +106,38 @@ class DeliveryNoteViewSet(ViewSet):
 
         output_serializer = DeliveryNoteOutputSerializer(dn)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=DeliveryNoteUpdateInputSerializer,
+        responses={200: DeliveryNoteOutputSerializer, 400: None},
+        summary="Partially update a DRAFT Delivery Note"
+    )
+    def partial_update(self, request, pk=None):
+        serializer = DeliveryNoteUpdateInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            dn = update_delivery_note(delivery_note_id=pk, **serializer.validated_data)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(DeliveryNoteOutputSerializer(dn).data)
+
+    @extend_schema(
+        request=DeliveryNoteUpdateInputSerializer,
+        responses={200: DeliveryNoteOutputSerializer, 400: None},
+        summary="Update a DRAFT Delivery Note and then post it in one transaction"
+    )
+    @action(detail=True, methods=['post'], url_path='update-and-post')
+    def update_and_post(self, request, pk=None):
+        serializer = DeliveryNoteUpdateInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        from django.db import transaction
+        try:
+            with transaction.atomic():
+                update_delivery_note(delivery_note_id=pk, **serializer.validated_data)
+                dn = post_delivery_note(delivery_note_id=pk)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(DeliveryNoteOutputSerializer(dn).data)
 
     @extend_schema(
         responses={200: DeliveryNoteOutputSerializer, 400: None},

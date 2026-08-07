@@ -184,6 +184,19 @@ export type DeliveryNoteOutput = {
     readonly updated_at: string;
 };
 
+export type DeliveryNoteUpdateInput = {
+    party_id?: number;
+    dispatch_date?: string;
+    vehicle_number?: string;
+    driver_name?: string;
+    transporter?: string;
+    remarks?: string;
+    loading_charge?: string;
+    loading_unloading_rate_per_unit?: string;
+    loading_charge_mode?: LoadingChargeModeEnum;
+    lines?: Array<DeliveryLineInput>;
+};
+
 /**
  * * `TAX_INVOICE` - Tax Invoice
  * * `BILL_OF_SUPPLY` - Bill of Supply
@@ -294,6 +307,23 @@ export type GrnOutput = {
     readonly lots: Array<LotOutput>;
     readonly created_at: string;
     readonly updated_at: string;
+};
+
+export type GrnUpdateInput = {
+    party_id?: number;
+    receipt_date?: string;
+    vehicle_number?: string;
+    driver_name?: string;
+    remarks?: string;
+    loading_charge?: string;
+    bill_no?: string;
+    bilty_no?: string;
+    transporter?: string;
+    preservation_rate_per_bag_per_month?: string;
+    loading_unloading_rate_per_bag?: string;
+    loading_charge_mode?: LoadingChargeModeEnum;
+    inward_time?: string | null;
+    items?: Array<LotItemUpdateInput>;
 };
 
 export type GenerateInvoicesInput = {
@@ -437,6 +467,22 @@ export type LotItemInput = {
     rent_rate_per_unit?: string;
 };
 
+export type LotItemUpdateInput = {
+    id?: number | null;
+    commodity_id: number;
+    chamber?: string;
+    floor?: string;
+    rack?: string;
+    chamber_id?: number | null;
+    floor_id?: number | null;
+    block_id: number;
+    special_remarks?: string;
+    initial_qty: number;
+    unit?: string;
+    unit_weight?: string;
+    rent_rate_per_unit?: string;
+};
+
 export type LotOutput = {
     readonly id: number;
     readonly facility_id: number;
@@ -553,6 +599,36 @@ export type PatchedAdjustInvoiceInput = {
     document_type?: DocumentTypeEnum | NullEnum | null;
     is_reverse_charge?: boolean;
     exemption_reason?: string;
+};
+
+export type PatchedDeliveryNoteUpdateInput = {
+    party_id?: number;
+    dispatch_date?: string;
+    vehicle_number?: string;
+    driver_name?: string;
+    transporter?: string;
+    remarks?: string;
+    loading_charge?: string;
+    loading_unloading_rate_per_unit?: string;
+    loading_charge_mode?: LoadingChargeModeEnum;
+    lines?: Array<DeliveryLineInput>;
+};
+
+export type PatchedGrnUpdateInput = {
+    party_id?: number;
+    receipt_date?: string;
+    vehicle_number?: string;
+    driver_name?: string;
+    remarks?: string;
+    loading_charge?: string;
+    bill_no?: string;
+    bilty_no?: string;
+    transporter?: string;
+    preservation_rate_per_bag_per_month?: string;
+    loading_unloading_rate_per_bag?: string;
+    loading_charge_mode?: LoadingChargeModeEnum;
+    inward_time?: string | null;
+    items?: Array<LotItemUpdateInput>;
 };
 
 export type PaymentInput = {
@@ -1476,6 +1552,31 @@ export type DeliveryNotesRetrieveResponses = {
 
 export type DeliveryNotesRetrieveResponse = DeliveryNotesRetrieveResponses[keyof DeliveryNotesRetrieveResponses];
 
+export type DeliveryNotesPartialUpdateData = {
+    body?: PatchedDeliveryNoteUpdateInput;
+    path: {
+        /**
+         * A unique integer value identifying this Delivery Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/delivery-notes/{id}/';
+};
+
+export type DeliveryNotesPartialUpdateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type DeliveryNotesPartialUpdateResponses = {
+    200: DeliveryNoteOutput;
+};
+
+export type DeliveryNotesPartialUpdateResponse = DeliveryNotesPartialUpdateResponses[keyof DeliveryNotesPartialUpdateResponses];
+
 export type DeliveryNotesCancelCreateData = {
     body?: never;
     path: {
@@ -1583,6 +1684,31 @@ export type DeliveryNotesPostCreateResponses = {
 };
 
 export type DeliveryNotesPostCreateResponse = DeliveryNotesPostCreateResponses[keyof DeliveryNotesPostCreateResponses];
+
+export type DeliveryNotesUpdateAndPostCreateData = {
+    body?: DeliveryNoteUpdateInput;
+    path: {
+        /**
+         * A unique integer value identifying this Delivery Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/delivery-notes/{id}/update-and-post/';
+};
+
+export type DeliveryNotesUpdateAndPostCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type DeliveryNotesUpdateAndPostCreateResponses = {
+    200: DeliveryNoteOutput;
+};
+
+export type DeliveryNotesUpdateAndPostCreateResponse = DeliveryNotesUpdateAndPostCreateResponses[keyof DeliveryNotesUpdateAndPostCreateResponses];
 
 export type ExportsInvoiceRegisterRetrieveData = {
     body?: never;
@@ -1902,6 +2028,31 @@ export type GrnsRetrieveResponses = {
 
 export type GrnsRetrieveResponse = GrnsRetrieveResponses[keyof GrnsRetrieveResponses];
 
+export type GrnsPartialUpdateData = {
+    body?: PatchedGrnUpdateInput;
+    path: {
+        /**
+         * A unique integer value identifying this Goods Receipt Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/grns/{id}/';
+};
+
+export type GrnsPartialUpdateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type GrnsPartialUpdateResponses = {
+    200: GrnOutput;
+};
+
+export type GrnsPartialUpdateResponse = GrnsPartialUpdateResponses[keyof GrnsPartialUpdateResponses];
+
 export type GrnsCancelCreateData = {
     body?: never;
     path: {
@@ -2009,6 +2160,31 @@ export type GrnsPostCreateResponses = {
 };
 
 export type GrnsPostCreateResponse = GrnsPostCreateResponses[keyof GrnsPostCreateResponses];
+
+export type GrnsUpdateAndPostCreateData = {
+    body?: GrnUpdateInput;
+    path: {
+        /**
+         * A unique integer value identifying this Goods Receipt Note.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/grns/{id}/update-and-post/';
+};
+
+export type GrnsUpdateAndPostCreateErrors = {
+    /**
+     * No response body
+     */
+    400: unknown;
+};
+
+export type GrnsUpdateAndPostCreateResponses = {
+    200: GrnOutput;
+};
+
+export type GrnsUpdateAndPostCreateResponse = GrnsUpdateAndPostCreateResponses[keyof GrnsUpdateAndPostCreateResponses];
 
 export type InvoicesListData = {
     body?: never;

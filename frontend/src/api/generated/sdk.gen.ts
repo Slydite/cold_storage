@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, AuthTokenCreateData, AuthTokenCreateErrors, AuthTokenCreateResponses, AuthTokenRevokeCreateData, AuthTokenRevokeCreateResponses, BlocksCreateData, BlocksCreateErrors, BlocksCreateResponses, BlocksListData, BlocksListResponses, BlocksRetrieveData, BlocksRetrieveErrors, BlocksRetrieveResponses, BlocksUpdateData, BlocksUpdateErrors, BlocksUpdateResponses, ChambersCreateData, ChambersCreateErrors, ChambersCreateResponses, ChambersListData, ChambersListResponses, ChambersRetrieveData, ChambersRetrieveErrors, ChambersRetrieveResponses, ChambersUpdateData, ChambersUpdateErrors, ChambersUpdateResponses, CommoditiesAliasesCreateData, CommoditiesAliasesCreateErrors, CommoditiesAliasesCreateResponses, CommoditiesAliasesDestroyData, CommoditiesAliasesDestroyErrors, CommoditiesAliasesDestroyResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesMergeCreateData, CommoditiesMergeCreateErrors, CommoditiesMergeCreateResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesEmailCreateData, DeliveryNotesEmailCreateErrors, DeliveryNotesEmailCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPdfRetrieveData, DeliveryNotesPdfRetrieveErrors, DeliveryNotesPdfRetrieveResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, ExportsInvoiceRegisterRetrieveData, ExportsInvoiceRegisterRetrieveResponses, ExportsTallyRetrieveData, ExportsTallyRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, FloorsCreateData, FloorsCreateErrors, FloorsCreateResponses, FloorsListData, FloorsListResponses, FloorsRetrieveData, FloorsRetrieveErrors, FloorsRetrieveResponses, FloorsUpdateData, FloorsUpdateErrors, FloorsUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsEmailCreateData, GrnsEmailCreateErrors, GrnsEmailCreateResponses, GrnsListData, GrnsListResponses, GrnsPdfRetrieveData, GrnsPdfRetrieveErrors, GrnsPdfRetrieveResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, InvoicesAdjustPartialUpdateData, InvoicesAdjustPartialUpdateErrors, InvoicesAdjustPartialUpdateResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesEmailCreateData, InvoicesEmailCreateErrors, InvoicesEmailCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPaymentsCreateData, InvoicesPaymentsCreateErrors, InvoicesPaymentsCreateResponses, InvoicesPaymentsDestroyData, InvoicesPaymentsDestroyErrors, InvoicesPaymentsDestroyResponses, InvoicesPaymentsListData, InvoicesPaymentsListErrors, InvoicesPaymentsListResponses, InvoicesPdfRetrieveData, InvoicesPdfRetrieveErrors, InvoicesPdfRetrieveResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesPreviewListData, InvoicesPreviewListResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsAdjustCreateData, LotsAdjustCreateErrors, LotsAdjustCreateResponses, LotsBulkRateChangeCreateData, LotsBulkRateChangeCreateErrors, LotsBulkRateChangeCreateResponses, LotsListData, LotsListResponses, LotsRateChangesCreateData, LotsRateChangesCreateErrors, LotsRateChangesCreateResponses, LotsRateChangesDestroyData, LotsRateChangesDestroyErrors, LotsRateChangesDestroyResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, ReportsDnRegisterRetrieveData, ReportsDnRegisterRetrieveResponses, ReportsGrnRegisterRetrieveData, ReportsGrnRegisterRetrieveResponses, ReportsInvoicesRetrieveData, ReportsInvoicesRetrieveResponses, ReportsPaymentsRetrieveData, ReportsPaymentsRetrieveResponses, ReportsStockSummaryRetrieveData, ReportsStockSummaryRetrieveResponses, UsersActivateCreateData, UsersActivateCreateErrors, UsersActivateCreateResponses, UsersCreateData, UsersCreateErrors, UsersCreateResponses, UsersDeactivateCreateData, UsersDeactivateCreateErrors, UsersDeactivateCreateResponses, UsersListData, UsersListResponses, UsersRetrieveData, UsersRetrieveErrors, UsersRetrieveResponses, UsersUpdateData, UsersUpdateErrors, UsersUpdateResponses } from './types.gen';
+import type { AuthCsrfRetrieveData, AuthCsrfRetrieveResponses, AuthLoginCreateData, AuthLoginCreateErrors, AuthLoginCreateResponses, AuthLogoutCreateData, AuthLogoutCreateResponses, AuthMeRetrieveData, AuthMeRetrieveResponses, AuthTokenCreateData, AuthTokenCreateErrors, AuthTokenCreateResponses, AuthTokenRevokeCreateData, AuthTokenRevokeCreateResponses, BlocksCreateData, BlocksCreateErrors, BlocksCreateResponses, BlocksListData, BlocksListResponses, BlocksRetrieveData, BlocksRetrieveErrors, BlocksRetrieveResponses, BlocksUpdateData, BlocksUpdateErrors, BlocksUpdateResponses, ChambersCreateData, ChambersCreateErrors, ChambersCreateResponses, ChambersListData, ChambersListResponses, ChambersRetrieveData, ChambersRetrieveErrors, ChambersRetrieveResponses, ChambersUpdateData, ChambersUpdateErrors, ChambersUpdateResponses, CommoditiesAliasesCreateData, CommoditiesAliasesCreateErrors, CommoditiesAliasesCreateResponses, CommoditiesAliasesDestroyData, CommoditiesAliasesDestroyErrors, CommoditiesAliasesDestroyResponses, CommoditiesCreateData, CommoditiesCreateErrors, CommoditiesCreateResponses, CommoditiesListData, CommoditiesListResponses, CommoditiesMergeCreateData, CommoditiesMergeCreateErrors, CommoditiesMergeCreateResponses, CommoditiesRetrieveData, CommoditiesRetrieveErrors, CommoditiesRetrieveResponses, CommoditiesUpdateData, CommoditiesUpdateErrors, CommoditiesUpdateResponses, DeliveryNotesCancelCreateData, DeliveryNotesCancelCreateErrors, DeliveryNotesCancelCreateResponses, DeliveryNotesCreateData, DeliveryNotesCreateErrors, DeliveryNotesCreateResponses, DeliveryNotesEmailCreateData, DeliveryNotesEmailCreateErrors, DeliveryNotesEmailCreateResponses, DeliveryNotesListData, DeliveryNotesListResponses, DeliveryNotesPartialUpdateData, DeliveryNotesPartialUpdateErrors, DeliveryNotesPartialUpdateResponses, DeliveryNotesPdfRetrieveData, DeliveryNotesPdfRetrieveErrors, DeliveryNotesPdfRetrieveResponses, DeliveryNotesPostCreateData, DeliveryNotesPostCreateErrors, DeliveryNotesPostCreateResponses, DeliveryNotesRetrieveData, DeliveryNotesRetrieveErrors, DeliveryNotesRetrieveResponses, DeliveryNotesUpdateAndPostCreateData, DeliveryNotesUpdateAndPostCreateErrors, DeliveryNotesUpdateAndPostCreateResponses, ExportsInvoiceRegisterRetrieveData, ExportsInvoiceRegisterRetrieveResponses, ExportsTallyRetrieveData, ExportsTallyRetrieveResponses, FacilitiesCreateData, FacilitiesCreateErrors, FacilitiesCreateResponses, FacilitiesListData, FacilitiesListResponses, FacilitiesRetrieveData, FacilitiesRetrieveErrors, FacilitiesRetrieveResponses, FacilitiesUpdateData, FacilitiesUpdateErrors, FacilitiesUpdateResponses, FloorsCreateData, FloorsCreateErrors, FloorsCreateResponses, FloorsListData, FloorsListResponses, FloorsRetrieveData, FloorsRetrieveErrors, FloorsRetrieveResponses, FloorsUpdateData, FloorsUpdateErrors, FloorsUpdateResponses, GrnsCancelCreateData, GrnsCancelCreateErrors, GrnsCancelCreateResponses, GrnsCreateData, GrnsCreateErrors, GrnsCreateResponses, GrnsEmailCreateData, GrnsEmailCreateErrors, GrnsEmailCreateResponses, GrnsListData, GrnsListResponses, GrnsPartialUpdateData, GrnsPartialUpdateErrors, GrnsPartialUpdateResponses, GrnsPdfRetrieveData, GrnsPdfRetrieveErrors, GrnsPdfRetrieveResponses, GrnsPostCreateData, GrnsPostCreateErrors, GrnsPostCreateResponses, GrnsRetrieveData, GrnsRetrieveErrors, GrnsRetrieveResponses, GrnsUpdateAndPostCreateData, GrnsUpdateAndPostCreateErrors, GrnsUpdateAndPostCreateResponses, InvoicesAdjustPartialUpdateData, InvoicesAdjustPartialUpdateErrors, InvoicesAdjustPartialUpdateResponses, InvoicesCancelCreateData, InvoicesCancelCreateErrors, InvoicesCancelCreateResponses, InvoicesCreateData, InvoicesCreateErrors, InvoicesCreateResponses, InvoicesEmailCreateData, InvoicesEmailCreateErrors, InvoicesEmailCreateResponses, InvoicesListData, InvoicesListResponses, InvoicesPaymentsCreateData, InvoicesPaymentsCreateErrors, InvoicesPaymentsCreateResponses, InvoicesPaymentsDestroyData, InvoicesPaymentsDestroyErrors, InvoicesPaymentsDestroyResponses, InvoicesPaymentsListData, InvoicesPaymentsListErrors, InvoicesPaymentsListResponses, InvoicesPdfRetrieveData, InvoicesPdfRetrieveErrors, InvoicesPdfRetrieveResponses, InvoicesPostCreateData, InvoicesPostCreateErrors, InvoicesPostCreateResponses, InvoicesPreviewListData, InvoicesPreviewListResponses, InvoicesRetrieveData, InvoicesRetrieveErrors, InvoicesRetrieveResponses, LotsAdjustCreateData, LotsAdjustCreateErrors, LotsAdjustCreateResponses, LotsBulkRateChangeCreateData, LotsBulkRateChangeCreateErrors, LotsBulkRateChangeCreateResponses, LotsListData, LotsListResponses, LotsRateChangesCreateData, LotsRateChangesCreateErrors, LotsRateChangesCreateResponses, LotsRateChangesDestroyData, LotsRateChangesDestroyErrors, LotsRateChangesDestroyResponses, LotsRetrieveData, LotsRetrieveErrors, LotsRetrieveResponses, LotsWithdrawCreateData, LotsWithdrawCreateErrors, LotsWithdrawCreateResponses, PartiesCreateData, PartiesCreateErrors, PartiesCreateResponses, PartiesListData, PartiesListResponses, PartiesRetrieveData, PartiesRetrieveErrors, PartiesRetrieveResponses, PartiesUpdateData, PartiesUpdateErrors, PartiesUpdateResponses, ReportsDnRegisterRetrieveData, ReportsDnRegisterRetrieveResponses, ReportsGrnRegisterRetrieveData, ReportsGrnRegisterRetrieveResponses, ReportsInvoicesRetrieveData, ReportsInvoicesRetrieveResponses, ReportsPaymentsRetrieveData, ReportsPaymentsRetrieveResponses, ReportsStockSummaryRetrieveData, ReportsStockSummaryRetrieveResponses, UsersActivateCreateData, UsersActivateCreateErrors, UsersActivateCreateResponses, UsersCreateData, UsersCreateErrors, UsersCreateResponses, UsersDeactivateCreateData, UsersDeactivateCreateErrors, UsersDeactivateCreateResponses, UsersListData, UsersListResponses, UsersRetrieveData, UsersRetrieveErrors, UsersRetrieveResponses, UsersUpdateData, UsersUpdateErrors, UsersUpdateResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -471,6 +471,27 @@ export const deliveryNotesRetrieve = <ThrowOnError extends boolean = false>(opti
 });
 
 /**
+ * Partially update a DRAFT Delivery Note
+ */
+export const deliveryNotesPartialUpdate = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesPartialUpdateData, ThrowOnError>): RequestResult<DeliveryNotesPartialUpdateResponses, DeliveryNotesPartialUpdateErrors, ThrowOnError> => (options.client ?? client).patch<DeliveryNotesPartialUpdateResponses, DeliveryNotesPartialUpdateErrors, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
+    url: '/api/delivery-notes/{id}/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Cancel a DRAFT Delivery Note
  */
 export const deliveryNotesCancelCreate = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesCancelCreateData, ThrowOnError>): RequestResult<DeliveryNotesCancelCreateResponses, DeliveryNotesCancelCreateErrors, ThrowOnError> => (options.client ?? client).post<DeliveryNotesCancelCreateResponses, DeliveryNotesCancelCreateErrors, ThrowOnError>({
@@ -536,6 +557,27 @@ export const deliveryNotesPostCreate = <ThrowOnError extends boolean = false>(op
     ],
     url: '/api/delivery-notes/{id}/post/',
     ...options
+});
+
+/**
+ * Update a DRAFT Delivery Note and then post it in one transaction
+ */
+export const deliveryNotesUpdateAndPostCreate = <ThrowOnError extends boolean = false>(options: Options<DeliveryNotesUpdateAndPostCreateData, ThrowOnError>): RequestResult<DeliveryNotesUpdateAndPostCreateResponses, DeliveryNotesUpdateAndPostCreateErrors, ThrowOnError> => (options.client ?? client).post<DeliveryNotesUpdateAndPostCreateResponses, DeliveryNotesUpdateAndPostCreateErrors, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
+    url: '/api/delivery-notes/{id}/update-and-post/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -780,6 +822,27 @@ export const grnsRetrieve = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
+ * Partially update a DRAFT GRN
+ */
+export const grnsPartialUpdate = <ThrowOnError extends boolean = false>(options: Options<GrnsPartialUpdateData, ThrowOnError>): RequestResult<GrnsPartialUpdateResponses, GrnsPartialUpdateErrors, ThrowOnError> => (options.client ?? client).patch<GrnsPartialUpdateResponses, GrnsPartialUpdateErrors, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
+    url: '/api/grns/{id}/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Cancel a DRAFT GRN
  */
 export const grnsCancelCreate = <ThrowOnError extends boolean = false>(options: Options<GrnsCancelCreateData, ThrowOnError>): RequestResult<GrnsCancelCreateResponses, GrnsCancelCreateErrors, ThrowOnError> => (options.client ?? client).post<GrnsCancelCreateResponses, GrnsCancelCreateErrors, ThrowOnError>({
@@ -845,6 +908,27 @@ export const grnsPostCreate = <ThrowOnError extends boolean = false>(options: Op
     ],
     url: '/api/grns/{id}/post/',
     ...options
+});
+
+/**
+ * Update a DRAFT GRN and then post it in one transaction
+ */
+export const grnsUpdateAndPostCreate = <ThrowOnError extends boolean = false>(options: Options<GrnsUpdateAndPostCreateData, ThrowOnError>): RequestResult<GrnsUpdateAndPostCreateResponses, GrnsUpdateAndPostCreateErrors, ThrowOnError> => (options.client ?? client).post<GrnsUpdateAndPostCreateResponses, GrnsUpdateAndPostCreateErrors, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { scheme: 'basic', type: 'http' }
+    ],
+    url: '/api/grns/{id}/update-and-post/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

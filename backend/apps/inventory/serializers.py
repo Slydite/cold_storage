@@ -191,6 +191,53 @@ class GRNCreateInputSerializer(serializers.Serializer):
     items = LotItemInputSerializer(many=True, required=False, default=list)
 
 
+class LotItemUpdateInputSerializer(serializers.Serializer):
+    id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    commodity_id = serializers.IntegerField()
+    chamber = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
+    floor = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
+    rack = serializers.CharField(max_length=50, required=False, allow_blank=True, default='')
+    chamber_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    floor_id = serializers.IntegerField(required=False, allow_null=True, default=None)
+    block_id = serializers.IntegerField(required=True)
+    special_remarks = serializers.CharField(max_length=255, required=False, allow_blank=True, default='')
+    initial_qty = serializers.IntegerField(min_value=1)
+    unit = serializers.CharField(max_length=20, required=False, allow_blank=True, default='')
+    unit_weight = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0.00)
+    rent_rate_per_unit = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, default=0.00)
+
+    def to_internal_value(self, data):
+        if 'block_id' not in data or data['block_id'] is None or data['block_id'] == '':
+            commodity_id = data.get('commodity_id')
+            commodity_name = "Unknown"
+            if commodity_id:
+                try:
+                    commodity_name = Commodity.objects.get(pk=commodity_id).name
+                except Commodity.DoesNotExist:
+                    pass
+            raise serializers.ValidationError({
+                'block_id': f"Storage location (block) is required for commodity '{commodity_name}'."
+            })
+        return super().to_internal_value(data)
+
+
+class GRNUpdateInputSerializer(serializers.Serializer):
+    party_id = serializers.IntegerField(required=False)
+    receipt_date = serializers.DateField(required=False)
+    vehicle_number = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    driver_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    remarks = serializers.CharField(max_length=1000, required=False, allow_blank=True)
+    loading_charge = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    bill_no = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    bilty_no = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    transporter = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    preservation_rate_per_bag_per_month = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    loading_unloading_rate_per_bag = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    loading_charge_mode = serializers.ChoiceField(choices=ChargeMode.choices, required=False)
+    inward_time = serializers.TimeField(required=False, allow_null=True)
+    items = LotItemUpdateInputSerializer(many=True, required=False)
+
+
 class GRNOutputSerializer(serializers.ModelSerializer):
     party_name = serializers.CharField(source='party.name', read_only=True)
     party_code = serializers.CharField(source='party.code', read_only=True)

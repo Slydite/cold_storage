@@ -702,6 +702,42 @@ paths:
           description: ''
         '404':
           description: No response body
+    patch:
+      operationId: delivery_notes_partial_update
+      summary: Partially update a DRAFT Delivery Note
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Delivery Note.
+        required: true
+      tags:
+      - delivery-notes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDeliveryNoteUpdateInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDeliveryNoteUpdateInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDeliveryNoteUpdateInput'
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryNoteOutput'
+          description: ''
+        '400':
+          description: No response body
   /api/delivery-notes/{id}/cancel/:
     post:
       operationId: delivery_notes_cancel_create
@@ -808,6 +844,43 @@ paths:
         required: true
       tags:
       - delivery-notes
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryNoteOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/delivery-notes/{id}/update-and-post/:
+    post:
+      operationId: delivery_notes_update_and_post_create
+      summary: Update a DRAFT Delivery Note and then post it in one transaction
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Delivery Note.
+        required: true
+      tags:
+      - delivery-notes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryNoteUpdateInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DeliveryNoteUpdateInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeliveryNoteUpdateInput'
       security:
       - cookieAuth: []
       - tokenAuth: []
@@ -1247,6 +1320,42 @@ paths:
           description: ''
         '404':
           description: No response body
+    patch:
+      operationId: grns_partial_update
+      summary: Partially update a DRAFT GRN
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Goods Receipt Note.
+        required: true
+      tags:
+      - grns
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedGRNUpdateInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedGRNUpdateInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedGRNUpdateInput'
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GRNOutput'
+          description: ''
+        '400':
+          description: No response body
   /api/grns/{id}/cancel/:
     post:
       operationId: grns_cancel_create
@@ -1353,6 +1462,43 @@ paths:
         required: true
       tags:
       - grns
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GRNOutput'
+          description: ''
+        '400':
+          description: No response body
+  /api/grns/{id}/update-and-post/:
+    post:
+      operationId: grns_update_and_post_create
+      summary: Update a DRAFT GRN and then post it in one transaction
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Goods Receipt Note.
+        required: true
+      tags:
+      - grns
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GRNUpdateInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GRNUpdateInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GRNUpdateInput'
       security:
       - cookieAuth: []
       - tokenAuth: []
@@ -3074,6 +3220,40 @@ components:
       - party_id
       - party_name
       - updated_at
+    DeliveryNoteUpdateInput:
+      type: object
+      properties:
+        party_id:
+          type: integer
+        dispatch_date:
+          type: string
+          format: date
+        vehicle_number:
+          type: string
+          maxLength: 50
+        driver_name:
+          type: string
+          maxLength: 100
+        transporter:
+          type: string
+          maxLength: 255
+        remarks:
+          type: string
+          maxLength: 1000
+        loading_charge:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        loading_unloading_rate_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        loading_charge_mode:
+          $ref: '#/components/schemas/LoadingChargeModeEnum'
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryLineInput'
     DocumentTypeEnum:
       enum:
       - TAX_INVOICE
@@ -3429,6 +3609,54 @@ components:
       - party_name
       - receipt_date
       - updated_at
+    GRNUpdateInput:
+      type: object
+      properties:
+        party_id:
+          type: integer
+        receipt_date:
+          type: string
+          format: date
+        vehicle_number:
+          type: string
+          maxLength: 50
+        driver_name:
+          type: string
+          maxLength: 100
+        remarks:
+          type: string
+          maxLength: 1000
+        loading_charge:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        bill_no:
+          type: string
+          maxLength: 50
+        bilty_no:
+          type: string
+          maxLength: 50
+        transporter:
+          type: string
+          maxLength: 255
+        preservation_rate_per_bag_per_month:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        loading_unloading_rate_per_bag:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        loading_charge_mode:
+          $ref: '#/components/schemas/LoadingChargeModeEnum'
+        inward_time:
+          type: string
+          format: time
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LotItemUpdateInput'
     GenerateInvoicesInput:
       type: object
       properties:
@@ -3881,6 +4109,59 @@ components:
       - block_id
       - commodity_id
       - initial_qty
+    LotItemUpdateInput:
+      type: object
+      properties:
+        id:
+          type: integer
+          nullable: true
+        commodity_id:
+          type: integer
+        chamber:
+          type: string
+          default: ''
+          maxLength: 50
+        floor:
+          type: string
+          default: ''
+          maxLength: 50
+        rack:
+          type: string
+          default: ''
+          maxLength: 50
+        chamber_id:
+          type: integer
+          nullable: true
+        floor_id:
+          type: integer
+          nullable: true
+        block_id:
+          type: integer
+        special_remarks:
+          type: string
+          default: ''
+          maxLength: 255
+        initial_qty:
+          type: integer
+          minimum: 1
+        unit:
+          type: string
+          default: ''
+          maxLength: 20
+        unit_weight:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          default: '0.00'
+        rent_rate_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          default: '0.00'
+      required:
+      - block_id
+      - commodity_id
+      - initial_qty
     LotOutput:
       type: object
       properties:
@@ -4266,6 +4547,88 @@ components:
         exemption_reason:
           type: string
           maxLength: 255
+    PatchedDeliveryNoteUpdateInput:
+      type: object
+      properties:
+        party_id:
+          type: integer
+        dispatch_date:
+          type: string
+          format: date
+        vehicle_number:
+          type: string
+          maxLength: 50
+        driver_name:
+          type: string
+          maxLength: 100
+        transporter:
+          type: string
+          maxLength: 255
+        remarks:
+          type: string
+          maxLength: 1000
+        loading_charge:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        loading_unloading_rate_per_unit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        loading_charge_mode:
+          $ref: '#/components/schemas/LoadingChargeModeEnum'
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeliveryLineInput'
+    PatchedGRNUpdateInput:
+      type: object
+      properties:
+        party_id:
+          type: integer
+        receipt_date:
+          type: string
+          format: date
+        vehicle_number:
+          type: string
+          maxLength: 50
+        driver_name:
+          type: string
+          maxLength: 100
+        remarks:
+          type: string
+          maxLength: 1000
+        loading_charge:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        bill_no:
+          type: string
+          maxLength: 50
+        bilty_no:
+          type: string
+          maxLength: 50
+        transporter:
+          type: string
+          maxLength: 255
+        preservation_rate_per_bag_per_month:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        loading_unloading_rate_per_bag:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        loading_charge_mode:
+          $ref: '#/components/schemas/LoadingChargeModeEnum'
+        inward_time:
+          type: string
+          format: time
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LotItemUpdateInput'
     PaymentInput:
       type: object
       properties:

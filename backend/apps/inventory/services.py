@@ -744,6 +744,327 @@ def bulk_add_rate_change(
     }
 
 
+def rebuild_lot_number_if_parsable(lot_number: str, receipt_date: date, quantity: int) -> str:
+    match = re.match(r'^(\d{8})-(\d{5})-(\d{5})(-[A-Z]+)?$', lot_number)
+    if not match:
+        return lot_number
+    date_str, serial_str, bags_str, suffix = match.groups()
+    serial = int(serial_str)
+    suffix = suffix or ""
+    new_num, _ = build_lot_number(receipt_date=receipt_date, serial=serial, bags=quantity)
+    return new_num + suffix
+
+
+@transaction.atomic
+def update_grn(
+    *,
+    grn_id: int,
+    require_location: bool = True,
+    validate_lot_number_format: bool = True,
+    **changes
+) -> GRN:
+    """
+    Update a Goods Receipt Note (GRN) and its lot items in place.
+    Only DRAFT GRNs can be updated.
+    """
+    try:
+        grn = GRN.objects.select_for_update().get(pk=grn_id)
+    except GRN.DoesNotExist:
+        raise ValidationError(f"GRN with ID {grn_id} does not exist.")
+
+    if grn.status != GRN.Status.DRAFT:
+        raise ValidationError(f"Cannot update GRN: current status is '{grn.status}', must be DRAFT.")
+
+    facility = grn.facility
+
+    # Header fields update
+    if 'party_id' in changes and changes['party_id'] is not None:
+        grn.party = get_party_or_raise(changes['party_id'], facility)
+    if 'receipt_date' in changes and changes['receipt_date'] is not None:
+        grn.receipt_date = changes['receipt_date']
+    if 'vehicle_number' in changes and changes['vehicle_number'] is not None:
+        grn.vehicle_number = upper_code(changes['vehicle_number'])
+    if 'driver_name' in changes and changes['driver_name'] is not None:
+        grn.driver_name = title_name(changes['driver_name'])
+    if 'remarks' in changes and changes['remarks'] is not None:
+        grn.remarks = clean_text(changes['remarks'])
+    if 'loading_charge' in changes and changes['loading_charge'] is not None:
+        grn.loading_charge = changes['loading_charge']
+    if 'bill_no' in changes and changes['bill_no'] is not None:
+        grn.bill_no = upper_code(changes['bill_no'])
+    if 'bilty_no' in changes and changes['bilty_no'] is not None:
+        grn.bilty_no = upper_code(changes['bilty_no'])
+    if 'transporter' in changes and changes['transporter'] is not None:
+        grn.transporter = title_name(changes['transporter'])
+    if 'preservation_rate_per_bag_per_month' in changes and changes['preservation_rate_per_bag_per_month'] is not None:
+        grn.preservation_rate_per_bag_per_month = changes['preservation_rate_per_bag_per_month']
+    if 'loading_unloading_rate_per_bag' in changes and changes['loading_unloading_rate_per_bag'] is not None:
+        grn.loading_unloading_rate_per_bag = changes['loading_unloading_rate_per_bag']
+    if 'loading_charge_mode' in changes and changes['loading_charge_mode'] is not None:
+        mode = changes['loading_charge_mode']
+        if mode not in ChargeMode.values:
+            raise ValidationError(f"Invalid loading_charge_mode: {mode}. Allowed: {ChargeMode.values}")
+        grn.loading_charge_mode = mode
+    if 'inward_time' in changes:
+        grn.inward_time = changes['inward_time']
+
+    grn.full_clean()
+    grn.save()
+
+    # Lines / Items update
+    if 'items' in changes:
+        items = changes['items'] or []
+        
+        # We need to map by ID
+        existing_lots = {lot.id: lot for lot in grn.lots.all()}
+        supplied_lots_by_id = {}
+        new_items = []
+        
+        for item_data in items:
+            lot_id = item_data.get('id') or item_data.get('lot_id')
+            if lot_id:
+                if lot_id not in existing_lots:
+                    raise ValidationError(f"Lot with ID {lot_id} does not belong to this GRN.")
+                supplied_lots_by_id[lot_id] = item_data
+            else:
+                new_items.append(item_data)
+                
+        # Existing lots absent from the supplied set must be deleted
+        lots_to_delete = [lot for lid, lot in existing_lots.items() if lid not in supplied_lots_by_id]
+        for lot in lots_to_delete:
+            delivery_line = lot.delivery_lines.first()
+            if delivery_line is not None:
+                dn_number = delivery_line.delivery_note.dn_number
+                raise ValidationError(
+                    f"Cannot delete lot '{lot.lot_number}' because it has delivery lines against Delivery Note '{dn_number}'."
+                )
+            lot.delete()
+            
+        # Update existing lots in place
+        commodity_ids = {item_data.get('commodity_id') for item_data in items if item_data.get('commodity_id')}
+        commodities_by_id = Commodity.objects.in_bulk(commodity_ids, field_name='pk')
+        commodities_by_id = {
+            cid: commodity for cid, commodity in commodities_by_id.items()
+            if commodity.facility_id == facility.id
+        }
+
+        # For updating existing lots
+        for lot_id, item_data in supplied_lots_by_id.items():
+            lot = existing_lots[lot_id]
+            
+            commodity_id = item_data.get('commodity_id')
+            commodity = commodities_by_id.get(commodity_id)
+            if commodity is None:
+                raise ValidationError(f"Commodity with ID {commodity_id} does not exist in facility {facility.id}.")
+                
+            initial_qty = item_data.get('initial_qty', 0)
+            if initial_qty <= 0:
+                raise ValidationError(f"Initial quantity for commodity '{commodity.name}' must be greater than 0.")
+                
+            # Rebuild lot number if parsable
+            lot.lot_number = rebuild_lot_number_if_parsable(lot.lot_number, grn.receipt_date, initial_qty)
+            
+            # Resolve locations
+            chamber_id = item_data.get('chamber_id')
+            floor_id = item_data.get('floor_id')
+            block_id = item_data.get('block_id')
+
+            if require_location and (block_id is None or block_id == ""):
+                raise ValidationError(f"Storage location (block) is required for commodity '{commodity.name}'.")
+
+            chamber_ref = None
+            floor_ref = None
+            block_ref = None
+
+            chamber_text = item_data.get('chamber', '')
+            floor_text = item_data.get('floor', '')
+
+            if block_id is not None:
+                try:
+                    block_ref = Block.objects.select_related('floor', 'floor__chamber', 'floor__chamber__facility').get(pk=block_id)
+                except Block.DoesNotExist:
+                    raise ValidationError(f"Block with ID {block_id} does not exist.")
+
+                if floor_id is not None and block_ref.floor_id != floor_id:
+                    raise ValidationError(f"Block with ID {block_id} does not belong to floor {floor_id}.")
+
+                if chamber_id is not None and block_ref.floor.chamber_id != chamber_id:
+                    raise ValidationError(f"Block with ID {block_id} does not belong to chamber {chamber_id}.")
+
+                if block_ref.floor.chamber.facility_id != facility.id:
+                    raise ValidationError(f"Block with ID {block_id} does not belong to facility {facility.id}.")
+
+                floor_ref = block_ref.floor
+                chamber_ref = floor_ref.chamber
+
+            elif floor_id is not None:
+                try:
+                    floor_ref = Floor.objects.select_related('chamber', 'chamber__facility').get(pk=floor_id)
+                except Floor.DoesNotExist:
+                    raise ValidationError(f"Floor with ID {floor_id} does not exist.")
+
+                if chamber_id is not None and floor_ref.chamber_id != chamber_id:
+                    raise ValidationError(f"Floor with ID {floor_id} does not belong to chamber {chamber_id}.")
+
+                if floor_ref.chamber.facility_id != facility.id:
+                    raise ValidationError(f"Floor with ID {floor_id} does not belong to facility {facility.id}.")
+
+                chamber_ref = floor_ref.chamber
+
+            elif chamber_id is not None:
+                try:
+                    chamber_ref = Chamber.objects.select_related('facility').get(pk=chamber_id)
+                except Chamber.DoesNotExist:
+                    raise ValidationError(f"Chamber with ID {chamber_id} does not exist.")
+
+                if chamber_ref.facility_id != facility.id:
+                    raise ValidationError(f"Chamber with ID {chamber_id} does not belong to facility {facility.id}.")
+
+            if chamber_ref is not None:
+                chamber_text = chamber_ref.name
+            if floor_ref is not None:
+                floor_text = floor_ref.name
+
+            unit = item_data.get('unit') or commodity.unit or Lot.UnitType.BAGS
+            special_remarks = clean_text(item_data.get('special_remarks', ''))
+
+            lot.commodity = commodity
+            lot.chamber = chamber_text
+            lot.floor = floor_text
+            lot.rack = item_data.get('rack', '')
+            lot.chamber_ref = chamber_ref
+            lot.floor_ref = floor_ref
+            lot.block_ref = block_ref
+            lot.special_remarks = special_remarks
+            lot.initial_qty = initial_qty
+            lot.remaining_qty = initial_qty
+            lot.unit = unit
+            lot.unit_weight = item_data.get('unit_weight', 0.00)
+            lot.rent_rate_per_unit = item_data.get('rent_rate_per_unit', 0.00)
+            lot.inward_date = grn.receipt_date
+            
+            lot.full_clean()
+            lot.save()
+
+        # Add new lots
+        for item_data in new_items:
+            commodity_id = item_data.get('commodity_id')
+            commodity = commodities_by_id.get(commodity_id)
+            if commodity is None:
+                raise ValidationError(f"Commodity with ID {commodity_id} does not exist in facility {facility.id}.")
+
+            initial_qty = item_data.get('initial_qty', 0)
+            if initial_qty <= 0:
+                raise ValidationError(f"Initial quantity for commodity '{commodity.name}' must be greater than 0.")
+
+            # Generate new lot number and serial
+            seq, created = Sequence.objects.select_for_update().get_or_create(
+                facility=facility,
+                sequence_type='LOT_SERIAL',
+                defaults={'prefix': '', 'current_value': 2606}
+            )
+            if not created and seq.current_value == 0:
+                seq.current_value = 2606
+                seq.save(update_fields=['current_value'])
+            
+            seq.current_value += 1
+            seq.save(update_fields=['current_value'])
+            
+            lot_number, _warning = build_lot_number(
+                receipt_date=grn.receipt_date,
+                serial=seq.current_value,
+                bags=initial_qty,
+            )
+
+            chamber_id = item_data.get('chamber_id')
+            floor_id = item_data.get('floor_id')
+            block_id = item_data.get('block_id')
+
+            if require_location and (block_id is None or block_id == ""):
+                raise ValidationError(f"Storage location (block) is required for commodity '{commodity.name}'.")
+
+            chamber_ref = None
+            floor_ref = None
+            block_ref = None
+
+            chamber_text = item_data.get('chamber', '')
+            floor_text = item_data.get('floor', '')
+
+            if block_id is not None:
+                try:
+                    block_ref = Block.objects.select_related('floor', 'floor__chamber', 'floor__chamber__facility').get(pk=block_id)
+                except Block.DoesNotExist:
+                    raise ValidationError(f"Block with ID {block_id} does not exist.")
+
+                if floor_id is not None and block_ref.floor_id != floor_id:
+                    raise ValidationError(f"Block with ID {block_id} does not belong to floor {floor_id}.")
+
+                if chamber_id is not None and block_ref.floor.chamber_id != chamber_id:
+                    raise ValidationError(f"Block with ID {block_id} does not belong to chamber {chamber_id}.")
+
+                if block_ref.floor.chamber.facility_id != facility.id:
+                    raise ValidationError(f"Block with ID {block_id} does not belong to facility {facility.id}.")
+
+                floor_ref = block_ref.floor
+                chamber_ref = floor_ref.chamber
+
+            elif floor_id is not None:
+                try:
+                    floor_ref = Floor.objects.select_related('chamber', 'chamber__facility').get(pk=floor_id)
+                except Floor.DoesNotExist:
+                    raise ValidationError(f"Floor with ID {floor_id} does not exist.")
+
+                if chamber_id is not None and floor_ref.chamber_id != chamber_id:
+                    raise ValidationError(f"Floor with ID {floor_id} does not belong to chamber {chamber_id}.")
+
+                if floor_ref.chamber.facility_id != facility.id:
+                    raise ValidationError(f"Floor with ID {floor_id} does not belong to facility {facility.id}.")
+
+                chamber_ref = floor_ref.chamber
+
+            elif chamber_id is not None:
+                try:
+                    chamber_ref = Chamber.objects.select_related('facility').get(pk=chamber_id)
+                except Chamber.DoesNotExist:
+                    raise ValidationError(f"Chamber with ID {chamber_id} does not exist.")
+
+                if chamber_ref.facility_id != facility.id:
+                    raise ValidationError(f"Chamber with ID {chamber_id} does not belong to facility {facility.id}.")
+
+            if chamber_ref is not None:
+                chamber_text = chamber_ref.name
+            if floor_ref is not None:
+                floor_text = floor_ref.name
+
+            unit = item_data.get('unit') or commodity.unit or Lot.UnitType.BAGS
+            special_remarks = clean_text(item_data.get('special_remarks', ''))
+
+            lot = Lot(
+                facility=facility,
+                grn=grn,
+                commodity=commodity,
+                lot_number=lot_number,
+                chamber=chamber_text,
+                floor=floor_text,
+                rack=item_data.get('rack', ''),
+                chamber_ref=chamber_ref,
+                floor_ref=floor_ref,
+                block_ref=block_ref,
+                special_remarks=special_remarks,
+                initial_qty=initial_qty,
+                remaining_qty=initial_qty,
+                unit=unit,
+                unit_weight=item_data.get('unit_weight', 0.00),
+                rent_rate_per_unit=item_data.get('rent_rate_per_unit', 0.00),
+                inward_date=grn.receipt_date
+            )
+            lot.full_clean()
+            lot.save()
+
+    return grn
+
+
+
 
 
 

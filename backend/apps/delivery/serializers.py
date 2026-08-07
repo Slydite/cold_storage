@@ -23,6 +23,19 @@ class DeliveryNoteCreateInputSerializer(serializers.Serializer):
     lines = DeliveryLineInputSerializer(many=True, required=False, default=list)
 
 
+class DeliveryNoteUpdateInputSerializer(serializers.Serializer):
+    party_id = serializers.IntegerField(required=False)
+    dispatch_date = serializers.DateField(required=False)
+    vehicle_number = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    driver_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    transporter = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    remarks = serializers.CharField(max_length=1000, required=False, allow_blank=True)
+    loading_charge = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    loading_unloading_rate_per_unit = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    loading_charge_mode = serializers.ChoiceField(choices=ChargeMode.choices, required=False)
+    lines = DeliveryLineInputSerializer(many=True, required=False)
+
+
 class DeliveryLineOutputSerializer(serializers.ModelSerializer):
     lot_number = serializers.CharField(source='lot.lot_number', read_only=True)
     commodity_name = serializers.CharField(source='lot.commodity.name', read_only=True)

@@ -24,6 +24,7 @@ from .services import (
     create_commodity,
     update_commodity,
     create_grn,
+    update_grn,
     post_grn,
     cancel_grn,
     withdraw_stock_from_lot,
@@ -41,6 +42,7 @@ from .serializers import (
     CommodityInputSerializer,
     CommodityOutputSerializer,
     GRNCreateInputSerializer,
+    GRNUpdateInputSerializer,
     GRNOutputSerializer,
     LotOutputSerializer,
     LotWithdrawalInputSerializer,
@@ -312,6 +314,38 @@ class GRNViewSet(ViewSet):
 
         output_serializer = GRNOutputSerializer(grn)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        request=GRNUpdateInputSerializer,
+        responses={200: GRNOutputSerializer, 400: None},
+        summary="Partially update a DRAFT GRN"
+    )
+    def partial_update(self, request, pk=None):
+        serializer = GRNUpdateInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            grn = update_grn(grn_id=pk, **serializer.validated_data)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(GRNOutputSerializer(grn).data)
+
+    @extend_schema(
+        request=GRNUpdateInputSerializer,
+        responses={200: GRNOutputSerializer, 400: None},
+        summary="Update a DRAFT GRN and then post it in one transaction"
+    )
+    @action(detail=True, methods=['post'], url_path='update-and-post')
+    def update_and_post(self, request, pk=None):
+        serializer = GRNUpdateInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        from django.db import transaction
+        try:
+            with transaction.atomic():
+                update_grn(grn_id=pk, **serializer.validated_data)
+                grn = post_grn(grn_id=pk)
+        except DjangoValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(GRNOutputSerializer(grn).data)
 
     @extend_schema(
         responses={200: GRNOutputSerializer, 400: None},
